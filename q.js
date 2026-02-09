@@ -3,8 +3,6 @@ run="queville.js";
 e=document.getElementById("run").innerHTML=run;
 
 var now=new Date(); function pad(num) { return num.toString().padStart(2, '0'); }
-tstamp=now.getFullYear().toString()+pad(now.getMonth()+1)+pad(now.getDate())+pad(now.getHours())+pad(now.getMinutes())+pad(now.getSeconds());
-print(tstamp);
 
 var ALlowMove=1;
 var AllowScroll=1;
@@ -24,10 +22,11 @@ var TMode=0;
 var TFill="";
 
 var objs=[];
+var ilist=[]; 
+var dlist=[]; 
 
 var map="";
 var maps=[];
-var sign=[];
 
 maps["Zz"]="GaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGa..Zm3535";
 maps["Z@"]="GaGaGaGaGaGaGaGaGaYbYaYaYaYaYcGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYaYaCeCcYaYaGaGaGaGaCeCcGaGaGaGaGaGaCeCcGaGaGaGaGaGaCeCcGaGaGa";
@@ -36,14 +35,16 @@ maps["Ce"]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUbAaAaAaUcUaUaUaAcDcGaDdAdUaUaUaAc
 maps["C+"]="UgUgUhUaUaUaUhUhUbAaAaAaAaAaUcUgAcCfCbCbCbCgAfUcAcCeCaCaCaCaCgAdAcCeCaCaCaCaCcAdAcCeCaCaCaCaCcAdAcCeCaCaCaCaCcAdAcCeCaCaCaCaCcAdAeChCdCaCaCdCiAfGaGaFlCeCcFkGaGaYmYaYlCeCcYmYaYlGbGaGaCeCcGaGbGb..Yb27..Zi51..Zh45..Bd46..Cg58..";
 maps["Cf"]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaAaAaAaAaAaAaUcUaGaGaGaGaGaGaAfUcGaGaGaGaGaGaGaScGaGaGaGaGaGaGaSgGaGaGaGaGaGaGaScGaGaGaGaBaGaGaSg";
 maps["Cg"]="GaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaSdSdSdGaGaGaSdSdSdSdSdGaGaSdSdSdSdSdSdSdSdSdSdSdSdSdSd";
-maps["Dd"]="UaUbAaAaAaAaAaAaUaAcGaGaGaGaGbGbUaAcGaGaGaGaGbGbUaAcGaGbGaGaGaGbUaAcGaGbGbGaGaGaUaAcGbGbGaGaBfBbUaAcGbGbGaBfBdGaUaAcGbGaGaBaGaGaUaAcGaGaGaBaGaGaUaAcGaGaGaBaGaGaUaAcGaGaGaBaRbRbUaAcGaGaGaBaRaRa";
+maps["Dc"]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaAaAaAaAaAaAaAaAaXcGaGaGaGaGaGaGaXdGaGaGaGaGaGaGaXcGaGaGaGaGaGaGaXdGaGaGaGaGaGaGaXcGaGaGaGaGaGaGaXdGaGaGaGaGaGaGaXcGaGaGaGaGaGaGa";
+maps["Dd"]="UaAcGaGaGaGaGaGaUaAcHaHaGaGaGaGaUaAcHaHaGaGaGaGaUaAcHaHaGaGaGaGaUaAcGaGaGaGaGaGaUaAcHaHaGaGaBfBbUaAcHaHaGaBfBdGaUaAcHaHaGaBaGaGaUaAcGaGaGaBaGaGaUaAcHaHaGaBaGaGaUaAcHaHaGaBaRbRbUaAcGaGaGaBaRaRa..Ye30..";
 maps["De"]="GbGbGaGaGaBaGaGaGbGbGaGaGaBaGaGaGbGaGaGbGaBaGaGaGbGaGaGaGaBaFiGaGaGaGaGaFkBiBbBbBbBbBbBbBbBdGaGaGaGaFkGaGbGaGaGaGaGaGaGaGaGaRbGaGaGaGaGaGaRbRaRbGaRbGaRbRbRaRbRaRbRaRbRaRaRbRaRbRaRbRaRbRbRaRbRa..Ab26..";
-maps["Df"]="GaGaGaGaBaGaGaScGaGaGaGaBaGaGaScGaFgGaGaBaGbGaGaGaGaGaGbBaGbGbGaBbBbBbBbBcBbBbBbGaGaGbGbBaGbGaGaGaGaGaGaBaGaGaGaGaFeGaGaBaGaGaSbRbGaFeGaBaScSeGaRaRbGaGaBaGaScSeRbRaGaGaBaSbGaScRaRbGaGaBaGaGaSc..Zf29..";
+maps["D+"]="IlIcIcIcIcIcIcImIcIlIcIcIcIcImIcIcIcIpInInInIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcImInInInInIlIcImIcIcIcIcIcIcIl";
+maps["Df"]="GaGaGaGaBaGaGaScGaGaGaGaBaGaGaScGaFgGaGaBaGbGaGaGaGaGaGbBaGbGbGaBbBbBbBbBcBbBbBbGaGaGbGbBaGbGaGaGaGaGaGaBaGaGaGaGaFeGaGaBaGaGaSbRbGaFeGaBaScSeGaRaRbGaGaBaGaScSeRbRaGaGaBaSbGaScRaRbGaGaBaGaGaSc..";
 maps["Dg"]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaGaGaGaGaUaUaUaUaBbGaGaGaUaUaUaUaGaGaGaGaUaUaUaUaGaGaGaGaUaUaUaUaGaGaGaGaUaUaUaUaGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdSdSdSdSdSdSdSdSd";
 maps["Ed"]="UaAcGaGaGaBaGaRaUaAcGaGaGaBaGaRbUaAcGaGaGaBaRbRaUaAcGaGaGaBaRaRbUaAcGaGaGaBaGaRaUaAcGaGaGaBaGaRbUaAcGaGaGaBaRbRaUaAcGaGaGaBaRaRbUaAcGaGaGaBaRbRaUaAcGaGaGaBaRaRbUaAcGaGaGaBaGaRaUaAcGaGaGaBaGaRb";
 maps["Ee"]="RaRbRaRbRbRaRbRaRbRaRbRaRaRbRaGaRaRbRaGaGaRaGaRbRbRaGaGaGaGaRbRaRaGaGaGaGaGaRaRbRbRbGaGaGaGaGaRaRaRaGaGaGaGaGaRbRbGaGaGaGaGaGaRaRaRbGaGaGaGaGaRbRbRaGaGaGaGaRbRaRaGaRbGaGaRbRaRbRbRbRaRbRbRaRbRa";
-maps["Ef"]="RaRbGaGaBaGaGaScGaRaRbGaBaGaGaScRbGaRaGaBaGaSbGaRaRbGaGaBaGaGaGaRbRaGaGaBiBbBbBbRaRbGaGaBaGaGaGaRbRaRbGaBaGaGaGaRaRbRaGaBaGaGaSbRbRaGaGaBaGaGaGaRaGaGaGaBaGaSbFkRbGaGaGaBaGaGaScRaRbGaGaBaGaGaSc";
-maps["Eg"]="ScSdSdSdSdSdSdSdScSdSdSdSdSdSdSdGaSfSbSfSiSdSdSdGaGaFkScSeSbSiSdBbBgGaGaGaGaScSdGaBeBgDcGaDdScSdGaFkBeBbBbBlScSdSbGaSbGaGbGbScSdGaScSdShSbSbSgSdFkSgSdSdSdSdSdSdScSdSdSdSdSdSdSdScSdSdSdSdSdSdSd..Zm4449";
+maps["Ef"]="RaRbGaGaBaGaGaScGaRaRbGaBaGaGaScRbGaRaGaBaGaSbGaRaRbGaGaBaGaGaGaRbRaGaGaBiBbBbBbRaRbGaGaBaGaGaGaRbRaRbGaBaGaGaGaRaRbRaGaBaGaGaGaRbRaGaGaBaGaGaGaRaGaGaGaBaGaSbFkRbGaGaGaBaGaGaScRaRbGaGaBaGaGaSc";
+maps["Eg"]="ScSdSdSdSdSdSdSdScSdSdSdSdSdSdSdGaSfSbSfSiSdSdSdGaGaFkScSeSbSiSdBbBgGaGaGaGaScSdGaBeBgDcGaDdScSdGaFkBeBbBbBlScSdGaGaSbGaGbGbScSdGaScSdShSbSbSgSdFkSgSdSdSdSdSdSdScSdSdSdSdSdSdSdScSdSdSdSdSdSdSd..Zm4449";
 maps["E-"]="GaGaGaGaGaGaGaScGaCfCbCbCbCbCgScGaCeCaCaCaCaCiScGaCeCaCaCaCcGaScGaCeCaCaCaCcScSdCbCaCaCaCaCcScSdCdCaCaCaCaCcScSdGaCeCaCaCaCcScSdGaCeCaCaCdCiScSdGaChCdCiGgSbSgSdGaSbSbSbSgSdSdSdScSdSdSdSdSdSdSd..La20..Lb19..Lc18..Ad60..";
 maps["Fd"]="UaAcGaGaGaBaGaRbUaAcGaGaGaBaGaRaUaAcGaGaGaBaGaGaUaAcGaGaGaBaGaGaUaAcGaGaGaBaGaGaUaAcGaGaGaBeBbBbUaAcGaGaGaGaGaGaUaAcDcGaDdGaGaGaUaAcGaGaGaGaGaGaUaUdAbAbAbAbAbAbUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUa..Zm5914";
 maps["Fe"]="RbRbRaRbRbRaRbRaRaRaRbRaRaRbRaRbGaGaRaGaGaRaGaRaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaBbBbBbBbBbBbBbBbGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaAbAbAbAbAbAbAbAbUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUa";
@@ -52,8 +53,11 @@ maps["F*"]="UaAcGaGaGaGaGaGaUaAcYaYaYaGaGaGaUaAcGaGaGaGaGaGaUaAcGaGaGaGaGaGaUaAc
 maps["Fg"]="SdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSd";
 maps["Ga"]="UaUaGaGaGaBaGaGaUaUaGaGaGaBaGaGaUaUaGaGaGaBaGaGaUaUaGaGaGaBaGaGaUaUaGaGaGaBeBgGaUaUaGaGaGaGaBeBbUaUaGaGaGaGaGaGaUaUaGaGaGaGaGaGaUaUaGaGaGaGaGaGaUaUaGaGaGaGaGaGaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUa";
 
+var sign=[];
 sign['Ce']="Welcome To Queville";
 sign['Df']="The Crossroads";
+
+var drop=[]; // drop[map]=iizzmmss
 
 login();
 
@@ -68,6 +72,7 @@ function input(l) {
    PMap=l.substring(4,6); 
    LMap(PMap); char(PName,PObj,PZ); 
   }
+  if (l=="") { hpop(); }
  } else {
   if (l.length<3) {
    print("Name must be at least three characters.<br>Enter your name:<br>");
@@ -158,7 +163,7 @@ function mainloop() {
   if (newT.charAt(0)=="R") { if (PInv.indexOf("Ab")<0) { AllowMove=0; }}
   if (newT.charAt(0)=="S") { if (PInv.indexOf("Ad")<0) { AllowMove=0; }}
   
-  
+  if (TMode) { AllowMove=1; }
   if (AllowMove) {
    PY=newY; PX=newX; PZ=newZ;
    if (newD=="R") { PObj=FaceR(PObj); } else { if (newD=="L") { PObj=FaceL(PObj); }}
@@ -168,7 +173,7 @@ function mainloop() {
     if (TFill) { maps[PMap]=maps[PMap].slice(0,PZ*2)+TFill+maps[PMap].slice((PZ*2)+2,maps[PMap].length); gfx(maps[PMap]); }
    }
    if (walk==PZ) {
-    walk=-1; if (Que) { ClickItem(Que); Que=""; }
+    walk=-1; if (Que) { eval(Que); Que=""; }
    }
 
    if (AllowScroll==0) {
@@ -188,6 +193,7 @@ function mainloop() {
    } 
   }
  }
+ if (drop[PMap]) { RefDItems(); }
  maintimer=setTimeout('mainloop();',200);
 }
 
@@ -249,11 +255,88 @@ function LMap(a) {
   c.onmousedown=new Function("MenuItem("+(z)+",this.parentNode)");
   document.body.appendChild(c);
  }
+ RefDItems();
  return maps[a];
+}
+ 
+function RefDItems() {
+ if (drop[PMap]) {
+  newdrop=0; dlist=drop[PMap].match(/.{1,8}/g);
+  now=new Date(); tstamp=pad(now.getMinutes())+pad(now.getSeconds());
+
+  for (b=0;b<dlist.length;b++) {
+   i=dlist[b].substring(0,2); z=dlist[b].substring(2,4); d=dlist[b].substring(4,8);
+   if (tstamp>d) {
+    newitem=ExpItem(i);
+    if (newitem!="--------") {
+     if (newitem=="Za") {
+      dlist[b]="--------"; if (document.getElementById("d"+b)) { document.getElementById("d"+b).remove(); }
+     } else {    	
+      if (document.getElementById("d"+b)) { document.getElementById("d"+b).remove(); }
+      c=new Date(); e=new Date(c.getTime()+60*1000); f=pad(e.getMinutes())+pad(e.getSeconds());
+      dlist[b]=newitem+z+f;
+     } 
+    }
+    newdrop=1;
+   } else {
+    y=Math.floor(z/(mapx+1)); x=z-(y*(mapx+1));
+    if (!document.getElementById("d"+b)) { 
+     c=document.createElement("img");
+     c.id="d"+b;
+     c.src=item[i];
+     c.style.position="absolute";
+     c.style.top=32+20+(y*32)+"px";
+     c.style.left=(32+22+(x*32))+"px";
+     c.onload=function() { this.style.top=parseInt(this.style.top)-(this.height-32)+"px"; this.style.left=parseInt(this.style.left)-(this.width-32)+"px"; }
+     c.onmousedown=new Function("MenuItem("+(z)+")");
+     document.body.appendChild(c);
+    }
+   }
+  }
+  if (newdrop) {
+   newdrop=""; for (b=0;b<dlist.length;b++) { newdrop=newdrop+dlist[b]; }
+   while (newdrop.endsWith("--------")) { newdrop=newdrop.slice(0, -8); }
+   drop[PMap]=newdrop; console.log(drop[PMap]); 
+  }   
+ }
+}  
+
+function ExpItem(a) {
+ switch (a) {
+  case "Fe": return "Ka"; break;
+  case "Fa": if (Math.random()>.8) { return "Ka"; } else { return "Za"; } break;
+  case "Fb": if (Math.random()>.6) { return "Ka"; } else { return "Za"; } break;
+  case "Fc": if (Math.random()>.4) { return "Ka"; } else { return "Za"; } break;
+  case "Fd": if (Math.random()>.2) { return "Ka"; } else { return "Za"; } break;
+  case "Ka": 
+  if (Math.random()>.8) {
+  	return "Fd";
+  } else {
+   if (Math.random()>.8) {
+    return "Fc";
+   } else {
+    if (Math.random()>.8) {
+     return "Fd";
+    } else {
+     return "Za";
+    }
+   }  
+  }
+  break;
+ }
+ return "--------"; 
 }
 
 function EraseAll() {
  for (b=0;b<ilist.length;b++) { if (document.getElementById("i"+b)) { document.getElementById("i"+b).remove(); }} ilist=[];
+ if (drop[PMap]) {
+  dlist=drop[PMap].match(/.{1,8}/g);  
+  for (b=0;b<dlist.length;b++) {
+ 	i=dlist[b].substring(0,2);
+ 	if (document.getElementById("d"+b)) { document.getElementById("d"+b).remove(); }
+  }
+ }
+ dlist=[];
  if (document.getElementById("cf"+PName)) { document.getElementById("cf"+PName).remove(); }
  if (document.getElementById("cb"+PName)) { document.getElementById("cb"+PName).remove(); }
  if (document.getElementById("ch"+PName)) { document.getElementById("ch"+PName).remove(); }
@@ -417,6 +500,7 @@ function keydown(k) {
     }
    }
   }
+  if (k=="enter") { TileMode(); }
  }
  
  if (k=="left") { walk=PZ-1; }
@@ -426,11 +510,20 @@ function keydown(k) {
 }
 
 function MenuTile(z) {
- if (PObj) { walk=z; }
+ if (PObj) { hpop(); walk=z; }
 }
 
 function MenuItem(IZ) {
  PUP="";
+ 
+ if (drop[PMap]) {
+  dlist=drop[PMap].match(/.{1,8}/g);
+  for (b=0;b<dlist.length;b++) {
+   i=dlist[b].substring(0,2); z=dlist[b].substring(2,4); d=dlist[b].substring(4,8);
+   if (IZ==z) { PUP=PUP+"<a href='javascript:GetDItem(\""+b+"\");'>"+ItemID(i)+"<br>"; }
+  }
+ } 
+ 
  for (b=0;b<ilist.length;b++) {
   i=ilist[b].substring(0,2);
   z=ilist[b].substring(2,4);
@@ -440,11 +533,33 @@ function MenuItem(IZ) {
  pop(PUP);
 }
 
+function GetDItem(b) {
+ dlist=drop[PMap].match(/.{1,8}/g);
+ i=dlist[b].substring(0,2); z=dlist[b].substring(2,4); d=dlist[b].substring(4,8);
+ if (i!="--") {
+  if (z!=PZ) {
+   walk=z; Que="GetDItem("+b+");";
+  } else {
+   a=PInv.indexOf("Za");
+   if (a>-1) {
+    newdrop=""; dlist[b]="--------"; 
+    for (c=0;c<dlist.length;c++) { newdrop=newdrop+dlist[c]; }
+    while (newdrop.endsWith("--------")) { newdrop=newdrop.slice(0, -8); }
+    drop[PMap]=newdrop; 
+  	 if (document.getElementById("d"+b)) { document.getElementById("d"+b).remove(); }
+    PInv=PInv.replace("Za", i);
+    Inven();
+   }
+   //i=dlist[b].substring(0,2); z=dlist[b].substring(2,4); d=dlist[b].substring(4,8);
+  }
+ } 
+} 
+
 function ClickItem(a) {
  hpop();
  i=a.substring(0,2); z=a.substring(2,4); d=a.substring(4,6);
  if (PZ!=z) {
-  Que=a; walk=z;
+  Que="ClickItem(\""+a+"\");"; walk=z;
  } else {
   if (i<="Sz") { GetItem(a); }
   if (i=="Zh") { PInv=PInv.replace("Bd", "El"); Inven(); }
@@ -460,6 +575,14 @@ function ClickItem(a) {
    PUP=PUP+"<a href=\"javascript:clothes(\'3\');\"><img src=\""+chrs[a+'3']+"\"></a>";
    PUP=PUP+"<a href=\"javascript:clothes(\'4\');\"><img src=\""+chrs[a+'4']+"\"></a>";
    pop(PUP);
+  }
+  if (i=="Ye") { 
+   if (PInv.indexOf("Fe")<0) { 
+    PUP="Put this on the<br>ground, and it will<br>grow into a<br>tomato plant<br><img src=\""+item['Fe']+"\">";
+    pop(PUP); PInv=PInv.replace("Za", "Fe");  
+   } else {
+   	pop("Empty");
+   }
   }
  }
 }
@@ -491,7 +614,7 @@ function GetItem(a) {
  PInv=PInv.replace("Za", i); Inven();
 }
 
-function Inven() {
+function Inven(Ci) {
  PUP="Player Inventory:<p>";
  for (a=0; a<NInv; a++) {
   PUP=PUP+"<a href=\"javascript:ClickInv("+a+");\"><img src=\""+item[PInv.substring(a*2,(a*2)+2)]+"\"></a>";
@@ -510,7 +633,17 @@ function ClickInv(a) {
 
 function Drop(a) {
  i=PInv.substring(a*2,(a*2)+2); PInv=PInv.replace(i, "Za"); Inven();
- // add dynamic item to game somehow
+ b=new Date(); c=new Date(b.getTime()+60*1000); tstamp=pad(c.getMinutes())+pad(c.getSeconds());
+ if (drop[PMap]) {  
+  if (drop[PMap].indexOf("--------")>-1) {  
+   drop[PMap]=drop[PMap].replace("--------", i+PZ+tstamp);
+  } else { 
+   drop[PMap]=drop[PMap]+i+PZ+tstamp;
+  }
+ } else {   
+  drop[PMap]=i+PZ+tstamp;
+ }
+ RefDItems();
 }
 
 function Wear(a) {

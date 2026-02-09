@@ -100,15 +100,15 @@ body { background-color: #333 }
 <script>
 var devteam=1;  // developer mode
 var run="";
-var txt="<p>Qandy Pocket<br>Computer v.1d<p>";
+var txt="<p>Qandy Pocket<br>Computer v.1e<p>";
 var mode="txt"; // gfx or txt display
 var mapx=7;
 var mapy=11;
 var map="";
-var caps=0;     // turns caps lock on/off
-var shift=0;    // shift key pressed  
-var keyon=1;    // turn keyboard input on/off
-var line="";    // input text line
+var caps=0;  // turns caps lock on/off
+var shift=0; // shift key pressed  
+var keyon=1; // turn keyboard input on/off
+var line=""; // input text line
 
 var PopX=0;
 var PopY=0;
@@ -781,7 +781,8 @@ function ItemID(I) {
   case "Vb": return "Mosquito"; break;
   case "Vc": return "Scorpion"; break;
   case "Vd": return "Fire Ant"; break;
-  case "Yb": return "Cart"; break;  
+  case "Yb": return "Cart"; break;
+  case "Ye": return "Seeds"; break;  
   case "Ze": return "Teleport"; break
   case "Zf": return "Sign"; break  
   case "Zi": return "Fire Pit"; break;  
@@ -802,5 +803,17 @@ function ClickChar(Z) {
 
 // system ready
 print(""); 
+
+mySearch = location.search.substr(1).split("&")
+for (i=0;i<mySearch.length;i++) {
+ nameVal = mySearch[i].split("=");
+ for (j in nameVal) { nameVal[j] = unescape(nameVal[j]); } 
+ if (nameVal[0]=="run") {
+  script=document.createElement('script');
+  script.src=nameVal[1];
+  document.head.appendChild(script);
+ }
+}
+
 </script>
 </body></html>

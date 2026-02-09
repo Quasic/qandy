@@ -15,7 +15,7 @@ atkr.src=item['Za'];
 atkr.className="item";
 document.body.appendChild(atkr);
 
-char("Joe","B0F0",pz);
+char("Joe","B1D3",pz);
 
 mainloop(); function mainloop() {
  t1="Ga"; t2="Gg"; t3="Gb"; t4="Gd"; // grass
@@ -81,28 +81,28 @@ mainloop(); function mainloop() {
 function north() {
  pop("North"); scr=""; y=y-1; if (y<0) { y=9; }
  if (py==9) { pz=pz-32; py=py-4; }
- if (cdir==0) { char("Joe","A0E0",pz); } else { char("Joe","B0F0",pz); } 
+ if (cdir==0) { char("Joe","A1C3",pz); } else { char("Joe","B1D3",pz); } 
  PUV=setTimeout("document.getElementById('pop').style.visibility='hidden';",1000);
  PUV=setTimeout("mainloop();",1000);
 }
 function south() {
  pop("South<br>"); scr=""; y=y+1; if (y>9) { y=0; }
  if (py==5) { pz=pz+32; py=py+4; }
- if (cdir==0) { char("Joe","A0E0",pz); } else { char("Joe","B0F0",pz); }
- PUV=setTimeout("document.getElementById('pop').style.visibility='hidden';",1000);
+ if (cdir==0) { char("Joe","A1C3",pz); } else { char("Joe","B1D3",pz); }
+  PUV=setTimeout("document.getElementById('pop').style.visibility='hidden';",1000);
  PUV=setTimeout("mainloop();",1000);
 }
 function east() {
  pop("East<br>"); scr=""; x=x+1; if (x>11) { x=0; }
  if (px==3) { px=6; pz=pz+3; } 
- char("Joe","B0F0",pz); cdir=1;
+ char("Joe","B1D3",pz); cdir=1;
  PUV=setTimeout("document.getElementById('pop').style.visibility='hidden';",1000);
  PUV=setTimeout("mainloop();",1000);
 }
 function west() {
  pop("West<br>"); scr=""; x=x-1; if (x<0) { x=11; }
  if (px==6) { px=3; pz=pz-3; }
- char("Joe","A0E0",pz); cdir=0;
+ char("Joe","A1C3",pz); cdir=0;
  PUV=setTimeout("document.getElementById('pop').style.visibility='hidden';",1000);
  PUV=setTimeout("mainloop();",1000);
 }
