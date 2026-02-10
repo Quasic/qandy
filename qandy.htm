@@ -100,7 +100,7 @@ body { background-color: #333 }
 <script>
 var devteam=1;  // developer mode
 var run="";
-var txt="<p>Qandy Pocket<br>Computer v.1e<p>";
+var txt="<p>Qandy Pocket<br>Computer v.1f<p>";
 var mode="txt"; // gfx or txt display
 var mapx=7;
 var mapy=11;
@@ -804,10 +804,10 @@ function ClickChar(Z) {
 // system ready
 print(""); 
 
-mySearch = location.search.substr(1).split("&")
+mySearch=location.search.substr(1).split("&")
 for (i=0;i<mySearch.length;i++) {
- nameVal = mySearch[i].split("=");
- for (j in nameVal) { nameVal[j] = unescape(nameVal[j]); } 
+ nameVal=mySearch[i].split("=");
+ for (j in nameVal) { nameVal[j]=unescape(nameVal[j]); } 
  if (nameVal[0]=="run") {
   script=document.createElement('script');
   script.src=nameVal[1];

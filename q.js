@@ -9,7 +9,7 @@ var AllowScroll=1;
 
 var PName="";
 var NInv=16;
-var PInv="ZaZaZaZaZaZaZaZaZaZaZaZaZaZaZaZa";
+var PInv="LaZaZaZaZaZaZaZaZaZaZaZaZaZaZaZa";
 var PObj=""; 
 var PMap="Ce";
 var PX=3;
@@ -27,50 +27,58 @@ var dlist=[];
 
 var map="";
 var maps=[];
-
-maps["Zz"]="GaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGa..Zm3535";
-maps["Z@"]="GaGaGaGaGaGaGaGaGaYbYaYaYaYaYcGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYfCaCaCaCaYgGaGaYaYaCeCcYaYaGaGaGaGaCeCcGaGaGaGaGaGaCeCcGaGaGaGaGaGaCeCcGaGaGa";
-maps["Cd"]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUbAaAaAaAaAaAaUaAcGaGaGaGaGaGaUaAcGaGaGaGaGaGaUaAcGaGaGaGaGaGa";
-maps["Ce"]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUbAaAaAaUcUaUaUaAcDcGaDdAdUaUaUaAcGaBaGaAfUcUaUaAcGaBaGaGaAdUaUbAeGaBaGaGaAfAaAcGaGaBaGaGaGaGaAcGaGaBeBgGaRcGaAcGaGaGaBaFkRaGaAcGaGaGaBeBgFlGaAeGbGaGaGaBaGaGa..Zm2783Ze74FfZf36..";
-maps["C+"]="UgUgUhUaUaUaUhUhUbAaAaAaAaAaUcUgAcCfCbCbCbCgAfUcAcCeCaCaCaCaCgAdAcCeCaCaCaCaCcAdAcCeCaCaCaCaCcAdAcCeCaCaCaCaCcAdAcCeCaCaCaCaCcAdAeChCdCaCaCdCiAfGaGaFlCeCcFkGaGaYmYaYlCeCcYmYaYlGbGaGaCeCcGaGbGb..Yb27..Zi51..Zh45..Bd46..Cg58..";
-maps["Cf"]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaAaAaAaAaAaAaUcUaGaGaGaGaGaGaAfUcGaGaGaGaGaGaGaScGaGaGaGaGaGaGaSgGaGaGaGaGaGaGaScGaGaGaGaBaGaGaSg";
-maps["Cg"]="GaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaSdSdSdGaGaGaSdSdSdSdSdGaGaSdSdSdSdSdSdSdSdSdSdSdSdSdSd";
-maps["Dc"]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaAaAaAaAaAaAaAaAaXcGaGaGaGaGaGaGaXdGaGaGaGaGaGaGaXcGaGaGaGaGaGaGaXdGaGaGaGaGaGaGaXcGaGaGaGaGaGaGaXdGaGaGaGaGaGaGaXcGaGaGaGaGaGaGa";
-maps["Dd"]="UaAcGaGaGaGaGaGaUaAcHaHaGaGaGaGaUaAcHaHaGaGaGaGaUaAcHaHaGaGaGaGaUaAcGaGaGaGaGaGaUaAcHaHaGaGaBfBbUaAcHaHaGaBfBdGaUaAcHaHaGaBaGaGaUaAcGaGaGaBaGaGaUaAcHaHaGaBaGaGaUaAcHaHaGaBaRbRbUaAcGaGaGaBaRaRa..Ye30..";
-maps["De"]="GbGbGaGaGaBaGaGaGbGbGaGaGaBaGaGaGbGaGaGbGaBaGaGaGbGaGaGaGaBaFiGaGaGaGaGaFkBiBbBbBbBbBbBbBbBdGaGaGaGaFkGaGbGaGaGaGaGaGaGaGaGaRbGaGaGaGaGaGaRbRaRbGaRbGaRbRbRaRbRaRbRaRbRaRaRbRaRbRaRbRaRbRbRaRbRa..Ab26..";
-maps["D+"]="IlIcIcIcIcIcIcImIcIlIcIcIcIcImIcIcIcIpInInInIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcIcIoIcIcImInInInInIlIcImIcIcIcIcIcIcIl";
-maps["Df"]="GaGaGaGaBaGaGaScGaGaGaGaBaGaGaScGaFgGaGaBaGbGaGaGaGaGaGbBaGbGbGaBbBbBbBbBcBbBbBbGaGaGbGbBaGbGaGaGaGaGaGaBaGaGaGaGaFeGaGaBaGaGaSbRbGaFeGaBaScSeGaRaRbGaGaBaGaScSeRbRaGaGaBaSbGaScRaRbGaGaBaGaGaSc..";
-maps["Dg"]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaGaGaGaGaUaUaUaUaBbGaGaGaUaUaUaUaGaGaGaGaUaUaUaUaGaGaGaGaUaUaUaUaGaGaGaGaUaUaUaUaGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdGaGaGaGaGaGaGaSdSdSdSdSdSdSdSdSd";
-maps["Ed"]="UaAcGaGaGaBaGaRaUaAcGaGaGaBaGaRbUaAcGaGaGaBaRbRaUaAcGaGaGaBaRaRbUaAcGaGaGaBaGaRaUaAcGaGaGaBaGaRbUaAcGaGaGaBaRbRaUaAcGaGaGaBaRaRbUaAcGaGaGaBaRbRaUaAcGaGaGaBaRaRbUaAcGaGaGaBaGaRaUaAcGaGaGaBaGaRb";
-maps["Ee"]="RaRbRaRbRbRaRbRaRbRaRbRaRaRbRaGaRaRbRaGaGaRaGaRbRbRaGaGaGaGaRbRaRaGaGaGaGaGaRaRbRbRbGaGaGaGaGaRaRaRaGaGaGaGaGaRbRbGaGaGaGaGaGaRaRaRbGaGaGaGaGaRbRbRaGaGaGaGaRbRaRaGaRbGaGaRbRaRbRbRbRaRbRbRaRbRa";
-maps["Ef"]="RaRbGaGaBaGaGaScGaRaRbGaBaGaGaScRbGaRaGaBaGaSbGaRaRbGaGaBaGaGaGaRbRaGaGaBiBbBbBbRaRbGaGaBaGaGaGaRbRaRbGaBaGaGaGaRaRbRaGaBaGaGaGaRbRaGaGaBaGaGaGaRaGaGaGaBaGaSbFkRbGaGaGaBaGaGaScRaRbGaGaBaGaGaSc";
-maps["Eg"]="ScSdSdSdSdSdSdSdScSdSdSdSdSdSdSdGaSfSbSfSiSdSdSdGaGaFkScSeSbSiSdBbBgGaGaGaGaScSdGaBeBgDcGaDdScSdGaFkBeBbBbBlScSdGaGaSbGaGbGbScSdGaScSdShSbSbSgSdFkSgSdSdSdSdSdSdScSdSdSdSdSdSdSdScSdSdSdSdSdSdSd..Zm4449";
-maps["E-"]="GaGaGaGaGaGaGaScGaCfCbCbCbCbCgScGaCeCaCaCaCaCiScGaCeCaCaCaCcGaScGaCeCaCaCaCcScSdCbCaCaCaCaCcScSdCdCaCaCaCaCcScSdGaCeCaCaCaCcScSdGaCeCaCaCdCiScSdGaChCdCiGgSbSgSdGaSbSbSbSgSdSdSdScSdSdSdSdSdSdSd..La20..Lb19..Lc18..Ad60..";
-maps["Fd"]="UaAcGaGaGaBaGaRbUaAcGaGaGaBaGaRaUaAcGaGaGaBaGaGaUaAcGaGaGaBaGaGaUaAcGaGaGaBaGaGaUaAcGaGaGaBeBbBbUaAcGaGaGaGaGaGaUaAcDcGaDdGaGaGaUaAcGaGaGaGaGaGaUaUdAbAbAbAbAbAbUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUa..Zm5914";
-maps["Fe"]="RbRbRaRbRbRaRbRaRaRaRbRaRaRbRaRbGaGaRaGaGaRaGaRaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaBbBbBbBbBbBbBbBbGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaGaAbAbAbAbAbAbAbAbUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUa";
-maps["Ff"]="RaRbGaGaBaGaGaSgRbRaGaFaBaGaScSdRaGaFaFaBaGaScSdGaFaFaBfBdGaSgSdFaFaBfBdGbSgSdSdBbBbBdGbGaScSdSdFaGaGbGbGaSgSdSdGaGaGaGbScSdSdSdGaGaGaGaSgSdSdSdGaGaGaSbSiSdSdSdSbSbSgSdSdSdSdSdSdSdSdSdSdSdSdSd..Ze66Ce";
-maps["F*"]="UaAcGaGaGaGaGaGaUaAcYaYaYaGaGaGaUaAcGaGaGaGaGaGaUaAcGaGaGaGaGaGaUaAcGaGaGaGaGaYdUaAcGaGaGaGaGaYdUaAcGaGaGaGaGaYdUaAcGaGaGaGaGaYdUaAcGaGaGaGaGaYdUaAcGaGaGaGaGaGaUaUdAbAbAbAbAbAbUaUaUaUaUaUaUaUa";
-maps["Fg"]="SdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSdSd";
-maps["Ga"]="UaUaGaGaGaBaGaGaUaUaGaGaGaBaGaGaUaUaGaGaGaBaGaGaUaUaGaGaGaBaGaGaUaUaGaGaGaBeBgGaUaUaGaGaGaGaBeBbUaUaGaGaGaGaGaGaUaUaGaGaGaGaGaGaUaUaGaGaGaGaGaGaUaUaGaGaGaGaGaGaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUa";
-
 var sign=[];
-sign['Ce']="Welcome To Queville";
-sign['Df']="The Crossroads";
+var drop=[]; 
 
-var drop=[]; // drop[map]=iizzmmss
+script=document.createElement('script');
+script.src="world.js";
+document.head.appendChild(script);
 
-login();
-
-function login() {
- keyon=1; print("<p>Welcome to Queville<p>Enter your name:<br>");
-}
-
+login(); function login() { keyon=1; print("<p>Welcome to Queville<p>Enter your name:<br>"); }
 function input(l) {
  k=1; if (PName) {
-  if (l.substr(0, 4)=="/tp ") { 
-   EraseAll();
-   PMap=l.substring(4,6); 
-   LMap(PMap); char(PName,PObj,PZ); 
+  if (PObj.indexOf("La">-1)) {
+  	if (l.charAt(0)=="/") {
+  	 codes=[]; codes=l.split(" ");
+    if (codes[0].substr(0, 2)=="/t") { EraseAll(); PMap=codes[1]; LMap(PMap); char(PName,PObj,PZ); }
+    if (codes[0].substr(0, 2)=="/i") { if (codes[2]) { maps[PMap]=maps[PMap]+codes[1]+PZ+codes[2]; } else { maps[PMap]=maps[PMap]+codes[1]+PZ+".."; } EraseAll(); PMap=codes[1]; LMap(PMap); char(PName,PObj,PZ); } 
+    if (codes[0].substr(0, 2)=="/d") { b=new Date(); c=new Date(b.getTime()+60*1000); tstamp=pad(c.getMinutes())+pad(c.getSeconds()); if (drop[PMap]) { if (drop[PMap].indexOf("--------")>-1) { drop[PMap]=drop[PMap].replace("--------", codes[1]+PZ+tstamp); } else { drop[PMap]=drop[PMap]+codes[1]+PZ+tstamp; }} else { drop[PMap]=codes[1]+PZ+tstamp; }}
+    if (codes[0].substr(0, 2)=="/s") { if (codes[1]) { sign[PMap]=l.substring(l.indexOf(" ")+1); pop(sign[PMap]); } else { sign[PMap]=""; }}
+    if (codes[0].substr(0, 2)=="/c") {
+     // copy world.js
+     js="";
+     for (a=65; a<90; a++) {
+     	for (b=97; b<123; b++) {
+     	 m=String.fromCharCode(a)+String.fromCharCode(b);
+     	 if (maps[m]) { js=js+"maps[\""+m+"\"]=\""+maps[m]+"\";\n"; }
+     	 if (sign[m]) { js=js+"sign[\""+m+"\"]=\""+sign[m]+"\";\n"; }
+     	 m=String.fromCharCode(a)+String.fromCharCode(b-58);
+     	 if (maps[m]) { js=js+"maps[\""+m+"\"]=\""+maps[m]+"\";\n"; }
+     	 if (sign[m]) { js=js+"sign[\""+m+"\"]=\""+sign[m]+"\";\n"; }
+     	}
+     }
+     MCode=document.createElement('textarea');
+     MCode.value=js;
+     document.body.appendChild(MCode);
+     MCode.select();
+     MCode.setSelectionRange(0, 99999);
+     try {
+      document.execCommand('copy');
+      pop("world.js copied to clipboard");
+     } catch (err) {
+      pop("Clipboard Error,<br>Browser Issue");
+     }
+     document.body.removeChild(MCode);
+    } 
+    if (codes[0].substr(0, 2)=="/h") {
+     cls(); print("DevTeam Commands:<p>");
+     print("&nbsp;/teleport [xx]<br>");
+     print("&nbsp;/item [xx] [..]<br>");
+     print("&nbsp;/drop [xx]<br>");
+     print("&nbsp;/sign [text]<br>");
+     print("&nbsp;/copy world.js<p>");
+    }
+   }
   }
   if (l=="") { hpop(); }
  } else {
@@ -561,6 +569,7 @@ function ClickItem(a) {
  if (PZ!=z) {
   Que="ClickItem(\""+a+"\");"; walk=z;
  } else {
+  if (i>="Fa"&&i<="Fd") { PlantTomato(a); }
   if (i<="Sz") { GetItem(a); }
   if (i=="Zh") { PInv=PInv.replace("Bd", "El"); Inven(); }
   if (i=="Zi") { PInv=PInv.replace("Cg", "Zj"); Inven(); }   
@@ -584,6 +593,41 @@ function ClickItem(a) {
    	pop("Empty");
    }
   }
+  if (i=="Yi") { EraseAll(); a=PMap.charCodeAt(0); b=PMap.charCodeAt(1); if (b>96&&b<123) { PMap=String.fromCharCode(a)+String.fromCharCode(b-58); } if (d>-1&&d<96) { PZ=parseInt(d); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); } LMap(PMap); char(PName,PObj,PZ); }
+ }
+}
+
+function PlantTomato(a) {
+ // plant one tomato, reduce tomato item by one
+ i=PInv.substring(a*2,(a*2)+2);
+ newitem=""; if (i=="Fd") {
+  newitem="Fc";
+ } else {
+  if (i=="Fc") {
+  	newitem="Fb";
+  } else {
+  	if (i=="Fb") {
+    newitem="Fa";
+   } else {
+    if (i=="Fa") {
+     newitem="Za";	
+    }
+   }
+  }
+ }
+ if (newitem) {
+  // drop plant, change inventory 
+  b=new Date(); c=new Date(b.getTime()+60*1000); tstamp=pad(c.getMinutes())+pad(c.getSeconds());
+  if (drop[PMap]) {  
+   if (drop[PMap].indexOf("--------")>-1) {  
+    drop[PMap]=drop[PMap].replace("--------", "Fa"+PZ+tstamp);
+   } else { 
+    drop[PMap]=drop[PMap]+"Fa"+PZ+tstamp;
+   }
+  } else {   
+   drop[PMap]="Fa"+PZ+tstamp;
+  }
+  i=PInv.substring(a*2,(a*2)+2); PInv=PInv.replace(i, newitem); Inven();
  }
 }
 
@@ -626,6 +670,7 @@ function Inven(Ci) {
 function ClickInv(a) {
  i=PInv.substring(a*2,(a*2)+2);
  PUP=ItemID(i)+"<p><img src=\""+item[i]+"\"><br>";
+ if (i>="Fa"&&i<="Fe") { PUP=PUP+"<a href=\"javascript:PlantTomato("+a+");\">Plant</a> &nbsp; "; }
  if (i>="La"&&i<="Pz") { PUP=PUP+"<a href=\"javascript:Wear("+a+");\">Wear</a> &nbsp; "; }
  PUP=PUP+"<a href=\"javascript:Drop("+a+");\">Drop</a>";
  pop(PUP);
@@ -643,7 +688,7 @@ function Drop(a) {
  } else {   
   drop[PMap]=i+PZ+tstamp;
  }
- RefDItems();
+ //RefDItems();
 }
 
 function Wear(a) {
