@@ -40,49 +40,68 @@ document.head.appendChild(script);
 login(); function login() { keyon=1; print("<p>Welcome to Queville<p>Enter your name:<br>"); }
 function input(l) {
  k=1; if (PName) {
-  if (PInv.indexOf("La")>-1) {
+  if (PWear.indexOf("La")>-1) {
   	if (l.charAt(0)=="/") {
   	 codes=[]; codes=l.split(" ");
     if (codes[0].substr(0, 2)=="/t") { EraseAll(); PMap=codes[1]; LMap(PMap); char(PName,PObj,PZ); }
-    if (codes[0].substr(0, 2)=="/i") { if (codes[2]) { maps[PMap]=maps[PMap]+codes[1]+PZ+codes[2]; } else { maps[PMap]=maps[PMap]+codes[1]+PZ+".."; } EraseAll(); PMap=codes[1]; LMap(PMap); char(PName,PObj,PZ); } 
+    if (codes[0].substr(0, 2)=="/i") {
+     if (codes[2]) {
+      maps[PMap]=maps[PMap]+codes[1]+PZ+codes[2];
+     } else {
+      maps[PMap]=maps[PMap]+codes[1]+PZ+"..";
+     }
+     EraseAll();
+     LMap(PMap);
+     char(PName,PObj,PZ);
+    } 
     if (codes[0].substr(0, 2)=="/d") { b=new Date(); c=new Date(b.getTime()+60*1000); tstamp=pad(c.getMinutes())+pad(c.getSeconds()); if (drop[PMap]) { if (drop[PMap].indexOf("--------")>-1) { drop[PMap]=drop[PMap].replace("--------", codes[1]+PZ+tstamp); } else { drop[PMap]=drop[PMap]+codes[1]+PZ+tstamp; }} else { drop[PMap]=codes[1]+PZ+tstamp; }}
     if (codes[0].substr(0, 2)=="/s") { if (codes[1]) { sign[PMap]=l.substring(l.indexOf(" ")+1); pop(sign[PMap]); } else { sign[PMap]=""; }}
     if (codes[0].substr(0, 2)=="/e") { TileMode(); }  
-    if (codes[0].substr(0, 2)=="/c") {
-     // copy world.js
-     js="";
-     for (a=65; a<90; a++) {
-     	for (b=97; b<123; b++) {
-     	 m=String.fromCharCode(a)+String.fromCharCode(b);
-     	 if (maps[m]) { js=js+"maps[\""+m+"\"]=\""+maps[m]+"\";\n"; }
-     	 if (sign[m]) { js=js+"sign[\""+m+"\"]=\""+sign[m]+"\";\n"; }
-     	 m=String.fromCharCode(a)+String.fromCharCode(b-58);
-     	 if (maps[m]) { js=js+"maps[\""+m+"\"]=\""+maps[m]+"\";\n"; }
-     	 if (sign[m]) { js=js+"sign[\""+m+"\"]=\""+sign[m]+"\";\n"; }
-     	}
-     }
-     MCode=document.createElement('textarea');
-     MCode.value=js;
-     document.body.appendChild(MCode);
-     MCode.select();
-     MCode.setSelectionRange(0, 99999);
-     try {
-      document.execCommand('copy');
-      pop("world.js copied to clipboard");
-     } catch (err) {
-      pop("Clipboard Error,<br>Browser Issue");
-     }
-     document.body.removeChild(MCode);
-    }
+    if (codes[0].substr(0, 2)=="/c") { CopyWorld(); }
     if (codes[0].substr(0, 2)=="/h") {
-     cls(); print("DevTeam Commands:<p>");
-     print("&nbsp;/tele [xx]<br>");
-     print("&nbsp;/item [xx] [..]<br>");
-     print("&nbsp;/drop [xx]<br>");
-     print("&nbsp;/sign [text]<br>");
-     print("&nbsp;/copy world.js<p>");
+     if (codes[1]) {
+     	if (codes[1].charAt(0)=="t") {
+       cls(); print("Teleport:<p>");
+       print("&nbsp;/t [xx]<p>");
+       print("Where [xx] is the two-character map code to teleport to.<p>");
+       print("Map codes are a capital letter followed by a lower case letter.<p>");
+       print("City codes have a symbol instead of a lower case letter.<p>");
+      } 
+      if (codes[1].charAt(0)=="i") {
+       cls(); print("Add Static Item:<p>");
+       print("&nbsp;/t [xx] ..<p>");
+       print("[xx] is the two-character item code of the item.<p>");
+       print("And .. is any optional data that item may need.<p>");
+      }
+      if (codes[1].charAt(0)=="d") {
+       cls(); print("Add Dynamic Item:<p>");
+       print("&nbsp;/d [xx]<p>");
+       print("Where [xx] it the two-character item code of the item.<p>");
+       print("Dynamic items disappear after sixty seconds.<p>");
+      }
+      if (codes[1].charAt(0)=="s") {
+       cls(); print("Edit Sign Text:<p>");
+       print("&nbsp;/s [text]<p>");
+       print("Will update the sign text with [text].<p>");
+       print("There can only be one sign per map screen.<p>");
+      }
+     } else {
+      cls(); print("Sysop Commands:<p>");
+      print("&nbsp;/tele [xx]<br>");
+      print("&nbsp;/item [xx] [..]<br>");
+      print("&nbsp;/drop [xx]<br>");
+      print("&nbsp;/sign [text]<br>");
+      print("&nbsp;/copy world.js<p>");
+     }
     }
    }
+  } else {
+  	if (l.charAt(0)=="/") {
+  	 cls(); print("Help System:<p>");
+  	 print("Click on the map to move avatar.<p>");
+  	 print("Click on items to use them, ie: Teleport<p>");
+  	 print("Wear Sysop Hat for Sysop Menu, use /help for Sysop Help.<p>");
+   }  
   }
   if (l=="") { hpop(); }
  } else {
@@ -97,6 +116,11 @@ function input(l) {
     PForce="visible";
     NewChar("");
     LMap(PMap);
+    cls();
+    print("Latest Updates:<p>Type /help for list of new commands.<p>");
+    print("Type /help [command] for help on that command.<p>");
+    print("Use the Sysop Hat to access the Sysop Menu and the Sysop Help.<p>");
+    print("Have Fun!<br>");
    }
   }
  }	
@@ -134,7 +158,7 @@ function NewChar(a) {
    pop(PUP);
   } else {
   	if (a.length==2) {
-  	 if (a.charAt(0)=="F") { PObj=a+"H0"; PWear=PWear="H0"; } else { PObj=a+"D0"; PWear=PWear+"D0"; }
+  	 if (a.charAt(0)=="F") { PObj=a+"H0"; } else { PObj=a+"D0"; }
     char(PName,PObj,PZ); PForce="hidden"; hpop(); mainloop();
   	} else {  	
     PX=2; PY=9; PZ=(PY*(mapx+1))+PX;
@@ -646,13 +670,18 @@ function clothes(b) {
 
 function MenuChar(z) {
  PUP="";
- PUP=PUP+"<a href=\"javascript:Inven();\">Inventory</a><br>";
  if (TMode) {
   PUP=PUP+"<a href=\"javascript:TileFill();\">Tile Fill</a><br>";
   PUP=PUP+"<a href=\"javascript:EdgeTiles();\">Edge Tiles</a><br>";
   PUP=PUP+"<a href=\"javascript:SaveMap();\">Export Tiles</a><br>";
- }
- pop(PUP); 
+  PUP=PUP+"<a href=\"javascript:TileMode();\">Exit Tile Edit</a><br>";
+ } else {
+  PUP=PUP+"<a href=\"javascript:Inven();\">Inventory</a><br>";
+  if (PWear.indexOf("La")>-1) {
+   PUP=PUP+"<a href=\"javascript:Sysop();\">Sysop Menu</a><br>";
+  }
+ } 
+ pop(PUP);
 }
 
 function GetItem(a) {
@@ -677,7 +706,7 @@ function ClickInv(a) {
  i=PInv.substring(a*2,(a*2)+2);
  PUP=ItemID(i)+"<p><img src=\""+item[i]+"\"><br>";
  if (i>="Fa"&&i<="Fe") { PUP=PUP+"<a href=\"javascript:PlantTomato("+a+");\">Plant</a> &nbsp; "; }
- if (i>="La"&&i<="Pz") { PUP=PUP+"<a href=\"javascript:Wear("+a+");\">Wear</a> &nbsp; "; }
+ if (i>="La"&&i<="Pz") { if (PWear.indexOf(i)>-1) { PUP=PUP+"<a href=\"javascript:Remove("+a+");\">Remove</a> &nbsp; "; } else { PUP=PUP+"<a href=\"javascript:Wear("+a+");\">Wear</a> &nbsp; "; }}
  PUP=PUP+"<a href=\"javascript:Drop("+a+");\">Drop</a>";
  pop(PUP);
 }
@@ -702,11 +731,50 @@ function Wear(a) {
  b=String.fromCharCode(i.charCodeAt(1)-49);
  PObj=FaceL(PObj); 
  if (i.indexOf("L")>-1) {
-  if (PObj.indexOf("I")>-1) {
-   PObj=PObj.substring(0,PObj.indexOf("I"))+"I"+b+PObj.substring(PObj.indexOf("I"+2));
-  } else {
-   PObj=PObj+"I"+b;
-  }
+  if (PObj.indexOf("I")>-1) { PObj=PObj.substring(0,PObj.indexOf("I"))+"I"+b+PObj.substring(PObj.indexOf("I"+2)); } else { PObj=PObj+"I"+b; }
+  if (PWear.indexOf("L")>-1) { PWear=str.replace(/L./g, i) } else { PWear=PWear+i; }}
+ hpop(); char(PName,PObj,PZ);
+}
+
+function Remove(a) {
+ i=PInv.substring(a*2,(a*2)+2);
+ b=String.fromCharCode(i.charCodeAt(1)-49);
+ PObj=FaceL(PObj); 
+ if (i.indexOf("L")>-1) {
+  if (PObj.indexOf("I")>-1) { PObj=PObj.replace(/I./g, ""); }
+  if (PWear.indexOf("L")>-1) { PWear=PObj.replace(/L./g, ""); }
  }
  hpop(); char(PName,PObj,PZ);
+}
+
+function Sysop(a) {
+ PUP="<a href=\"javascript:TileMode();\">Edit Tiles</a><br>";
+ PUP=PUP+"<a href=\"javascript:CopyWorld();\">Copy world.js</a><br>";
+ pop(PUP);
+}
+
+function CopyWorld() {
+ js="";
+ for (a=65; a<90; a++) {
+  for (b=97; b<123; b++) {
+   m=String.fromCharCode(a)+String.fromCharCode(b);
+   if (maps[m]) { js=js+"maps[\""+m+"\"]=\""+maps[m]+"\";\n"; }
+   if (sign[m]) { js=js+"sign[\""+m+"\"]=\""+sign[m]+"\";\n"; }
+   m=String.fromCharCode(a)+String.fromCharCode(b-58);
+   if (maps[m]) { js=js+"maps[\""+m+"\"]=\""+maps[m]+"\";\n"; }
+   if (sign[m]) { js=js+"sign[\""+m+"\"]=\""+sign[m]+"\";\n"; }
+  }
+ }
+ MCode=document.createElement('textarea');
+ MCode.value=js;
+ document.body.appendChild(MCode);
+ MCode.select();
+ MCode.setSelectionRange(0, 99999);
+ try {
+  document.execCommand('copy');
+  pop("world.js copied to clipboard");
+ } catch (err) {
+  pop("Clipboard Error,<br>Browser Issue");
+ }
+ document.body.removeChild(MCode);
 }
