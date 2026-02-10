@@ -10,7 +10,8 @@ var AllowScroll=1;
 var PName="";
 var NInv=16;
 var PInv="LaZaZaZaZaZaZaZaZaZaZaZaZaZaZaZa";
-var PObj=""; 
+var PObj="";
+var PWear=""; 
 var PMap="Ce";
 var PX=3;
 var PY=7;
@@ -34,16 +35,19 @@ script=document.createElement('script');
 script.src="world.js";
 document.head.appendChild(script);
 
+// login via cookie
+
 login(); function login() { keyon=1; print("<p>Welcome to Queville<p>Enter your name:<br>"); }
 function input(l) {
  k=1; if (PName) {
-  if (PObj.indexOf("La">-1)) {
+  if (PInv.indexOf("La")>-1) {
   	if (l.charAt(0)=="/") {
   	 codes=[]; codes=l.split(" ");
     if (codes[0].substr(0, 2)=="/t") { EraseAll(); PMap=codes[1]; LMap(PMap); char(PName,PObj,PZ); }
     if (codes[0].substr(0, 2)=="/i") { if (codes[2]) { maps[PMap]=maps[PMap]+codes[1]+PZ+codes[2]; } else { maps[PMap]=maps[PMap]+codes[1]+PZ+".."; } EraseAll(); PMap=codes[1]; LMap(PMap); char(PName,PObj,PZ); } 
     if (codes[0].substr(0, 2)=="/d") { b=new Date(); c=new Date(b.getTime()+60*1000); tstamp=pad(c.getMinutes())+pad(c.getSeconds()); if (drop[PMap]) { if (drop[PMap].indexOf("--------")>-1) { drop[PMap]=drop[PMap].replace("--------", codes[1]+PZ+tstamp); } else { drop[PMap]=drop[PMap]+codes[1]+PZ+tstamp; }} else { drop[PMap]=codes[1]+PZ+tstamp; }}
     if (codes[0].substr(0, 2)=="/s") { if (codes[1]) { sign[PMap]=l.substring(l.indexOf(" ")+1); pop(sign[PMap]); } else { sign[PMap]=""; }}
+    if (codes[0].substr(0, 2)=="/e") { TileMode(); }  
     if (codes[0].substr(0, 2)=="/c") {
      // copy world.js
      js="";
@@ -69,10 +73,10 @@ function input(l) {
       pop("Clipboard Error,<br>Browser Issue");
      }
      document.body.removeChild(MCode);
-    } 
+    }
     if (codes[0].substr(0, 2)=="/h") {
      cls(); print("DevTeam Commands:<p>");
-     print("&nbsp;/teleport [xx]<br>");
+     print("&nbsp;/tele [xx]<br>");
      print("&nbsp;/item [xx] [..]<br>");
      print("&nbsp;/drop [xx]<br>");
      print("&nbsp;/sign [text]<br>");
@@ -130,7 +134,7 @@ function NewChar(a) {
    pop(PUP);
   } else {
   	if (a.length==2) {
-  	 if (a.charAt(0)=="F") { PObj=a+"H0"; } else { PObj=a+"D0"; }
+  	 if (a.charAt(0)=="F") { PObj=a+"H0"; PWear=PWear="H0"; } else { PObj=a+"D0"; PWear=PWear+"D0"; }
     char(PName,PObj,PZ); PForce="hidden"; hpop(); mainloop();
   	} else {  	
     PX=2; PY=9; PZ=(PY*(mapx+1))+PX;
@@ -201,7 +205,7 @@ function mainloop() {
    } 
   }
  }
- if (drop[PMap]) { RefDItems(); }
+ if (drop[PMap]) { RefDItems(); } 
  maintimer=setTimeout('mainloop();',200);
 }
 
@@ -272,18 +276,20 @@ function RefDItems() {
   newdrop=0; dlist=drop[PMap].match(/.{1,8}/g);
   now=new Date(); tstamp=pad(now.getMinutes())+pad(now.getSeconds());
 
-  for (b=0;b<dlist.length;b++) {
+  for (b=0;b<dlist.length;b++) { 
    i=dlist[b].substring(0,2); z=dlist[b].substring(2,4); d=dlist[b].substring(4,8);
-   if (tstamp>d) {
+   if (tstamp>d) { 
     newitem=ExpItem(i);
-    if (newitem!="--------") {
-     if (newitem=="Za") {
+    if (newitem!="--------") { 
+     if (newitem=="Za") { 
       dlist[b]="--------"; if (document.getElementById("d"+b)) { document.getElementById("d"+b).remove(); }
-     } else {    	
+     } else {     	
       if (document.getElementById("d"+b)) { document.getElementById("d"+b).remove(); }
       c=new Date(); e=new Date(c.getTime()+60*1000); f=pad(e.getMinutes())+pad(e.getSeconds());
       dlist[b]=newitem+z+f;
      } 
+    } else {
+     dlist[b]="--------"; if (document.getElementById("d"+b)) { document.getElementById("d"+b).remove(); }
     }
     newdrop=1;
    } else {
@@ -634,13 +640,13 @@ function PlantTomato(a) {
 function clothes(b) {
  a="C"; if (PObj.indexOf("D")>-1) { a="D"; } else { if (PObj.indexOf("G")>-1) { a="G"; } else { if (PObj.indexOf("H")>-1) { a="H"; }}}
  PObj=PObj.substring(0,PObj.indexOf(a))+a+b+PObj.substring(PObj.indexOf(a)+2);
+ // update PWear here
  hpop(); char(PName,PObj,PZ);
 }
 
 function MenuChar(z) {
  PUP="";
  PUP=PUP+"<a href=\"javascript:Inven();\">Inventory</a><br>";
- PUP=PUP+"<a href=\"javascript:TileMode();\">Tile Mode</a><br>";
  if (TMode) {
   PUP=PUP+"<a href=\"javascript:TileFill();\">Tile Fill</a><br>";
   PUP=PUP+"<a href=\"javascript:EdgeTiles();\">Edge Tiles</a><br>";
@@ -655,7 +661,7 @@ function GetItem(a) {
   b=ilist[a].substring(0,2); c=ilist[a].substring(2,4);
   if (c==PZ) { if (b==i) { document.getElementById("i"+a).remove(); } }
  }
- PInv=PInv.replace("Za", i); Inven();
+ PInv=PInv.replace("Za", i); 
 }
 
 function Inven(Ci) {
