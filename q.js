@@ -48,7 +48,7 @@ function Begin() {
   PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); 
   PForce="hidden"; mode="gfx"; print("");  
   LMap(PMap); char(PName,PObj,PZ); 
-  mainloop();
+  keyon=1; mainloop();
  } else {
   login(); function login() { keyon=1; print("<p>Welcome to Queville<p>Enter your name:<br>"); }
  }
@@ -61,9 +61,9 @@ function input(l) {
   	 codes=[]; codes=l.split(" ");
     if (codes[0].substr(0, 2)=="/t") { EraseAll(); PMap=codes[1]; LMap(PMap); char(PName,PObj,PZ); }
     if (codes[0].substr(0, 2)=="/i") {
-     if (codes[2]) {
+     if (codes[2]) { 
       maps[PMap]=maps[PMap]+codes[1]+PZ+codes[2];
-     } else {
+     } else { 
       maps[PMap]=maps[PMap]+codes[1]+PZ+"..";
      }
      EraseAll();
@@ -288,7 +288,7 @@ function StepHere(a) {
 }
 
 function LMap(a) {
- if (maps[a]) {} else { maps[a]="CaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCa"; }
+ if (maps[a]) {} else { maps[a]="CaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCa.."; }
  gfx(maps[a]);
  items=[]; if (maps[a].length>194) { ilist=maps[a].substring(194).match(/.{1,6}/g); }
  for (b=0;b<ilist.length;b++) {
@@ -303,6 +303,7 @@ function LMap(a) {
   c.style.position="absolute";
   c.style.top=32+20+(y*32)+"px";
   c.style.left=(32+22+(x*32))+"px";
+  c.style.zIndex="120";
   c.onload=function() { this.style.top=parseInt(this.style.top)-(this.height-32)+"px"; this.style.left=parseInt(this.style.left)-(this.width-32)+"px"; }
   c.onmousedown=new Function("MenuItem("+(z)+",this.parentNode)");
   document.body.appendChild(c);
@@ -709,8 +710,8 @@ function MenuChar(z) {
   if (PWear) { if (PWear.indexOf("La")>-1) {
    PUP=PUP+"<a href=\"javascript:Sysop();\">Sysop Menu</a><br>";
   }
+  PUP=PUP+"<a href=\"javascript:Quit(0);\">Quit Game</a><br>";
  }}
- PUP=PUP+"<a href=\"javascript:Quit(0);\">Quit Game</a><br>";
  pop(PUP);
 }
 
