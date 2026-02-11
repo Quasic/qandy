@@ -26,6 +26,7 @@ var objs=[];
 var ilist=[]; 
 var dlist=[]; 
 
+var world=0;
 var map="";
 var maps=[];
 var sign=[];
@@ -33,11 +34,26 @@ var drop=[];
 
 script=document.createElement('script');
 script.src="world.js";
+script.onload=Begin;
 document.head.appendChild(script);
 
-// login via cookie
+function Begin() {
+ PName=localStorage.getItem('PName'); 
+ if (PName) {
+  PObj=localStorage.getItem('PObj'); 
+  PWear=localStorage.getItem('PWear'); 
+  PInv=localStorage.getItem('PInv'); 
+  PMap=localStorage.getItem('PMap'); 
+  PZ=localStorage.getItem('PZ'); PZ=parseInt(PZ);
+  PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); 
+  PForce="hidden"; mode="gfx"; print("");  
+  LMap(PMap); char(PName,PObj,PZ); 
+  mainloop();
+ } else {
+  login(); function login() { keyon=1; print("<p>Welcome to Queville<p>Enter your name:<br>"); }
+ }
+}
 
-login(); function login() { keyon=1; print("<p>Welcome to Queville<p>Enter your name:<br>"); }
 function input(l) {
  k=1; if (PName) {
   if (PWear.indexOf("La")>-1) {
@@ -69,7 +85,7 @@ function input(l) {
       } 
       if (codes[1].charAt(0)=="i") {
        cls(); print("Add Static Item:<p>");
-       print("&nbsp;/t [xx] ..<p>");
+       print("&nbsp;/i [xx] ..<p>");
        print("[xx] is the two-character item code of the item.<p>");
        print("And .. is any optional data that item may need.<p>");
       }
@@ -112,15 +128,16 @@ function input(l) {
     print("Name cannot start with NPC.<br>Enter your name:<br>");
    } else {
     PName=l;
-    mode="gfx";
+    //mode="gfx";
     PForce="visible";
     NewChar("");
     LMap(PMap);
     cls();
-    print("Latest Updates:<p>Type /help for list of new commands.<p>");
+    print("Latest Updates:<p>");
+    print("Wear Sysop Hat to access Sysop Menu and Sysop Help.<p>");
+    print("Type /help for list of Sysop commands.<p>");
     print("Type /help [command] for help on that command.<p>");
-    print("Use the Sysop Hat to access the Sysop Menu and the Sysop Help.<p>");
-    print("Have Fun!<br>");
+    print("Have Fun!<p>Press [ESC] Key:");
    }
   }
  }	
@@ -169,12 +186,10 @@ function NewChar(a) {
 }
 
 function mainloop() {
- if (walk>-1) { 
+ if (walk>-1) {
   walkY=Math.floor(walk/(mapx+1));
   walkX=walk-(walkY*(mapx+1));
-
   newZ=PZ; newX=PX; newY=PY; newD="";
-
   if (PX>walkX) { disX=PX-walkX; } else { disX=walkX-PX;}
   if (PY>walkY) { disY=PY-walkY; } else { disY=walkY-PY; }
   if (disX>disY) {
@@ -199,7 +214,8 @@ function mainloop() {
   if (newT.charAt(0)=="R") { if (PInv.indexOf("Ab")<0) { AllowMove=0; }}
   if (newT.charAt(0)=="S") { if (PInv.indexOf("Ad")<0) { AllowMove=0; }}
   
-  if (TMode) { AllowMove=1; }
+  if (TMode) { AllowMove=1; } if (PWear) { if (PWear.indexOf("La")>-1) { AllowMove=1; }}
+  
   if (AllowMove) {
    PY=newY; PX=newX; PZ=newZ;
    if (newD=="R") { PObj=FaceR(PObj); } else { if (newD=="L") { PObj=FaceL(PObj); }}
@@ -230,7 +246,7 @@ function mainloop() {
   }
  }
  if (drop[PMap]) { RefDItems(); } 
- maintimer=setTimeout('mainloop();',200);
+ maintimer=setTimeout('mainloop();',200); 
 }
 
 function WalkHere(i) {
@@ -273,7 +289,7 @@ function StepHere(a) {
 
 function LMap(a) {
  if (maps[a]) {} else { maps[a]="CaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCaCa"; }
- gfx(maps[a]); 
+ gfx(maps[a]);
  items=[]; if (maps[a].length>194) { ilist=maps[a].substring(194).match(/.{1,6}/g); }
  for (b=0;b<ilist.length;b++) {
   i=ilist[b].substring(0,2);
@@ -292,6 +308,14 @@ function LMap(a) {
   document.body.appendChild(c);
  }
  RefDItems();
+ if (PName && PObj) { 
+  localStorage.setItem('PName', PName);
+  localStorage.setItem('PObj', PObj);
+  localStorage.setItem('PWear', PWear);
+  localStorage.setItem('PInv', PInv);
+  localStorage.setItem('PMap', PMap);
+  localStorage.setItem('PZ', PZ);
+ }
  return maps[a];
 }
  
@@ -391,8 +415,8 @@ function North() {
  } else {
   a=a-1; if (a<65) { a=90; }
   PMap=String.fromCharCode(a)+String.fromCharCode(b);
-  LMap(PMap);
-  PY=11; PZ=88+PX; char(PName,PObj,PZ);
+  PY=11; PZ=88+PX; 
+  LMap(PMap); char(PName,PObj,PZ);
  }
 }
 
@@ -405,8 +429,8 @@ function South() {
  } else {
   a=a+1; if (a>90) { a=65; }
   PMap=String.fromCharCode(a)+String.fromCharCode(b);
-  LMap(PMap);
-  PY=0; PZ=PX; char(PName,PObj,PZ);
+  PY=0; PZ=PX; 
+  LMap(PMap); char(PName,PObj,PZ);
  }
 }
 
@@ -419,8 +443,8 @@ function East() {
  } else { 
   b=b+1; if (b>122) { b=97; }
   PMap=String.fromCharCode(a)+String.fromCharCode(b);
-  LMap(PMap);
-  PX=PX-mapx; PZ=PZ-mapx; char(PName,PObj,PZ);
+  PX=PX-mapx; PZ=PZ-mapx; 
+  LMap(PMap); char(PName,PObj,PZ);
  }
 } 	
  	
@@ -433,8 +457,8 @@ function West() {
  } else {
   b=b-1; if (b<97) { b=122; }
   PMap=String.fromCharCode(a)+String.fromCharCode(b);
-  PX=PX+(mapx); PZ=PZ+(mapx); char(PName,PObj,PZ);
-  LMap(PMap);
+  PX=PX+(mapx); PZ=PZ+(mapx); 
+  LMap(PMap); char(PName,PObj,PZ);
  }
 }
 
@@ -445,6 +469,7 @@ function XCity(a,b) {
  for (b=0;b<ilist.length;b++) {
   if (ilist[b].substring(0,2)=="Zm") { PZ=parseInt(ilist[b].substring(2,4)); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); }
  }
+ localStorage.setItem('PZ', PZ);
  char(PName,PObj,PZ);
 }
 
@@ -566,7 +591,10 @@ function MenuItem(IZ) {
   i=ilist[b].substring(0,2);
   z=ilist[b].substring(2,4);
   d=ilist[b].substring(4,6);
-  if (IZ==z) { PUP=PUP+"<a href='javascript:ClickItem(\""+ilist[b]+"\");'>"+ItemID(i)+"<br>"; }
+  if (IZ==z) {
+  	PUP=PUP+"<a href='javascript:ClickItem(\""+ilist[b]+"\");'>"+ItemID(i)+"<br>";
+  	if (PWear) { if (PWear.indexOf("La")>-1) { PUP=PUP+"<a href='javascript:DelItem(\""+ilist[b]+"\");'>Delete "+ItemID(i)+"<br>"; }} 
+  }
  }
  pop(PUP);
 }
@@ -604,8 +632,9 @@ function ClickItem(a) {
   if (i=="Zh") { PInv=PInv.replace("Bd", "El"); Inven(); }
   if (i=="Zi") { PInv=PInv.replace("Cg", "Zj"); Inven(); }   
   if (i=="Zm") { EraseAll(); a=PMap.charCodeAt(0); b=PMap.charCodeAt(1); if (b>96&&b<123) { PMap=String.fromCharCode(a)+String.fromCharCode(b-58); } if (d>-1&&d<96) { PZ=parseInt(d); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); } LMap(PMap); char(PName,PObj,PZ); }
-  if (i=="Ze") { EraseAll(); PMap=d; LMap(PMap); for (b=0;b<ilist.length;b++) { if (ilist[b].substring(0,2)=="Ze") { PZ=parseInt(ilist[b].substring(2,4)); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); } } char(PName,PObj,PZ); }
+  if (i=="Ze") { EraseAll(); PMap=d; LMap(PMap); for (b=0;b<ilist.length;b++) { if (ilist[b].substring(0,2)=="Ze") { PZ=parseInt(ilist[b].substring(2,4)); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); localStorage.setItem('PZ', PZ); }} char(PName,PObj,PZ); }
   if (i=="Zf") { pop(sign[PMap]); }
+  if (i=="Zg") { if (d!="..") { Fish(a); }}
   if (i=="Yb") {
    PUP="Free Clothes<br>"; a="C"; if (PObj.indexOf("D")>-1) { a="D"; } else { if (PObj.indexOf("G")>-1) { a="G"; } else { if (PObj.indexOf("H")>-1) { a="H"; }}}
    PUP=PUP+"<a href=\"javascript:clothes(\'0\');\"><img src=\""+chrs[a+'0']+"\"></a>";
@@ -677,10 +706,11 @@ function MenuChar(z) {
   PUP=PUP+"<a href=\"javascript:TileMode();\">Exit Tile Edit</a><br>";
  } else {
   PUP=PUP+"<a href=\"javascript:Inven();\">Inventory</a><br>";
-  if (PWear.indexOf("La")>-1) {
+  if (PWear) { if (PWear.indexOf("La")>-1) {
    PUP=PUP+"<a href=\"javascript:Sysop();\">Sysop Menu</a><br>";
   }
- } 
+ }}
+ PUP=PUP+"<a href=\"javascript:Quit(0);\">Quit Game</a><br>";
  pop(PUP);
 }
 
@@ -732,7 +762,7 @@ function Wear(a) {
  PObj=FaceL(PObj); 
  if (i.indexOf("L")>-1) {
   if (PObj.indexOf("I")>-1) { PObj=PObj.substring(0,PObj.indexOf("I"))+"I"+b+PObj.substring(PObj.indexOf("I"+2)); } else { PObj=PObj+"I"+b; }
-  if (PWear.indexOf("L")>-1) { PWear=str.replace(/L./g, i) } else { PWear=PWear+i; }}
+  if (PWear.indexOf("L")>-1) { PWear=PWear.replace(/L./g, i) } else { PWear=PWear+i; }}
  hpop(); char(PName,PObj,PZ);
 }
 
@@ -777,4 +807,36 @@ function CopyWorld() {
   pop("Clipboard Error,<br>Browser Issue");
  }
  document.body.removeChild(MCode);
+}
+
+function DelItem(a) {
+ pop("<a href=\"javascript:YesDelete(\'"+a+"\');\">Delete "+ItemID(a.substring(0,2))+"?</a>");  
+}
+
+function YesDelete(a) {
+ hpop(); i=a.substring(0,2); z=a.substring(2,4); d=a.substring(4,6);
+ items=[]; if (maps[PMap].length>194) { b=maps[PMap].substring(194); } 
+ c=b.replace(i+z+d, "");  
+ maps[PMap]=maps[PMap].substring(0,194)+c;
+ EraseAll(); LMap(PMap); char(PName,PObj,PZ);
+} 
+
+function Fish(a) {
+ alert("fishing");
+}
+
+function Quit(a) {
+ if (a==0) {
+  PUP="This will delete<br>you localSession.<p>Are you sure?<p>";
+  PUP=PUP+"<a href=\"javascript:Quit(1);\">Yes, Quit Game</a>";
+ } else {
+  localStorage.removeItem('PName');
+  localStorage.removeItem('PObj');
+  localStorage.removeItem('PWear');
+  localStorage.removeItem('PInv');
+  localStorage.removeItem('PMap');
+  localStorage.removeItem('PZ');
+  stimer=setTimeout('location.reload();',1000);
+ }
+ pop(PUP);
 }
