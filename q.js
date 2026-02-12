@@ -299,7 +299,7 @@ function LMap(a) {
   x=z-(y*(mapx+1));
   c=document.createElement("img");
   c.id="i"+b;
-  c.src=item[ilist[b].substring(0,2)];
+  c.src="i/"+ilist[b].substring(0,2)+".png";
   c.style.position="absolute";
   c.style.top=32+20+(y*32)+"px";
   c.style.left=(32+22+(x*32))+"px";
@@ -346,7 +346,7 @@ function RefDItems() {
     if (!document.getElementById("d"+b)) { 
      c=document.createElement("img");
      c.id="d"+b;
-     c.src=item[i];
+     c.src="i/"+i+".png";
      c.style.position="absolute";
      c.style.top=32+20+(y*32)+"px";
      c.style.left=(32+22+(x*32))+"px";
@@ -631,7 +631,13 @@ function ClickItem(a) {
   if (i>="Fa"&&i<="Fd") { PlantTomato(a); }
   if (i<="Sz") { GetItem(a); }
   if (i=="Zh") { PInv=PInv.replace("Bd", "El"); Inven(); }
-  if (i=="Zi") { PInv=PInv.replace("Cg", "Zj"); Inven(); }   
+  if (i=="Zi") {
+  	if (PInv.indexOf("Cg")>-1) { 
+    PInv=PInv.replace("Cg", "Zj"); Inven();
+    pop("<img src=\"i/Zj.png\">");
+    stimer=setTimeout('hpop();',1000);
+   }
+  }   
   if (i=="Zm") { EraseAll(); a=PMap.charCodeAt(0); b=PMap.charCodeAt(1); if (b>96&&b<123) { PMap=String.fromCharCode(a)+String.fromCharCode(b-58); } if (d>-1&&d<96) { PZ=parseInt(d); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); } LMap(PMap); char(PName,PObj,PZ); }
   if (i=="Ze") { EraseAll(); PMap=d; LMap(PMap); for (b=0;b<ilist.length;b++) { if (ilist[b].substring(0,2)=="Ze") { PZ=parseInt(ilist[b].substring(2,4)); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); localStorage.setItem('PZ', PZ); }} char(PName,PObj,PZ); }
   if (i=="Zf") { pop(sign[PMap]); }
@@ -647,7 +653,7 @@ function ClickItem(a) {
   }
   if (i=="Ye") { 
    if (PInv.indexOf("Fe")<0) { 
-    PUP="Put this on the<br>ground, and it will<br>grow into a<br>tomato plant<br><img src=\""+item['Fe']+"\">";
+    PUP="Put this on the<br>ground, and it will<br>grow into a<br>tomato plant<br><img src=\"Fe.png\">";
     pop(PUP); PInv=PInv.replace("Za", "Fe");  
    } else {
    	pop("Empty");
@@ -655,6 +661,17 @@ function ClickItem(a) {
   }
   if (i=="Yi") { EraseAll(); a=PMap.charCodeAt(0); b=PMap.charCodeAt(1); if (b>96&&b<123) { PMap=String.fromCharCode(a)+String.fromCharCode(b-58); } if (d>-1&&d<96) { PZ=parseInt(d); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); } LMap(PMap); char(PName,PObj,PZ); }
  }
+}
+
+function Teleport(a) {
+ EraseAll(); PMap=a; LMap(PMap);
+ for (b=0;b<ilist.length;b++) {
+  if (ilist[b].substring(0,2)=="Ze") {
+  	PZ=parseInt(ilist[b].substring(2,4)); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1));
+  	localStorage.setItem('PZ', PZ);
+  }
+ }
+ char(PName,PObj,PZ);
 }
 
 function PlantTomato(a) {
@@ -727,7 +744,7 @@ function GetItem(a) {
 function Inven(Ci) {
  PUP="Player Inventory:<p>";
  for (a=0; a<NInv; a++) {
-  PUP=PUP+"<a href=\"javascript:ClickInv("+a+");\"><img src=\""+item[PInv.substring(a*2,(a*2)+2)]+"\"></a>";
+  PUP=PUP+"<a href=\"javascript:ClickInv("+a+");\"><img src=\"i/"+PInv.substring(a*2,(a*2)+2)+".png\"></a>";
   if ((a+1)%4===0) { PUP=PUP+"<br>"; }
  }
  pop(PUP);
@@ -735,7 +752,7 @@ function Inven(Ci) {
 
 function ClickInv(a) {
  i=PInv.substring(a*2,(a*2)+2);
- PUP=ItemID(i)+"<p><img src=\""+item[i]+"\"><br>";
+ PUP=ItemID(i)+"<p><img src=\"i/"+i+".png\"><br>";
  if (i>="Fa"&&i<="Fe") { PUP=PUP+"<a href=\"javascript:PlantTomato("+a+");\">Plant</a> &nbsp; "; }
  if (i>="La"&&i<="Pz") { if (PWear.indexOf(i)>-1) { PUP=PUP+"<a href=\"javascript:Remove("+a+");\">Remove</a> &nbsp; "; } else { PUP=PUP+"<a href=\"javascript:Wear("+a+");\">Wear</a> &nbsp; "; }}
  PUP=PUP+"<a href=\"javascript:Drop("+a+");\">Drop</a>";
@@ -780,6 +797,7 @@ function Remove(a) {
 
 function Sysop(a) {
  PUP="<a href=\"javascript:TileMode();\">Edit Tiles</a><br>";
+ PUP=PUP+"<a href=\"javascript:Teleport(\'D+\');\">Sysop Room</a><br>";
  PUP=PUP+"<a href=\"javascript:CopyWorld();\">Copy world.js</a><br>";
  pop(PUP);
 }

@@ -95,8 +95,10 @@ body { background-color: #333 }
 <div id=dot class="k1">.</div>
 <div id=slash class="k1">/</div>
 <div id=enter class="k2">ENTER</div>
-<script src="qandy-gfx.js">
-</script>
+
+//<script src="qandy-gfx.js">
+//</script>
+
 <script>
 var devteam=1;  // developer mode
 var run="";
@@ -278,7 +280,7 @@ tiles();  function tiles() {
  for (Y=0; Y<=mapy; Y++) {
   for (X=0; X<=mapx; X++) {
    T=document.createElement("img");
-   T.id="T"+Z; T.src=tile['Ga']; 
+   T.id="T"+Z; T.src="t/Ga.png"; 
    T.height=32; T.width=32;
    T.className="tile";
    T.onmousedown=new Function("ClickTile("+(Z)+",this.parentNode)");     
@@ -643,7 +645,7 @@ function print(a) {
  }
 }
 function cls() { txt=""; e=document.getElementById("txt").innerHTML="<p>"+txt+"<p>"; print(""); }
-function gfx(scr) { a=0; for (b=0; b<=mapy; b++) { for (c=0; c<=mapx; c++) { e=document.getElementById("T"+a).src=tile[scr.charAt(a*2)+scr.charAt((a*2)+1)]; a++; }}}
+function gfx(scr) { a=0; for (b=0; b<=mapy; b++) { for (c=0; c<=mapx; c++) { e=document.getElementById("T"+a).src="t/"+scr.charAt(a*2)+scr.charAt((a*2)+1)+".png"; a++; }}}
 
 function hpop() { document.getElementById("pop").style.visibility="hidden"; }
 
@@ -696,12 +698,12 @@ function char(C,O,Z) {
  if (O.indexOf("H")>-1) { body="H"+O.charAt(O.indexOf("H")+1); }
 
  if (document.getElementById("cb"+C)) {
-  e=document.getElementById("cb"+C).src=chrs[body];
+  e=document.getElementById("cb"+C).src="c/"+body+".png";
   e=document.getElementById("cb"+C).style.top=32+22+(Y*32)+"px";
   e=document.getElementById("cb"+C).style.left=(32+22+(X*32))+"px";
  } else {
   chr=document.createElement("img");
-  chr.id="cb"+C; chr.src=chrs[body];
+  chr.id="cb"+C; chr.src="c/"+body+".png";
   chr.className="char";  
   chr.style.position="absolute"; chr.style.height=64; chr.style.width=32;
   chr.style.top=32+22+(Y*32)+"px"; chr.style.left=(32+22+(X*32))+"px";
@@ -710,7 +712,7 @@ function char(C,O,Z) {
   document.body.appendChild(chr);
  }
  if (document.getElementById("cf"+C)) {
-  e=document.getElementById("cf"+C).src=chrs[face];
+  e=document.getElementById("cf"+C).src="c/"+face+".png";
   e=document.getElementById("cf"+C).style.top=32+22+(Y*32)+"px";
   e=document.getElementById("cf"+C).style.left=(32+22+(X*32))+"px";
  } else {
@@ -728,12 +730,12 @@ function char(C,O,Z) {
  if (O.indexOf("J")>-1) { hat="J"+O.charAt(O.indexOf("J")+1); }
  if (hat) {
   if (document.getElementById("ch"+C)) {
-   e=document.getElementById("ch"+C).src=chrs[hat];
+   e=document.getElementById("ch"+C).src="c/"+hat+".png";
    e=document.getElementById("ch"+C).style.top=32+22+(Y*32)+"px";
    e=document.getElementById("ch"+C).style.left=(32+22+(X*32))+"px";
   } else {
    chr=document.createElement("img");
-   chr.id="ch"+C; chr.src=chrs[hat];
+   chr.id="ch"+C; chr.src="c/"+hat+".png";
    chr.className="char";  
    chr.style.position="absolute"; chr.style.height=64; chr.style.width=32;
    chr.style.top=32+22+(Y*32)+"px"; chr.style.left=(32+22+(X*32))+"px";
