@@ -4,8 +4,8 @@ e=document.getElementById("run").innerHTML=run;
 
 var now=new Date(); function pad(num) { return num.toString().padStart(2, '0'); }
 
-var ALlowMove=1;
 var AllowScroll=1;
+var ALlowMove=1;
 
 var PName="";
 var NInv=16;
