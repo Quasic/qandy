@@ -1,4 +1,5 @@
 <html><head>
+<html><head>
 <style>
 body { background-color: #333 }
 #cursor { background-color: #CCC; }
@@ -96,9 +97,6 @@ body { background-color: #333 }
 <div id=slash class="k1">/</div>
 <div id=enter class="k2">ENTER</div>
 
-//<script src="qandy-gfx.js">
-//</script>
-
 <script>
 var devteam=1;  // developer mode
 var run="";
@@ -117,6 +115,11 @@ var PopY=0;
 var PopHide="hidden";
 var PopAlign="center";
 var PForce="hidden";
+
+var pop4="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9cKHRUjLyS5OncAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAC5JREFUeNrtzkEBAAAEBDD0z6nGieGzJVgn2Xo09UxAQEBAQEBAQEBAQEBAQOAAuq4EI/9axwQAAAAASUVORK5CYII=";
+var k64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABsAAAAaCAYAAABGiCfwAAAACXBIWXMAAAsSAAALEgHS3X78AAAAKElEQVRIie3NMQEAAAgDILV/51nBywsK0Enqy7xNMplMJpPJZDLZ0QI7tAMxEF7bywAAAABJRU5ErkJggg==";
+var l64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAAYCAYAAAC1Ft6mAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAOklEQVRYhe3PgQkAIRDAsPf33/lcQrBIMkG7ZuZ7yX874DRDdYbqDNUZqjNUZ6jOUJ2hOkN1huoM1W10mgMt7zY1rwAAAABJRU5ErkJggg==";
+var m64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAG0AAAAYCAYAAADwF3MkAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAVUlEQVRoge3RwQkAIBDAMHX/nc8ZfEkhmaDQPTOLlvM7gHemBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWdAFuuAMtk7qVEgAAAABJRU5ErkJggg==";
 
 img=document.createElement('img');
 img.id="qpc"; img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAMklEQVRYhe3OMQEAMAjEwKei2wHxRQbLxUCu3u2fxc7mHAAAAAAAAAAAAAAAAAAAIEkGzIgCpxq6s7YAAAAASUVORK5CYII="; 
@@ -717,7 +720,7 @@ function char(C,O,Z) {
   e=document.getElementById("cf"+C).style.left=(32+22+(X*32))+"px";
  } else {
   chr=document.createElement("img");
-  chr.id="cf"+C; chr.src=chrs[face];
+  chr.id="cf"+C; chr.src="c/"+face+".png";
   chr.className="char";  
   chr.style.position="absolute"; chr.style.height=64; chr.style.width=32;
   chr.style.top=32+22+(Y*32)+"px"; chr.style.left=(32+22+(X*32))+"px";

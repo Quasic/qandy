@@ -12,7 +12,7 @@ var NInv=16;
 var PInv="LaZaZaZaZaZaZaZaZaZaZaZaZaZaZaZa";
 var PObj="";
 var PWear=""; 
-var PMap="Ce";
+var PMap="Ck";
 var PX=3;
 var PY=7;
 var PZ=(PY*(mapx+1))+PX;
@@ -200,6 +200,7 @@ function mainloop() {
    if (PY<walkY) { newY=PY+1; newZ=PZ+(mapx+1); }
   }
   AllowMove=1;
+  
   if (newY<0) { AllowMove=0; }
   if (newY>mapy) { AllowMove=0; }
   if (newX<0) { AllowMove=0; }
@@ -227,7 +228,7 @@ function mainloop() {
    if (walk==PZ) {
     walk=-1; if (Que) { eval(Que); Que=""; }
    }
-
+   
    if (AllowScroll==0) {
     AllowScroll=1;
     if (PX==0)    { AllowScroll=0; }
@@ -638,7 +639,7 @@ function ClickItem(a) {
     stimer=setTimeout('hpop();',1000);
    }
   }   
-  if (i=="Zm") { EraseAll(); a=PMap.charCodeAt(0); b=PMap.charCodeAt(1); if (b>96&&b<123) { PMap=String.fromCharCode(a)+String.fromCharCode(b-58); } if (d>-1&&d<96) { PZ=parseInt(d); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); } LMap(PMap); char(PName,PObj,PZ); }
+  if (i=="Zm") { EraseAll(); a=PMap.charCodeAt(0); b=PMap.charCodeAt(1); if (b>96&&b<123) { PMap=String.fromCharCode(a)+String.fromCharCode(b-58); } if (d>-1&&d<96) { PZ=parseInt(d); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); } AllowScroll=0; LMap(PMap); char(PName,PObj,PZ); }
   if (i=="Ze") { EraseAll(); PMap=d; LMap(PMap); for (b=0;b<ilist.length;b++) { if (ilist[b].substring(0,2)=="Ze") { PZ=parseInt(ilist[b].substring(2,4)); PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); localStorage.setItem('PZ', PZ); }} char(PName,PObj,PZ); }
   if (i=="Zf") { pop(sign[PMap]); }
   if (i=="Zg") { if (d!="..") { Fish(a); }}
@@ -797,7 +798,7 @@ function Remove(a) {
 
 function Sysop(a) {
  PUP="<a href=\"javascript:TileMode();\">Edit Tiles</a><br>";
- PUP=PUP+"<a href=\"javascript:Teleport(\'D+\');\">Sysop Room</a><br>";
+ PUP=PUP+"<a href=\"javascript:Teleport(\'D1\');\">Sysop Room</a><br>";
  PUP=PUP+"<a href=\"javascript:CopyWorld();\">Copy world.js</a><br>";
  pop(PUP);
 }
