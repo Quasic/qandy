@@ -103,7 +103,7 @@ var tile=[]; var item=[]; var chrs=[]; var buld=[];
 
 var devteam=1;  // developer mode
 var run="";
-var txt="<p>Qandy Pocket<br>Computer v.1h<p>";
+var txt="<p>Qandy Pocket<br>Computer v.1i<p>";
 var mode="txt"; // gfx or txt display
 var mapx=7;
 var mapy=11;
@@ -615,7 +615,9 @@ function button(b) {
         if (line.substr(0, 3)=="cls") {
          txt=""; print(""); line="";
         } else {
-         eval(line);
+         //eval(line);
+         print(line+"<p>eval() disabled for security testing.");
+         line="";
         }
        }
        txt=txt+line+"<br>"; line=""; print("");
