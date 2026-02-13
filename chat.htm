@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebRTC Peer Chat</title>
+    <script src="peerjs.min.js"></script>
+</head>
+<body>
+    <h3>Your ID: <span id="my-id">...</span></h3>
+    <input id="receiver-id" type="text" placeholder="Paste Friend's ID">
+    <button onclick="connectToPeer()">Connect</button>
+
+    <div id="chat-box" style="height:200px; border:1px solid #000; overflow-y:scroll; margin:10px 0;"></div>
+    
+    <input id="msg" type="text" placeholder="Message">
+    <button onclick="sendMsg()">Send</button>
+    <button onclick="download()">Download Chat</button>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const peer = new Peer(); // Connects to PeerJS free cloud signaling server
+        let conn;
+
+        // 1. Display your ID so you can give it to a friend
+        peer.on('open', id => document.getElementById('my-id').innerText = id);
+
+        // 2. Listen for incoming connections
+        peer.on('connection', c => {
+            conn = c;
+            setupReceiver();
+        });
+
+        // 3. Connect to a friend
+        function connectToPeer() {
+            const id = document.getElementById('receiver-id').value;
+            conn = peer.connect(id);
+            setupReceiver();
+        }
+
+        function setupReceiver() {
+            conn.on('data', data => appendMsg("Peer: " + data));
+            conn.on('open', () => appendMsg("--- Connected ---"));
+        }
+
+        function sendMsg() {
+            const msg = document.getElementById('msg').value;
+            conn.send(msg);
+            appendMsg("You: " + msg);
+            document.getElementById('msg').value = "";
+        }
+
+        function appendMsg(text) {
+            chatBox.innerText += text + "\n";
+        }
+
+        function download() {
+            const blob = new Blob([chatBox.innerText], {type: 'text/plain'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'chat.txt';
+            a.click();
+        }
+    </script>
+</body>
+</html>
