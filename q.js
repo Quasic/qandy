@@ -798,9 +798,29 @@ function Remove(a) {
 
 function Sysop(a) {
  PUP="<a href=\"javascript:TileMode();\">Edit Tiles</a><br>";
+ PUP=PUP+"<a href=\"javascript:AddItem(\'\');\">Add Item</a><br>";
  PUP=PUP+"<a href=\"javascript:Teleport(\'D1\');\">Sysop Room</a><br>";
  PUP=PUP+"<a href=\"javascript:CopyWorld();\">Copy world.js</a><br>";
  pop(PUP);
+}
+
+function AddItem(a) {
+ if (a=="") {
+  PUP="<a href=\"javascript:AddItem(\'Ze\');\">Teleport</a><br>";
+  PUP=PUP+"<a href=\"javascript:AddItem(\'Zf\');\">Sign</a><br>";
+  PUP=PUP+"<a href=\"javascript:AddItem(\'Zg\');\">Pier</a><br>";
+  PUP=PUP+"<a href=\"javascript:AddItem(\'Zm\');\">City</a><br>";
+  PUP=PUP+"<a href=\"javascript:AddItem(\'Za\');\">Other</a><br>";
+  pop(PUP);  
+ } else {
+  out="";
+  if (a=="Za") { out="Add Item:<p>Use the tile set viewer to get the two-character item-code and enter it here. <p>"; b="/item "; }
+  if (a=="Ze") { out="Add Teleport:<p>Type the teleport map destination (two character code) and press ENTER.<p>"; b="/item Ze "; }
+  if (a=="Zf") { out="Add Sign:<p>Type the text on the sign and press ENTER.<p>"; b="/sign "+PMap+" "; } // add sign first here!!
+  if (a=="Zg") { out="Add Fishing Pier:<p>Type the fish code for this pier, and press ENTER.<p>Leave blank for no fish.<p>"; b="/item Zg "; }
+  if (a=="Zm") { out="Add City Gates:<p>Type the z-location for player to enter and press ENTER.<p>Leave blank to use z-location of the gates. <p>"; b="/item Zm "; }
+  if (out) { line=b; mode="txt"; cls(); print(out); }
+ }
 }
 
 function CopyWorld() {

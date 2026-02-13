@@ -1,38 +1,30 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Gun.js Simple Chat</title>
-    <!-- Load Gun.js from CDN -->
-    <script src="gun.js"></script>
-</head>
-<body>
-    <h2>Chat Room</h2>
-    <div id="messages" style="height:300px; overflow-y:scroll; border:1px solid #ccc;"></div>
-    <input id="alias" placeholder="Username" />
-    <input id="msg" placeholder="Message" />
-    <button onclick="send()">Send</button>
+<html><head><title>QChat</title>
+<script src="gun.js"></script>
+</head><body>
+<h2>Chat Room</h2>
+<div id="messages" style="height:300px; overflow-y:scroll; border:1px solid #ccc;"></div>
+<input id="alias" placeholder="Username" />
+<input id="msg" placeholder="Message" />
+<button onclick="send()">Send</button>
 
-    <script>
-        // Initialize Gun (connects to public peers by default)
-        const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-        const chat = gun.get('simple-chat-room'); // Get a node
+<script>
+ const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+ const chat = gun.get('QChat'); // Get a node
 
-        // Send message function
-        function send() {
-            const alias = document.getElementById('alias').value || 'Anonymous';
-            const msg = document.getElementById('msg').value;
-            chat.set({alias: alias, msg: msg, time: Date.now()});
-            document.getElementById('msg').value = '';
-        }
+ function send() {
+  const alias = document.getElementById('alias').value || 'Anonymous';
+  const msg = document.getElementById('msg').value;
+  chat.set({alias: alias, msg: msg, time: Date.now()});
+  document.getElementById('msg').value = '';
+ }
 
-        // Listen for messages in real-time
-        chat.map().on((data, key) => {
-            if (data) {
-                const messages = document.getElementById('messages');
-                messages.innerHTML += `<p><b>${data.alias}:</b> ${data.msg}</p>`;
-                messages.scrollTop = messages.scrollHeight; // Auto-scroll
-            }
-        });
-    </script>
-</body>
-</html>
+ chat.map().on((data, key) => {
+  if (data) {
+   const messages = document.getElementById('messages');
+   messages.innerHTML += `<p><b>${data.alias}:</b> ${data.msg}</p>`;
+   messages.scrollTop = messages.scrollHeight; // Auto-scroll
+  }
+ });
+</script>
+</body></html>
