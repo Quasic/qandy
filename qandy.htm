@@ -6,10 +6,17 @@ body { background-color: #333 }
 .qpc { position: absolute; top: 0px; left: 0px; width: 160px; height: 24px;
        padding-left: 0px; padding-right: 0px; align-items: center;
        background-color: grey; z-index: 0; }
-.txt { position: absolute; left: 86px; top: 64px;  
-       width: 256px; height: 384px; z-index: 254;     
-       font-family: courier; font-size: 18px; weight: bold; 
-       color: #fff; background-color: #000; }
+.txt { position: absolute; left: 86px; top: 64px; width: 256px; height: 384px; z-index: 254;     
+       font-family: courier; font-size: 18px; font-weight: normal;
+       color: #fff; background-color: #000;
+       overflow-y: scroll; overflow-x: hidden; 
+       padding: 2px; box-sizing: border-box;
+     }
+.txt::-webkit-scrollbar { width: 12px; }
+.txt::-webkit-scrollbar-track { background: #000; }
+.txt::-webkit-scrollbar-thumb { background: #444; border-radius: 6px; }
+.txt::-webkit-scrollbar-thumb:hover { background: #666; }
+
 .pop { position:absolute; top:260; left:190; z-index:250;
        font-family: arial; font-size: 14px; weight: bold;
        color: navy; background-color: #999; visibility:hidden;
@@ -281,6 +288,7 @@ document.body.appendChild(img);
 img=document.createElement('img'); img.id="kenter"; img.src=l64; img.style.position="absolute"; img.style.zIndex="99"; 
 img.onclick = function() { button(13); }
 document.body.appendChild(img); 
+
 tiles();  function tiles() {
  Z=0;
  for (Y=0; Y<=mapy; Y++) {
@@ -295,15 +303,12 @@ tiles();  function tiles() {
   }
  }
 }
-// img=document.createElement('img'); img.id="footer"; img.src=l64; img.style.position="absolute"; document.body.appendChild(img); 
-resize(); function resize() {
 
- //kx0=79; kx1=107; kx2=135; kx3=164; kx4=192;  
- //kx5=221; kx6=250; kx7=279; kx8=307; kx9=335;
- 
+resize(); function resize() {
+ document.getElementById("qpc").style.top = "32px"; 
+ document.getElementById("qpc").style.left = "32px";
  kx0=47; kx1=75; kx2=103; kx3=132; kx4=160;  
  kx5=189; kx6=218; kx7=247; kx8=275; kx9=303;
- 
  e=document.getElementById("qpc").style.top="32px"; 
  e=document.getElementById("qpc").style.left="32px";
  e=document.getElementById("esc").style.left=kx0+"px";        e=document.getElementById("esc").style.top="446px";
@@ -410,16 +415,19 @@ resize(); function resize() {
  e=document.getElementById("kslash").style.left=(left-5)+"px"; e=document.getElementById("kslash").style.top=(up-6)+"px";
  left=wide+243; up=high+570; e=document.getElementById("enter").style.left=left+"px"; e=document.getElementById("enter").style.top=up+"px"; 
  e=document.getElementById("kenter").style.left=(left-5)+"px"; e=document.getElementById("kenter").style.top=(up-6)+"px";
- if (mode=="gfx") { 
-  e=document.getElementById("txt").innerHTML="<p>"+txt+"<p>";
-  e=document.getElementById("txt").style.left=left+"297px";
-  e=document.getElementById("txt").style.top=up+"22px";
+ if (mode=="gfx") {
+  up=32+(404-(document.getElementById('txt').offsetHeight));
+  left=32+22+300;
+  document.getElementById("txt").style.left=left+"px";
+  document.getElementById("txt").style.top=up+"px";
  } else {
-  e=document.getElementById("txt").innerHTML="<p>"+txt+"<p>";
-  left=32+22; up=64+(404-(document.getElementById('txt').offsetHeight));
-  e=document.getElementById("txt").style.left=left+"px";
-  e=document.getElementById("txt").style.top=up+"px";
+  left=32+22;
+  up=32+(402-(document.getElementById('txt').offsetHeight));
+  document.getElementById("txt").style.left="54px";
+  document.getElementById("txt").style.top=up+"px";
  }
+ const textElement=document.getElementById("txt");
+ textElement.scrollTop=textElement.scrollHeight;
  Z=0; for (Y=0; Y<=mapy; Y++) {
   for (X=0; X<=mapx; X++) {
    e=document.getElementById("T"+Z).style.top=50+(Y*32)+"px";  
@@ -427,15 +435,15 @@ resize(); function resize() {
    Z++;
   }
  }
- //e=document.getElementById("footer").style.top=664+"px";  
- //e=document.getElementById("footer").style.left=(32+22)+"px"; 
 }
+
 document.addEventListener('keydown', function () { press(); });
 function press() { 
  key=""; k=event.keyCode; shift=event.shiftKey; button(k);
 }
+
 function button(b) {
-  k=""; l=""; switch (b) {
+ k=""; l=""; switch (b) {
   case 37: k="left"; break;
   case 38: k="up"; break;
   case 39: k="right"; break;
@@ -491,10 +499,14 @@ function button(b) {
   case 219: if (shift||caps) { k="open";  l="{"; } else { k="["; l=k; } break;
   case 221: if (shift||caps) { k="close"; l="}"; } else { k="]"; l=k; } break;  
  }
- if (k=="esc") {
-  if (mode=="txt") { mode="gfx"; } else { mode="txt"; } 
+ if (k === "esc") {
+  if (mode === "txt") {
+   mode = "gfx";
+  } else {
+   mode = "txt";
+  }
  } else {
-  if (k=="caps") {
+  if (k === "caps") {
    caps=1-caps;
    if (caps) {
     e=document.getElementById("open").innerHTML="<p>{";
@@ -592,66 +604,86 @@ function button(b) {
     e=document.getElementById("caps").style.color="#fff";
    }
   } else {
-   if (k=="back") {
-    if (line.length>0) { line=line.substr(0, line.length-1);  }
+   if (k === "back") {
+    if (line.length > 0) {
+     line = line.substr(0, line.length - 1);
+    }
    } else {
-    if (k=="enter") {
+    if (k === "enter") {
      if (keyon) {
       if (run) {
-       // press enter while program is running
+       // Program is running - pass input to program
        txt=txt+line+"<br>";
-       input(line); line=""; print("");
+       input(line);
+       line = "";
+       print("");
       } else {
-       // press enter while program is not running
-       txt=txt+"<br>"; 
-       //qandy commands go here
-       if (line.slice(-3)==".js") {
-        keyon=0; txt=txt+line+"<br>";
-        prg=document.createElement('script');
+       // OS command mode
+       if (line.slice(-3) === ".js") {
+        keyon=0;
+        txt=txt+line+"<br>";
+        const prg=document.createElement('script');
         prg.src=line;
+        prg.onload=() => { keyon = 1; };
+        prg.onerror=() => { print("Error loading program"); keyon = 1; };
         document.head.appendChild(prg);
         line="";
+       } else if (line.substr(0, 3)==="cls") {
+        txt=""; print(""); line="";
        } else {
-        if (line.substr(0, 3)=="cls") {
-         txt=""; print(""); line="";
-        } else {
-         //eval(line);
-         print(line+"<p>eval() disabled for security testing.");
-         line="";
-        }
+        txt=txt+line+"<br>";
+        executeCode(line);
+        line="";
        }
-       txt=txt+line+"<br>"; line=""; print("");
+       print("");
       }
      }
     }
    }
    if (keyon) { line=line+l; }
    if (run) { keydown(k); }
-  } 
+  }
  }
  print("");
 }
+
+function executeCode(code) {
+ try {
+  const result=eval(code);
+  if (result !== undefined) {
+   print(String(result)+"<br>");
+  }
+  return true;
+ } catch (error) {
+  print(`Error: ${error.message}`+"<br>");
+  return false;
+ }
+}
+
 // system functions
 function print(a) {
  txt=txt+a;
- if (keyon) { a=line; } else { a=""; }
+ if (keyon) { a = line; } else { a = ""; }
  if (keyon) {
-  e=document.getElementById("txt").innerHTML="<p>"+txt+a+"<font id=cursor>&nbsp;</font>";
+  document.getElementById("txt").innerHTML = "<p>" + txt + a + "<font id=cursor>&nbsp;</font>";
  } else {
-  e=document.getElementById("txt").innerHTML="<p>"+txt+a;
+  document.getElementById("txt").innerHTML = "<p>" + txt + a;
  }
- if (mode=="gfx") {
+ if (mode == "gfx") {
   up=32+(404-(document.getElementById('txt').offsetHeight));
   left=32+22+300;
-  e=document.getElementById("txt").style.left=left+"px";
-  e=document.getElementById("txt").style.top=up+"px";
+  document.getElementById("txt").style.left = left + "px";
+  document.getElementById("txt").style.top = up + "px";
  } else {
   left=32+22;
   up=32+(402-(document.getElementById('txt').offsetHeight));
-  e=document.getElementById("txt").style.left="54px";
-  e=document.getElementById("txt").style.top=up+"px";
+  document.getElementById("txt").style.left = "54px";
+  document.getElementById("txt").style.top = up + "px";
  }
+ const textElement = document.getElementById("txt");
+ textElement.scrollTop = textElement.scrollHeight;
 }
+
 function cls() { txt=""; e=document.getElementById("txt").innerHTML="<p>"+txt+"<p>"; print(""); }
 function gfx(scr) { a=0; for (b=0; b<=mapy; b++) { for (c=0; c<=mapx; c++) { e=document.getElementById("T"+a).src="t/"+scr.charAt(a*2)+scr.charAt((a*2)+1)+".png"; a++; }}}
 
