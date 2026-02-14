@@ -46,11 +46,14 @@ function Begin() {
   PMap=localStorage.getItem('PMap'); 
   PZ=localStorage.getItem('PZ'); PZ=parseInt(PZ);
   PY=Math.floor(PZ/(mapx+1)); PX=PZ-(PY*(mapx+1)); 
-  PForce="hidden"; mode="gfx"; print("");  
+  PForce="hidden"; mode="gfx";
+  document.getElementById("txt").style.left = "350px"; 
   LMap(PMap); char(PName,PObj,PZ); 
   keyon=1; mainloop();
+  print("\nWelcome to Queville!\n\n");
+  pop(PName+" Logged In.");
  } else {
-  login(); function login() { keyon=1; print("<p>Welcome to Queville<p>Enter your name:<br>"); }
+  login(); function login() { keyon=1; print("\nWelcome to Queville\n\nEnter your name:\n"); }
  }
 }
 
@@ -77,37 +80,38 @@ function input(l) {
     if (codes[0].substr(0, 2)=="/h") {
      if (codes[1]) {
      	if (codes[1].charAt(0)=="t") {
-       cls(); print("Teleport:<p>");
-       print("&nbsp;/t [xx]<p>");
-       print("Where [xx] is the two-character map code to teleport to.<p>");
-       print("Map codes are a capital letter followed by a lower case letter.<p>");
-       print("City codes have a symbol instead of a lower case letter.<p>");
+       cls(); print("\nTeleport:\n\n");
+       print(" /t [xx]\n\n");
+       print("Where [xx] is the two-character map code to teleport to.\n\n");
+       print("Map codes are a capital letter followed by a lower case letter.\n\n");
+       print("City codes have a symbol instead of a lower case letter.\n\n");
       } 
       if (codes[1].charAt(0)=="i") {
-       cls(); print("Add Static Item:<p>");
-       print("&nbsp;/i [xx] ..<p>");
-       print("[xx] is the two-character item code of the item.<p>");
-       print("And .. is any optional data that item may need.<p>");
+       cls(); print("\nAdd Static Item:\n\n");
+       print(" /i [xx] ..\n");
+       print("[xx] is the two-character item code of the item.\n\n");
+       print("And .. is any optional data that item may need.\n\n");
       }
       if (codes[1].charAt(0)=="d") {
-       cls(); print("Add Dynamic Item:<p>");
-       print("&nbsp;/d [xx]<p>");
-       print("Where [xx] it the two-character item code of the item.<p>");
-       print("Dynamic items disappear after sixty seconds.<p>");
+       cls(); print("\nAdd Dynamic Item:\n\n");
+       print(" /d [xx]\n\n");
+       print("Where [xx] it the two-character item code of the item.\n\n");
+       print("Dynamic items disappear after sixty seconds.\n\n");
       }
       if (codes[1].charAt(0)=="s") {
-       cls(); print("Edit Sign Text:<p>");
-       print("&nbsp;/s [text]<p>");
-       print("Will update the sign text with [text].<p>");
-       print("There can only be one sign per map screen.<p>");
+       cls(); print("\nEdit Sign Text:\n\n");
+       print(" /s [text]\n\n");
+       print("Will update the sign text with [text].\n\n");
+       print("There can only be one sign per map screen.\n\n");
       }
      } else {
-      cls(); print("Sysop Commands:<p>");
-      print("&nbsp;/tele [xx]<br>");
-      print("&nbsp;/item [xx] [..]<br>");
-      print("&nbsp;/drop [xx]<br>");
-      print("&nbsp;/sign [text]<br>");
-      print("&nbsp;/copy world.js<p>");
+      cls();
+      print("\nSysop Commands:\n\n");
+      print(" /tele [xx]\n");
+      print(" /item [xx] [..]\n");
+      print(" /drop [xx]\n");
+      print(" /sign [text]\n");
+      print(" /copy world.js\n\n");
      }
     }
    }
@@ -133,10 +137,10 @@ function input(l) {
     NewChar("");
     LMap(PMap);
     cls();
-    print("Latest Updates:<p>");
-    print("Wear Sysop Hat to access Sysop Menu and Sysop Help.<p>");
-    print("Type /help for list of Sysop commands.<p>");
-    print("Type /help [command] for help on that command.<p>");
+    print("Latest Updates:\n\n");
+    print("Wear Sysop Hat to access Sysop Menu and Sysop Help.\n\n");
+    print("Type /help for list of Sysop commands.\n\n");
+    print("Type /help [command] for help on that command.\n\n");
     print("Have Fun!<p>Press [ESC] Key:");
    }
   }
@@ -152,25 +156,25 @@ function NewChar(a) {
  PopForce="visible";
  if (a=="M") {
   PUP="Select Character:<p>";
-  PUP=PUP+"<a href=\"javascript:NewChar(\'B0\');\"><img src=\""+chrs['B0']+"\" height=64 width=32></a> &nbsp; ";
-  PUP=PUP+"<a href=\"javascript:NewChar(\'B1\');\"><img src=\""+chrs['B1']+"\" height=64 width=32></a> &nbsp; ";
-  PUP=PUP+"<a href=\"javascript:NewChar(\'B2\');\"><img src=\""+chrs['B2']+"\" height=64 width=32></a><br>";
-  PUP=PUP+"<a href=\"javascript:NewChar(\'B3\');\"><img src=\""+chrs['B3']+"\" height=64 width=32></a> &nbsp; ";
-  PUP=PUP+"<a href=\"javascript:NewChar(\'B4\');\"><img src=\""+chrs['B4']+"\" height=64 width=32></a> &nbsp; ";
-  PUP=PUP+"<a href=\"javascript:NewChar(\'B5\');\"><img src=\""+chrs['B5']+"\" height=64 width=32></a> &nbsp; ";
-  PUP=PUP+"<a href=\"javascript:NewChar(\'B6\');\"><img src=\""+chrs['B6']+"\" height=64 width=32></a><p>";
+  PUP=PUP+"<a href=\"javascript:NewChar(\'B0\');\"><img src=\"c/B0.png\" height=64 width=32></a> &nbsp; ";
+  PUP=PUP+"<a href=\"javascript:NewChar(\'B1\');\"><img src=\"c/B1.png\" height=64 width=32></a> &nbsp; ";
+  PUP=PUP+"<a href=\"javascript:NewChar(\'B2\');\"><img src=\"c/B2.png\" height=64 width=32></a><br>";
+  PUP=PUP+"<a href=\"javascript:NewChar(\'B3\');\"><img src=\"c/B3.png\" height=64 width=32></a> &nbsp; ";
+  PUP=PUP+"<a href=\"javascript:NewChar(\'B4\');\"><img src=\"c/B4.png\" height=64 width=32></a> &nbsp; ";
+  PUP=PUP+"<a href=\"javascript:NewChar(\'B5\');\"><img src=\"c/B5.png\" height=64 width=32></a> &nbsp; ";
+  PUP=PUP+"<a href=\"javascript:NewChar(\'B6\');\"><img src=\"c/B6.png\" height=64 width=32></a><p>";
   PUP=PUP+"<a href=\"javascript:NewChar(\'\');\">Go Back</a><p>";
   pop(PUP);
  } else {
   if (a=="F") {
    PUP="Select Character:<p>";
-   PUP=PUP+"<a href=\"javascript:NewChar(\'F0\');\"><img src=\""+chrs['F0']+"\" height=64 width=32></a> &nbsp; ";
-   PUP=PUP+"<a href=\"javascript:NewChar(\'F1\');\"><img src=\""+chrs['F1']+"\" height=64 width=32></a> &nbsp; ";
-   PUP=PUP+"<a href=\"javascript:NewChar(\'F2\');\"><img src=\""+chrs['F2']+"\" height=64 width=32></a><br>";
-   PUP=PUP+"<a href=\"javascript:NewChar(\'F3\');\"><img src=\""+chrs['F3']+"\" height=64 width=32></a> &nbsp; ";
-   PUP=PUP+"<a href=\"javascript:NewChar(\'F4\');\"><img src=\""+chrs['F4']+"\" height=64 width=32></a> &nbsp; ";
-   PUP=PUP+"<a href=\"javascript:NewChar(\'F5\');\"><img src=\""+chrs['F5']+"\" height=64 width=32></a> &nbsp; ";
-   PUP=PUP+"<a href=\"javascript:NewChar(\'F6\');\"><img src=\""+chrs['F6']+"\" height=64 width=32></a><p>";
+   PUP=PUP+"<a href=\"javascript:NewChar(\'F0\');\"><img src=\"c/F0.png\" height=64 width=32></a> &nbsp; ";
+   PUP=PUP+"<a href=\"javascript:NewChar(\'F1\');\"><img src=\"c/F1.png\" height=64 width=32></a> &nbsp; ";
+   PUP=PUP+"<a href=\"javascript:NewChar(\'F2\');\"><img src=\"c/F2.png\" height=64 width=32></a><br>";
+   PUP=PUP+"<a href=\"javascript:NewChar(\'F3\');\"><img src=\"c/F3.png\" height=64 width=32></a> &nbsp; ";
+   PUP=PUP+"<a href=\"javascript:NewChar(\'F4\');\"><img src=\"c/F4.png\" height=64 width=32></a> &nbsp; ";
+   PUP=PUP+"<a href=\"javascript:NewChar(\'F5\');\"><img src=\"c/F5.png\" height=64 width=32></a> &nbsp; ";
+   PUP=PUP+"<a href=\"javascript:NewChar(\'F6\');\"><img src=\"c/F6.png\" height=64 width=32></a><p>";
    PUP=PUP+"<a href=\"javascript:NewChar(\'\');\">Go Back</a><p>";
    pop(PUP);
   } else {
@@ -179,7 +183,7 @@ function NewChar(a) {
     char(PName,PObj,PZ); PForce="hidden"; hpop(); mainloop();
   	} else {  	
     PX=2; PY=9; PZ=(PY*(mapx+1))+PX;
-    pop("<p>Male or Female?<br><a href=\"javascript:NewChar(\'M\');\"><img src=\""+chrs['B1']+"\" height=128 width=64></a> &nbsp; <a href=\"javascript:NewChar(\'F\');\"><img src=\""+chrs['F5']+"\"height=128 width=64></a>");
+    pop("<p>Male or Female?<br><a href=\"javascript:NewChar(\'M\');\"><img src=\"c/B1.png\" height=128 width=64></a> &nbsp; <a href=\"javascript:NewChar(\'F\');\"><img src=\"c/F5.png\" height=128 width=64></a>");
    }
   }
  }
@@ -645,11 +649,11 @@ function ClickItem(a) {
   if (i=="Zg") { if (d!="..") { Fish(a); }}
   if (i=="Yb") {
    PUP="Free Clothes<br>"; a="C"; if (PObj.indexOf("D")>-1) { a="D"; } else { if (PObj.indexOf("G")>-1) { a="G"; } else { if (PObj.indexOf("H")>-1) { a="H"; }}}
-   PUP=PUP+"<a href=\"javascript:clothes(\'0\');\"><img src=\""+chrs[a+'0']+"\"></a>";
-   PUP=PUP+"<a href=\"javascript:clothes(\'1\');\"><img src=\""+chrs[a+'1']+"\"></a><br>";
-   PUP=PUP+"<a href=\"javascript:clothes(\'2\');\"><img src=\""+chrs[a+'2']+"\"></a>";
-   PUP=PUP+"<a href=\"javascript:clothes(\'3\');\"><img src=\""+chrs[a+'3']+"\"></a>";
-   PUP=PUP+"<a href=\"javascript:clothes(\'4\');\"><img src=\""+chrs[a+'4']+"\"></a>";
+   PUP=PUP+"<a href=\"javascript:clothes(\'0\');\"><img src=\"c/"+a+"0.png\"></a>";
+   PUP=PUP+"<a href=\"javascript:clothes(\'1\');\"><img src=\"c/"+a+"1.png\"></a><br>";
+   PUP=PUP+"<a href=\"javascript:clothes(\'2\');\"><img src=\"c/"+a+"2.png\"></a>";
+   PUP=PUP+"<a href=\"javascript:clothes(\'3\');\"><img src=\"c/"+a+"3.png\"></a>";
+   PUP=PUP+"<a href=\"javascript:clothes(\'4\');\"><img src=\"c/"+a+"4.png\"></a>";
    pop(PUP);
   }
   if (i=="Ye") { 
