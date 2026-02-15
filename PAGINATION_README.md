@@ -39,6 +39,19 @@ This directory contains comprehensive documentation for the text overflow pagina
    - Verification steps
    - Expected behaviors
 
+6. **[form-feed-test.js](form-feed-test.js)** - Form Feed demo script
+   - Demonstrates explicit page breaks
+   - Interactive 4-page example
+   - Shows Form Feed usage
+
+### Feature Documentation
+
+7. **[FORM_FEED_SUMMARY.md](FORM_FEED_SUMMARY.md)** - Form Feed enhancement
+   - ANSI Form Feed (`\f`) support
+   - Explicit page break control
+   - Usage examples and benefits
+   - Technical implementation details
+
 ## 🚀 Quick Start
 
 ### For End Users
@@ -47,6 +60,20 @@ This directory contains comprehensive documentation for the text overflow pagina
 2. Type `ascii.js` and press Enter
 3. After 20 lines, you'll see: `--- Press Any Key to Continue ---`
 4. Press any key to see the next page
+
+### For Developers Using Form Feed
+
+Programs can explicitly trigger page breaks using Form Feed:
+
+```javascript
+print("Section 1\n");
+print("Content here...\n");
+print("\f");  // Explicit page break
+
+print("Section 2\n");
+```
+
+Try the demo: Type `form-feed-test.js` in qandy2.htm
 
 Read the [User Guide](PAGINATION_USER_GUIDE.md) for more details.
 
@@ -73,23 +100,33 @@ Read the [Technical Documentation](PAGINATION_FEATURE.md) for details.
 - **Performance**: Minimal overhead, constant memory
 - **User Impact**: 4 pauses for ascii.js (67 lines)
 - **Configuration**: Adjustable threshold and on/off toggle
+- **Triggers**: Line counting (automatic) OR Form Feed (explicit)
 
-## 🎯 Problem Solved
+## 🎯 Problems Solved
 
-**Issue**: The ascii.js script prints more text than fits on screen. The qandy2.htm buffer discards scrolled-off data, resulting in data loss.
+**Issue 1**: The ascii.js script prints more text than fits on screen. The qandy2.htm buffer discards scrolled-off data, resulting in data loss.
 
-**Solution**: Pagination with "Press Any Key to Continue" that:
+**Solution 1**: Pagination with "Press Any Key to Continue" that:
 - ✅ Preserves all data
 - ✅ Gives user control
 - ✅ Saves 97% memory
 - ✅ Fits retro aesthetic
 - ✅ Configurable
 
+**Issue 2**: Programs need explicit control over page breaks, not just automatic line counting.
+
+**Solution 2**: Form Feed (`\f`) support for explicit page breaks:
+- ✅ Standard ANSI/ASCII character
+- ✅ Program-controlled pagination
+- ✅ Works with automatic pagination
+- ✅ Backward compatible
+
 ## 📖 Reading Order
 
 ### New Users
 1. [User Guide](PAGINATION_USER_GUIDE.md) - Learn how to use it
 2. [Visual Guide](VISUAL_GUIDE.md) - See it in action
+3. Try `form-feed-test.js` for interactive demo
 
 ### Developers
 1. [Implementation Summary](IMPLEMENTATION_SUMMARY.md) - Project overview
