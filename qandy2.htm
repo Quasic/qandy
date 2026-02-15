@@ -1118,7 +1118,7 @@ codes: {
  cursorBack: (n = 1) => `\x1b[${n}D`,
  clearScreen: '\x1b[2J',
  clearLine: '\x1b[K',
- pageBreak: '\f'  // Form Feed - explicit page break for pagination
+ pageBreak: '\f'  // Form Feed (ASCII 12, 0x0C) - explicit page break for pagination
 }};
 
 // system functions
@@ -1154,8 +1154,8 @@ function showFiles() {
 }
 
 function triggerPaginationPause() {
-  // Helper function to trigger pagination pause
-  // Can be called by line count threshold OR Form Feed character
+  // Pauses pagination output and displays "Press Any Key to Continue" prompt.
+  // Can be triggered by: line count threshold (20 lines) OR Form Feed character (\f)
   paginationPaused = true;
   keyon = 0;  // Disable normal keyboard input
   
