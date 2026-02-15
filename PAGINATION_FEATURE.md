@@ -19,7 +19,7 @@ The text pagination feature has been implemented in `qandy2.htm` to address the 
 
 ### Key Components
 
-#### State Variables (lines 172-181)
+#### State Variables (lines 177-182)
 ```javascript
 var paginationEnabled = true;        // Enable/disable pagination feature
 var paginationPaused = false;        // Is print() currently paused?
