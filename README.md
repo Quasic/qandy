@@ -42,4 +42,16 @@ Visit the [Qandy GitHub Pages site](https://quintrix.github.io/qandy/) for the r
 
 ---
 
+## Deployment
+
+This project is deployed via **GitHub Pages** at [https://quintrix.github.io/qandy/](https://quintrix.github.io/qandy/).
+
+**Note**: Automatic Vercel deployments are disabled (see `vercel.json`) to conserve deployment quota. Changes are automatically deployed to GitHub Pages when merged to the main branch. If you need to deploy to Vercel manually, use the Vercel CLI:
+
+```bash
+vercel --prod
+```
+
+---
+
 If you have suggestions or want to contribute, open an issue or fork the repo!
