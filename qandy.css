@@ -1,5 +1,8 @@
 /* Qandy Pocket Computer Styles */
 
+/* Import Google Fonts for better extended ASCII character support */
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;700&display=swap');
+
 body { background-color: #333 }
 #cursor { background-color: #CCC; }
 .qpc { position: absolute; top: 0px; left: 0px; width: 160px; height: 24px;
@@ -12,15 +15,15 @@ body { background-color: #333 }
   width: 256px; 
   height: 384px; 
   z-index: 254;     
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
+  font-family: 'VT323', 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 16px;
   font-weight: normal;
   color: #fff;
   background-color: #000;
   overflow-y: scroll;
   overflow-x: hidden;
   padding: 4px;
-  line-height: 1.1;
+  line-height: 1.2;
   box-sizing: border-box;
   white-space: pre;
   word-wrap: break-word;
