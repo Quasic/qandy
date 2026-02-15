@@ -457,7 +457,8 @@ function button(b) {
   }
  } else {
   if (k==="caps") {
-   // Cycle through three states: 0 (lowercase) -> 1 (uppercase) -> 2 (extended graphics) -> 0
+   // Cycle through three states: 0 (lowercase) -> 1 (uppercase) -> 2 (extended graphics)
+   // The modulo operation wraps from 2 back to 0
    caps = (caps + 1) % 3;
    
    // Update all key labels based on caps lock state
@@ -606,8 +607,8 @@ function button(b) {
     document.getElementById("comma").innerHTML = extendedChars[','];
     document.getElementById("dot").innerHTML = extendedChars['.'];
     document.getElementById("dash").innerHTML = extendedChars['-'];
-    document.getElementById("caps").style.backgroundColor = "#0f0";
-    document.getElementById("caps").style.color = "#000";
+    document.getElementById("caps").style.backgroundColor = "#2d7a2d";
+    document.getElementById("caps").style.color = "#fff";
    }
   } else {
    // Handle arrow key cursor movement
