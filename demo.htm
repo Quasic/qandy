@@ -1,47 +1,60 @@
 <html><head>
-<html><head>
+<link rel="stylesheet" type="text/css" href="qandy.css">
 <style>
-body { background-color: #333 }
-#cursor { background-color: #CCC; }
-.qpc { position: absolute; top: 0px; left: 0px; width: 160px; heigth: 24px;
-       padding-left: 0px; padding-right: 0px; align-items: center;
-       background-color: grey; z-index: 0; }
-.txt { position: absolute; left: 86px; top: 64px;  
-       width: 256px; height: 384px; z-index: 254;     
-       font-family: courier; font-size: 18px; weight: bold; 
-       color: #fff; background-color: #000; }
-.pop { position:absolute; top:260; left:190; z-index:250;
-       font-family: arial; font-size: 14px; weight: bold;
-       color: navy; background-color: #999; visibility:hidden;
-       text-align: center;
-       padding-top: 0px; padding-bottom: 0px;  
-       padding-right: 4px; padding-left: 4px; }
-.run { position: absolute; top: 0px; left: 0px; width: 106px; heigth: 18px;
-       font-family: courier; font-size: 14px; weight: bold; 
-       color: #000; background-color: #aaa; 
-       text-align: center; padding: 0px; padding-top: 4px; z-index: 2; }
-.tile { position: absolute; top: 0px; left: 0px; }
-.item { position: absolute; top: 0px; left: 0px; }
-.char { position: absolute; top: 0px; left: 0px; }
-.k1 { position: absolute; top: 0px; left: 0px; width: 24px; heigth: 24px;
-      padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 14px; max-height: 14px; margin: 0; padding: 4; 
-      display: flex; justify-content: center;  align-items: center;       
-      color: white; background-color: #333; text-align: center;
-      font-family: Arial; font-size: 14px; weight: bold;
-      cursor: default; z-index: 1; }
-.k2 { position: absolute; top: 0px; left: 0px; width: 52px; heigth: 24px;
-      padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 42px; max-height: 12px; margin: 0; padding: 4;        
-      color: white; background-color: #333; text-align: center;
-      font-family: Arial; font-size: 12px; weight: bold; 
-      cursor: default; z-index: 1; }
-.k3 { position: absolute; top: 0px; left: 0px; width: 71px; heigth: 24px;
-      padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 100px; max-height: 12px; margin: 0; padding: 4;        
-      color: white; background-color: #333; text-align: center;
-      font-family: Arial; font-size: 12px; weight: bold;
-      cursor: default; z-index: 1; }
+/* demo.htm specific overrides */
+.txt { 
+  left: 86px;
+  font-family: courier; 
+  font-size: 18px;
+  font-weight: bold;
+  padding: 0px;
+  line-height: normal;
+  white-space: normal;
+  overflow-y: hidden;
+  overflow-x: hidden;
+}
+.run { 
+  top: 0px; 
+  left: 0px; 
+  width: 106px; 
+  height: 18px;
+  font-size: 14px; 
+  padding-top: 4px; 
+  z-index: 2; 
+}
+.k1 { 
+  width: 24px; 
+  height: 24px;
+  max-width: 14px; 
+  max-height: 14px;
+  background-color: #333;
+  cursor: default; 
+  z-index: 1; 
+}
+.k1:hover { background-color: #333; }
+.k1:active { background-color: #333; }
+.k2 { 
+  width: 52px; 
+  height: 24px;
+  max-width: 42px; 
+  max-height: 12px;
+  background-color: #333;
+  cursor: default; 
+  z-index: 1; 
+}
+.k2:hover { background-color: #333; }
+.k2:active { background-color: #333; }
+.k3 { 
+  width: 71px; 
+  height: 24px;
+  max-width: 100px; 
+  max-height: 12px;
+  background-color: #333;
+  cursor: default; 
+  z-index: 1; 
+}
+.k3:hover { background-color: #333; }
+.k3:active { background-color: #333; }
 </style></head><body>
 <p><br>
 <div id=txt class="txt"></div>

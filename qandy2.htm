@@ -1,135 +1,7 @@
 <!DOCTYPE html>
 <html><head>
-<style>
-body { background-color: #333 }
-#cursor { background-color: #CCC; }
-.qpc { position: absolute; top: 0px; left: 0px; width: 160px; height: 24px;
-       padding-left: 0px; padding-right: 0px; align-items: center;
-       background-color: grey; z-index: 0; }
-.txt { 
-  position: absolute; 
-  left: 54px; 
-  top: 64px;  
-  width: 256px; 
-  height: 384px; 
-  z-index: 254;     
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  font-weight: normal;
-  color: #fff;
-  background-color: #000;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  padding: 4px;
-  line-height: 1.1;
-  box-sizing: border-box;
-  white-space: pre;
-  word-wrap: break-word;
-  display: block;
-  scrollbar-width: thin;
-  scrollbar-color: #0f0 #000;
-}
-
-#cursor {
-  display: inline-block;
-  background-color: #fff;
-  width: 8px;
-  height: 14px;
-  animation: blink 1s infinite;
-}
-
-@keyframes blink {
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
-
-.txt::-webkit-scrollbar { width: 14px; }
-.txt::-webkit-scrollbar-track { background: #000; }
-.txt::-webkit-scrollbar-thumb { background: #0f0; border-radius: 7px; }
-.txt::-webkit-scrollbar-thumb:hover { background: #0f0; }
-
-.ansi-black { color: #000; }
-.ansi-red { color: #f00; }
-.ansi-green { color: #0f0; }
-.ansi-yellow { color: #ff0; }
-.ansi-blue { color: #00f; }
-.ansi-magenta { color: #f0f; }
-.ansi-cyan { color: #0ff; }
-.ansi-white { color: #fff; }
-
-.ansi-bg-black { background-color: #000; }
-.ansi-bg-red { background-color: #f00; }
-.ansi-bg-green { background-color: #0f0; }
-.ansi-bg-yellow { background-color: #ff0; }
-.ansi-bg-blue { background-color: #00f; }
-.ansi-bg-magenta { background-color: #f0f; }
-.ansi-bg-cyan { background-color: #0ff; }
-.ansi-bg-white { background-color: #fff; }
-
-.ansi-bold { font-weight: bold; }
-.ansi-inverse { filter: invert(1); }
-
-.pop { position:absolute; top:260; left:190; z-index:250;
-       font-family: arial; font-size: 14px; weight: bold;
-       color: navy; background-color: #999; visibility:hidden;
-       text-align: center;
-       padding-top: 0px; padding-bottom: 0px;  
-       padding-right: 4px; padding-left: 4px; }
-.run { position: absolute; top: 0px; left: 0px; width: 106px; height: 18px;
-       font-family: courier; font-size: 14px; weight: bold; 
-       color: #000; background-color: #aaa; 
-       text-align: center; padding: 0px; padding-top: 4px; z-index: 2; }
-.tile { position: absolute; top: 0px; left: 0px; }
-.item { position: absolute; top: 0px; left: 0px; }
-.char { position: absolute; top: 0px; left: 0px; }
-
-.k1 { position: absolute; top: 0px; left: 0px; width: 30px; height: 30px;
-      padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 24px; max-height: 24px; margin: 0; padding: 4; 
-      display: flex; justify-content: center;  align-items: center;       
-      color: white; background-color: #222; text-align: center;
-      font-family: Arial; font-size: 14px; weight: bold;
-      cursor: pointer; z-index: 99; 
-      border: 1px solid #555; border-radius: 3px;
-      user-select: none; }
-.k1:hover { background-color: #444; }
-.k1:active { background-color: #666; }
-.k2 { position: absolute; top: 0px; left: 0px; width: 52px; height: 30px;
-      padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 52px; max-height: 24px; margin: 0; padding: 4;        
-      display: flex; justify-content: center;  align-items: center;      
-      color: white; background-color: #222; text-align: center;
-      font-family: Arial; font-size: 12px; weight: bold; 
-      cursor: pointer; z-index: 99; 
-      border: 1px solid #555; border-radius: 3px;
-      user-select: none; }
-.k2:hover { background-color: #444; }
-.k2:active { background-color: #666; }
-.k3 { position: absolute; top: 0px; left: 0px; width: 81px; height: 30px;
-      padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 81px; max-height: 24px; margin: 0; padding: 4;        
-      display: flex; justify-content: center;  align-items: center;      
-      color: white; background-color: #222; text-align: center;
-      font-family: Arial; font-size: 12px; weight: bold;
-      cursor: pointer; z-index: 99; 
-      border: 1px solid #555; border-radius: 3px;
-      user-select: none; }
-.k3:hover { background-color: #444; }
-.k3:active { background-color: #666; }
-.k4 { position: absolute; top: 0px; left: 0px; width: 109px; height: 30px;
-      padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 109px; max-height: 24px; margin: 0; padding: 4;        
-      display: flex; justify-content: center;  align-items: center;      
-      color: white; background-color: #888; text-align: center;
-      font-family: Arial; font-size: 12px; weight: bold;
-      cursor: pointer; z-index: 99; 
-      border: 1px solid #555; border-radius: 3px;
-      user-select: none; }
-.k4:hover { background-color: #aaa; }
-.k4:active { background-color: #666; }
-
-
-</style></head><body><p><br>
+<link rel="stylesheet" type="text/css" href="qandy.css">
+</head><body><p><br>
 <div id=txt class="txt"></div>
 <div id="pop" class="pop" onMouseOver='PopUpVis="visible";' onMouseOut='PopUpVis=PForce; PUV=setTimeout("document.getElementById(\"pop\").style.visibility=PopUpVis;",100);'></div>
 <div id=run class="run" align=center>qandy.js</div>
@@ -145,7 +17,40 @@ var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
 var keyon=1; // turn keyboard input on/off
 
+// Normal character mapping for lowercase (caps level 0)
+// User can edit these to customize keyboard layout
+var normalKeys = {
+  '1': '1', '2': '2', '3': '3', '4': '4', '5': '5',
+  '6': '6', '7': '7', '8': '8', '9': '9', '0': '0',
+  'q': 'q', 'w': 'w', 'e': 'e', 'r': 'r', 't': 't',
+  'y': 'y', 'u': 'u', 'i': 'i', 'o': 'o', 'p': 'p',
+  'a': 'a', 's': 's', 'd': 'd', 'f': 'f', 'g': 'g',
+  'h': 'h', 'j': 'j', 'k': 'k', 'l': 'l',
+  'z': 'z', 'x': 'x', 'c': 'c', 'v': 'v', 'b': 'b',
+  'n': 'n', 'm': 'm',
+  '[': '[', ']': ']', ';': ';', '\'': '\'',
+  ',': ',', '.': '.', '/': '/', '=': '=', '-': '-',
+  '\\': '\\', '`': '`'
+};
+
+// Shifted character mapping for uppercase and symbols (caps level 1)
+// User can edit these to customize shifted key behavior
+var shiftedKeys = {
+  '1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
+  '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+  'q': 'Q', 'w': 'W', 'e': 'E', 'r': 'R', 't': 'T',
+  'y': 'Y', 'u': 'U', 'i': 'I', 'o': 'O', 'p': 'P',
+  'a': 'A', 's': 'S', 'd': 'D', 'f': 'F', 'g': 'G',
+  'h': 'H', 'j': 'J', 'k': 'K', 'l': 'L',
+  'z': 'Z', 'x': 'X', 'c': 'C', 'v': 'V', 'b': 'B',
+  'n': 'N', 'm': 'M',
+  '[': '{', ']': '}', ';': ':', '\'': '"',
+  ',': '<', '.': '>', '/': '?', '=': '+', '-': '_',
+  '\\': '|', '`': '~'
+};
+
 // Extended graphic character mapping for caps level 2
+// User can edit these to customize extended characters for ASCII/ANSI art
 var extendedChars = {
   'q': '┌', 'w': '┬', 'e': '┐', 'r': '─', 't': '╔',
   'a': '├', 's': '┼', 'd': '┤', 'f': '│', 'g': '╠',
@@ -157,7 +62,8 @@ var extendedChars = {
   '5': '■', '6': '□', '7': '◆', '8': '○',
   '9': '★', '0': '☆', '[': '♠', ']': '♥',
   ';': '♦', '\'': '♣', ',': '✓', '.': '✗',
-  '/': '÷', '=': '×', '-': '±', ' ': '·'
+  '/': '÷', '=': '×', '-': '±', ' ': '·',
+  '\\': '¦', '`': '`'
 };
 var line=""; // input text line
 var cursorPos=0; // cursor position in input line for editing
@@ -206,10 +112,12 @@ var map="";
 
 // Keyboard data structure - array of key objects
 var keyboardData = [
-  // Row 0: ESC, RUN, DASH, EQUAL, BACK (y=446)
+  // Row 0: ESC, BACKTICK, BACKSLASH, DASH, EQUAL, BACK (y=446)
   {id:"esc", label:"ESC", keyCode:27, x:47, y:446, width:52},
-  {id:"dash", label:"-", keyCode:173, x:218, y:446, width:28},
-  {id:"equal", label:"=", keyCode:61, x:247, y:446, width:28},
+  {id:"backtick", label:"`", keyCode:192, x:103, y:446, width:28},
+  {id:"backslash", label:"\\", keyCode:220, x:132, y:446, width:28},
+  {id:"dash", label:"-", keyCode:173, x:189, y:446, width:28},
+  {id:"equal", label:"=", keyCode:61, x:218, y:446, width:28},
   {id:"back", label:"BACK", keyCode:8, x:275, y:446, width:52},
   // Row 1: Number keys 1-0 (y=480)
   {id:"n1", label:"1", keyCode:49, x:47, y:480, width:28},
@@ -465,7 +373,9 @@ function button(b) {
   case 190: if (shift||caps===1) { k="dot";   l=">"; } else if (caps===2) { k="dot"; l=extendedChars['.']; } else { k="."; l=k; } break;
   case 173: if (shift||caps===1) { k="dash";  l="_"; } else if (caps===2) { k="dash"; l=extendedChars['-']; } else { k="-"; l=k; } break;
   case 219: if (shift||caps===1) { k="open";  l="{"; } else if (caps===2) { k="open"; l=extendedChars['[']; } else { k="["; l=k; } break;
-  case 221: if (shift||caps===1) { k="close"; l="}"; } else if (caps===2) { k="close"; l=extendedChars[']']; } else { k="]"; l=k; } break;  
+  case 221: if (shift||caps===1) { k="close"; l="}"; } else if (caps===2) { k="close"; l=extendedChars[']']; } else { k="]"; l=k; } break;
+  case 192: if (shift||caps===1) { k="backtick"; l="~"; } else if (caps===2) { k="backtick"; l=extendedChars['`']; } else { k="`"; l=k; } break;
+  case 220: if (shift||caps===1) { k="backslash"; l="|"; } else if (caps===2) { k="backslash"; l=extendedChars['\\']; } else { k="\\"; l=k; } break;  
  }
  if (k==="esc") {
   if (mode==="txt") {
@@ -531,6 +441,8 @@ function button(b) {
     document.getElementById("comma").innerHTML = ",";
     document.getElementById("dot").innerHTML = ".";
     document.getElementById("dash").innerHTML = "-";
+    document.getElementById("backtick").innerHTML = "`";
+    document.getElementById("backslash").innerHTML = "\\";
     document.getElementById("caps").style.backgroundColor = "#222";
     document.getElementById("caps").style.color = "#fff";
    } else if (caps === 1) {
@@ -580,6 +492,8 @@ function button(b) {
     document.getElementById("comma").innerHTML = "<";
     document.getElementById("dot").innerHTML = ">";
     document.getElementById("dash").innerHTML = "_";
+    document.getElementById("backtick").innerHTML = "~";
+    document.getElementById("backslash").innerHTML = "|";
     document.getElementById("caps").style.backgroundColor = "#444";
     document.getElementById("caps").style.color = "#000";
    } else {
@@ -629,6 +543,8 @@ function button(b) {
     document.getElementById("comma").innerHTML = extendedChars[','];
     document.getElementById("dot").innerHTML = extendedChars['.'];
     document.getElementById("dash").innerHTML = extendedChars['-'];
+    document.getElementById("backtick").innerHTML = extendedChars['`'];
+    document.getElementById("backslash").innerHTML = extendedChars['\\'];
     document.getElementById("caps").style.backgroundColor = "#888";
     document.getElementById("caps").style.color = "#000";
    }

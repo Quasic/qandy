@@ -54,7 +54,7 @@ function ascii() {
   
   // Extended ASCII (128-255)
   print("\x1b[1;33mExtended ASCII (128-255):\x1b[0m\n");
-  for (let i = 128; i < 256; i++) {
+  for (let i = 160; i < 256; i++) {
     var char = String.fromCharCode(i);
     var hex = i.toString(16);
     if (hex.length === 1) hex = "0" + hex;
