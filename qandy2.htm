@@ -888,8 +888,11 @@ function updateDisplay() {
     let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
     
     // Calculate how many display lines we need
-    const charsPerLine = 29;
+    const charsPerLine = screenWidth;
     const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine));
+    
+    // Helper function to escape HTML characters
+    const escapeHtml = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
     
     // Render input across multiple wrapped lines
     for (let lineIndex = 0; lineIndex < numLines; lineIndex++) {
@@ -910,11 +913,11 @@ function updateDisplay() {
           if (charPos === cursorPos) {
             // This is the cursor position - invert colors
             lineHtml += '<span style="background-color: white; color: black;">' + 
-                        char.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;') + 
+                        escapeHtml(char) + 
                         '</span>';
           } else {
             // Normal character
-            lineHtml += char.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
+            lineHtml += escapeHtml(char);
           }
         } else if (charPos === cursorPos && charPos === cleanInput.length) {
           // Cursor is at the end of input (after last character)
