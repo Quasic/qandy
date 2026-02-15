@@ -226,6 +226,9 @@ function renderDialog() {
   }
 }
 
+// Message timer management
+var messageTimer = null;
+
 // Render status bar at bottom
 function renderStatusBar() {
   print("\x1b[47;30m"); // White background, black text
@@ -243,10 +246,14 @@ function renderStatusBar() {
   }
   print(status.substring(0, editorState.maxCols) + "\x1b[0m\n");
   
-  // Clear message after display
+  // Clear message after display with single timer
   if (editorState.message) {
-    setTimeout(function() {
+    if (messageTimer) {
+      clearTimeout(messageTimer);
+    }
+    messageTimer = setTimeout(function() {
       editorState.message = "";
+      messageTimer = null;
     }, 3000);
   }
 }
@@ -343,6 +350,8 @@ function runCode() {
     var code = editorState.lines.join("\n");
     cls();
     print("\x1b[1;32mExecuting code...\x1b[0m\n\n");
+    // Note: eval() is used here for the development environment
+    // This allows dynamic code execution in the emulator context
     eval(code);
   } catch (err) {
     print("\x1b[1;31mError: " + err.message + "\x1b[0m\n");
@@ -412,28 +421,27 @@ function handleDialogKey(k) {
 
 // Handle menu keyboard input
 function handleMenuKey(k) {
-  var key = k.toUpperCase();
-  
-  if (key === "\x1b") { // Escape
+  // Check for special keys first (don't uppercase these)
+  if (k === "\x1b") { // Escape
     closeMenu();
     renderEditor();
-  } else if (key === "\r" || key === "\n") { // Enter
+  } else if (k === "\r" || k === "\n") { // Enter
     var menu = menus[editorState.menuIndex];
     var action = menu.items[editorState.menuItemIndex].action;
     action();
-  } else if (key === "←" || key === "\x08") { // Left arrow or backspace
+  } else if (k === "←" || k === "\x08") { // Left arrow or backspace
     editorState.menuIndex = (editorState.menuIndex - 1 + menus.length) % menus.length;
     editorState.menuItemIndex = 0;
     renderEditor();
-  } else if (key === "→" || key === " ") { // Right arrow or space
+  } else if (k === "→" || k === " ") { // Right arrow or space
     editorState.menuIndex = (editorState.menuIndex + 1) % menus.length;
     editorState.menuItemIndex = 0;
     renderEditor();
-  } else if (key === "↑") { // Up arrow
+  } else if (k === "↑") { // Up arrow
     var menu = menus[editorState.menuIndex];
     editorState.menuItemIndex = (editorState.menuItemIndex - 1 + menu.items.length) % menu.items.length;
     renderEditor();
-  } else if (key === "↓") { // Down arrow
+  } else if (k === "↓") { // Down arrow
     var menu = menus[editorState.menuIndex];
     editorState.menuItemIndex = (editorState.menuItemIndex + 1) % menu.items.length;
     renderEditor();
@@ -442,10 +450,8 @@ function handleMenuKey(k) {
 
 // Handle edit mode keyboard input
 function handleEditKey(k) {
-  var key = k.toUpperCase();
-  
-  // F10 or Alt to open menu
-  if (k === "F10" || k === "\x1bOP" || key === "M") {
+  // Check for menu key first (uppercase M)
+  if (k.toUpperCase() === "M" && k.length === 1) {
     editorState.menuOpen = true;
     editorState.menuIndex = 0;
     editorState.menuItemIndex = 0;
@@ -453,8 +459,17 @@ function handleEditKey(k) {
     return;
   }
   
-  // Arrow keys
-  if (key === "↑") {
+  // F10 or Alt to open menu
+  if (k === "F10" || k === "\x1bOP") {
+    editorState.menuOpen = true;
+    editorState.menuIndex = 0;
+    editorState.menuItemIndex = 0;
+    renderEditor();
+    return;
+  }
+  
+  // Arrow keys - check before converting to uppercase
+  if (k === "↑") {
     if (editorState.cursorLine > 0) {
       editorState.cursorLine--;
       editorState.cursorCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine].length);
@@ -462,7 +477,7 @@ function handleEditKey(k) {
       renderEditor();
     }
     return;
-  } else if (key === "↓") {
+  } else if (k === "↓") {
     if (editorState.cursorLine < editorState.lines.length - 1) {
       editorState.cursorLine++;
       editorState.cursorCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine].length);
@@ -470,7 +485,7 @@ function handleEditKey(k) {
       renderEditor();
     }
     return;
-  } else if (key === "←" || k === "\x08") {
+  } else if (k === "←" || k === "\x08") {
     if (editorState.cursorCol > 0) {
       editorState.cursorCol--;
       renderEditor();
@@ -482,7 +497,7 @@ function handleEditKey(k) {
       renderEditor();
     }
     return;
-  } else if (key === "→") {
+  } else if (k === "→") {
     if (editorState.cursorCol < editorState.lines[editorState.cursorLine].length) {
       editorState.cursorCol++;
       renderEditor();
