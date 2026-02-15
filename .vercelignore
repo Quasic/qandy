@@ -1,0 +1,34 @@
+# Vercel ignore patterns
+# Since auto-deployment is disabled, this file helps maintain clean deployments if manual deployment is needed
+
+# Temporary files
+*~
+*.swp
+*.swo
+
+# Git directory
+.git
+.gitignore
+
+# Documentation (not needed for runtime)
+*.md
+ANSWER_FORM_FEED.md
+COMMAND_HISTORY.md
+COMMAND_HISTORY_SUMMARY.md
+COMMAND_HISTORY_TESTING.md
+FORM_FEED_IMPLEMENTATION.md
+FORM_FEED_QUICK_REF.md
+FORM_FEED_SUMMARY.md
+IMPLEMENTATION_SUMMARY.md
+PAGINATION_FEATURE.md
+PAGINATION_README.md
+PAGINATION_USER_GUIDE.md
+SYNTAX_ERROR_FIX.md
+VISUAL_GUIDE.md
+
+# Test files
+test-*.html
+*-test.js
+form-feed-quick-test.js
+form-feed-test.js
+command-history-demo.js
