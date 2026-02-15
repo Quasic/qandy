@@ -346,12 +346,18 @@ function press() {
  if (event.ctrlKey && event.key === 'c') {
   event.preventDefault();
   if (selectionStart !== -1 && selectionEnd !== -1) {
-   const selectedText = line.substring(
-    Math.min(selectionStart, selectionEnd), 
-    Math.max(selectionStart, selectionEnd)
-   );
+   const start = Math.min(selectionStart, selectionEnd);
+   const end = Math.max(selectionStart, selectionEnd);
+   const selectedText = line.substring(start, end);
    navigator.clipboard.writeText(selectedText).then(() => {
     print("\x1b[32mCopied to clipboard!\x1b[0m\n");
+   }).catch(err => {
+    print("\x1b[31mCopy failed\x1b[0m\n");
+   });
+  } else if (line.length > 0) {
+   // Copy entire line if no selection
+   navigator.clipboard.writeText(line).then(() => {
+    print("\x1b[32mCopied entire input to clipboard!\x1b[0m\n");
    }).catch(err => {
     print("\x1b[31mCopy failed\x1b[0m\n");
    });
@@ -685,13 +691,40 @@ function button(b) {
     selectionStart = -1;
     selectionEnd = -1;
    } else if (k === "delete") {
-    // Delete - delete character at cursor
-    if (cursorPos < line.length) {
+    // Check for Shift+Delete (cut operation)
+    if (shift && selectionStart !== -1 && selectionEnd !== -1) {
+     // Cut operation: copy then delete
+     const start = Math.min(selectionStart, selectionEnd);
+     const end = Math.max(selectionStart, selectionEnd);
+     const selectedText = line.substring(start, end);
+     
+     // Copy to clipboard
+     navigator.clipboard.writeText(selectedText).then(() => {
+      // Delete the selected text
+      line = line.substring(0, start) + line.substring(end);
+      cursorPos = start;
+      selectionStart = -1;
+      selectionEnd = -1;
+      updateDisplay();
+      print("\x1b[32mCut to clipboard!\x1b[0m\n");
+     }).catch(err => {
+      print("\x1b[31mCut failed\x1b[0m\n");
+     });
+     return; // Don't call updateDisplay again
+    }
+    // Delete selected text (without copy)
+    else if (selectionStart !== -1 && selectionEnd !== -1) {
+     const start = Math.min(selectionStart, selectionEnd);
+     const end = Math.max(selectionStart, selectionEnd);
+     line = line.substring(0, start) + line.substring(end);
+     cursorPos = start;
+     selectionStart = -1;
+     selectionEnd = -1;
+    }
+    // Normal delete - remove character at cursor position
+    else if (cursorPos < line.length) {
      line = line.substring(0, cursorPos) + line.substring(cursorPos + 1);
     }
-    // Clear selection
-    selectionStart = -1;
-    selectionEnd = -1;
    } else {
     if (k === "enter") {
      if (keyon) {
