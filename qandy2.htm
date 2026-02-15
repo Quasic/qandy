@@ -145,7 +145,40 @@ var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
 var keyon=1; // turn keyboard input on/off
 
+// Normal character mapping for lowercase (caps level 0)
+// User can edit these to customize keyboard layout
+var normalKeys = {
+  '1': '1', '2': '2', '3': '3', '4': '4', '5': '5',
+  '6': '6', '7': '7', '8': '8', '9': '9', '0': '0',
+  'q': 'q', 'w': 'w', 'e': 'e', 'r': 'r', 't': 't',
+  'y': 'y', 'u': 'u', 'i': 'i', 'o': 'o', 'p': 'p',
+  'a': 'a', 's': 's', 'd': 'd', 'f': 'f', 'g': 'g',
+  'h': 'h', 'j': 'j', 'k': 'k', 'l': 'l',
+  'z': 'z', 'x': 'x', 'c': 'c', 'v': 'v', 'b': 'b',
+  'n': 'n', 'm': 'm',
+  '[': '[', ']': ']', ';': ';', '\'': '\'',
+  ',': ',', '.': '.', '/': '/', '=': '=', '-': '-',
+  '\\': '\\', '`': '`'
+};
+
+// Shifted character mapping for uppercase and symbols (caps level 1)
+// User can edit these to customize shifted key behavior
+var shiftedKeys = {
+  '1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
+  '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+  'q': 'Q', 'w': 'W', 'e': 'E', 'r': 'R', 't': 'T',
+  'y': 'Y', 'u': 'U', 'i': 'I', 'o': 'O', 'p': 'P',
+  'a': 'A', 's': 'S', 'd': 'D', 'f': 'F', 'g': 'G',
+  'h': 'H', 'j': 'J', 'k': 'K', 'l': 'L',
+  'z': 'Z', 'x': 'X', 'c': 'C', 'v': 'V', 'b': 'B',
+  'n': 'N', 'm': 'M',
+  '[': '{', ']': '}', ';': ':', '\'': '"',
+  ',': '<', '.': '>', '/': '?', '=': '+', '-': '_',
+  '\\': '|', '`': '~'
+};
+
 // Extended graphic character mapping for caps level 2
+// User can edit these to customize extended characters for ASCII/ANSI art
 var extendedChars = {
   'q': '┌', 'w': '┬', 'e': '┐', 'r': '─', 't': '╔',
   'a': '├', 's': '┼', 'd': '┤', 'f': '│', 'g': '╠',
@@ -157,7 +190,8 @@ var extendedChars = {
   '5': '■', '6': '□', '7': '◆', '8': '○',
   '9': '★', '0': '☆', '[': '♠', ']': '♥',
   ';': '♦', '\'': '♣', ',': '✓', '.': '✗',
-  '/': '÷', '=': '×', '-': '±', ' ': '·'
+  '/': '÷', '=': '×', '-': '±', ' ': '·',
+  '\\': '¦', '`': '`'
 };
 var line=""; // input text line
 var cursorPos=0; // cursor position in input line for editing
@@ -206,10 +240,12 @@ var map="";
 
 // Keyboard data structure - array of key objects
 var keyboardData = [
-  // Row 0: ESC, RUN, DASH, EQUAL, BACK (y=446)
+  // Row 0: ESC, BACKTICK, BACKSLASH, DASH, EQUAL, BACK (y=446)
   {id:"esc", label:"ESC", keyCode:27, x:47, y:446, width:52},
-  {id:"dash", label:"-", keyCode:173, x:218, y:446, width:28},
-  {id:"equal", label:"=", keyCode:61, x:247, y:446, width:28},
+  {id:"backtick", label:"`", keyCode:192, x:103, y:446, width:28},
+  {id:"backslash", label:"\\", keyCode:220, x:132, y:446, width:28},
+  {id:"dash", label:"-", keyCode:173, x:189, y:446, width:28},
+  {id:"equal", label:"=", keyCode:61, x:218, y:446, width:28},
   {id:"back", label:"BACK", keyCode:8, x:275, y:446, width:52},
   // Row 1: Number keys 1-0 (y=480)
   {id:"n1", label:"1", keyCode:49, x:47, y:480, width:28},
@@ -465,7 +501,9 @@ function button(b) {
   case 190: if (shift||caps===1) { k="dot";   l=">"; } else if (caps===2) { k="dot"; l=extendedChars['.']; } else { k="."; l=k; } break;
   case 173: if (shift||caps===1) { k="dash";  l="_"; } else if (caps===2) { k="dash"; l=extendedChars['-']; } else { k="-"; l=k; } break;
   case 219: if (shift||caps===1) { k="open";  l="{"; } else if (caps===2) { k="open"; l=extendedChars['[']; } else { k="["; l=k; } break;
-  case 221: if (shift||caps===1) { k="close"; l="}"; } else if (caps===2) { k="close"; l=extendedChars[']']; } else { k="]"; l=k; } break;  
+  case 221: if (shift||caps===1) { k="close"; l="}"; } else if (caps===2) { k="close"; l=extendedChars[']']; } else { k="]"; l=k; } break;
+  case 192: if (shift||caps===1) { k="backtick"; l="~"; } else if (caps===2) { k="backtick"; l=extendedChars['`']; } else { k="`"; l=k; } break;
+  case 220: if (shift||caps===1) { k="backslash"; l="|"; } else if (caps===2) { k="backslash"; l=extendedChars['\\']; } else { k="\\"; l=k; } break;  
  }
  if (k==="esc") {
   if (mode==="txt") {
@@ -531,6 +569,8 @@ function button(b) {
     document.getElementById("comma").innerHTML = ",";
     document.getElementById("dot").innerHTML = ".";
     document.getElementById("dash").innerHTML = "-";
+    document.getElementById("backtick").innerHTML = "`";
+    document.getElementById("backslash").innerHTML = "\\";
     document.getElementById("caps").style.backgroundColor = "#222";
     document.getElementById("caps").style.color = "#fff";
    } else if (caps === 1) {
@@ -580,6 +620,8 @@ function button(b) {
     document.getElementById("comma").innerHTML = "<";
     document.getElementById("dot").innerHTML = ">";
     document.getElementById("dash").innerHTML = "_";
+    document.getElementById("backtick").innerHTML = "~";
+    document.getElementById("backslash").innerHTML = "|";
     document.getElementById("caps").style.backgroundColor = "#444";
     document.getElementById("caps").style.color = "#000";
    } else {
@@ -629,6 +671,8 @@ function button(b) {
     document.getElementById("comma").innerHTML = extendedChars[','];
     document.getElementById("dot").innerHTML = extendedChars['.'];
     document.getElementById("dash").innerHTML = extendedChars['-'];
+    document.getElementById("backtick").innerHTML = extendedChars['`'];
+    document.getElementById("backslash").innerHTML = extendedChars['\\'];
     document.getElementById("caps").style.backgroundColor = "#888";
     document.getElementById("caps").style.color = "#000";
    }
