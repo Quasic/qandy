@@ -88,10 +88,11 @@ function playNote(note, duration = 200) {
   note = note.toString().trim().toUpperCase();
   
   // If only a letter is provided (e.g., "C"), default to octave 4 (middle C)
-  if (note.length === 1 && note >= 'A' && note <= 'G') {
+  const validNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+  if (note.length === 1 && validNotes.indexOf(note) !== -1) {
     note = note + '4';
   } else if (note.length === 2 && (note[1] === '#' || note[1] === 'B')) {
-    // If note is like "C#" or "Db", default to octave 4
+    // If note is like "C#" or "DB" (flat after uppercase), default to octave 4
     note = note + '4';
   }
   
@@ -152,7 +153,7 @@ function beep(frequency = 800, duration = 200) {
 }
 
 function keydown(k) {
-  var key = k.toUpperCase();
+  const key = k.toUpperCase();
   
   if (key === "B") {
     print("\x1b[1;33mPlaying beep...\x1b[0m\n");
@@ -162,9 +163,9 @@ function keydown(k) {
   } else if (key === "N") {
     print("\x1b[1;33mPlaying C major scale (C4-C5)...\x1b[0m\n");
     // Play a C major scale with 300ms per note
-    var scale = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'];
-    var delay = 0;
-    for (var i = 0; i < scale.length; i++) {
+    const scale = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'];
+    let delay = 0;
+    for (let i = 0; i < scale.length; i++) {
       (function(note, waitTime) {
         setTimeout(function() {
           playNote(note, 300);
