@@ -87,34 +87,34 @@ body { background-color: #333 }
       padding-left: 0px; padding-right: 0px; align-items: center;
       max-width: 24px; max-height: 24px; margin: 0; padding: 4; 
       display: flex; justify-content: center;  align-items: center;       
-      color: white; background-color: #888; text-align: center;
+      color: white; background-color: #222; text-align: center;
       font-family: Arial; font-size: 14px; weight: bold;
       cursor: pointer; z-index: 99; 
       border: 1px solid #555; border-radius: 3px;
       user-select: none; }
-.k1:hover { background-color: #aaa; }
+.k1:hover { background-color: #444; }
 .k1:active { background-color: #666; }
 .k2 { position: absolute; top: 0px; left: 0px; width: 52px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
       max-width: 52px; max-height: 24px; margin: 0; padding: 4;        
       display: flex; justify-content: center;  align-items: center;      
-      color: white; background-color: #888; text-align: center;
+      color: white; background-color: #222; text-align: center;
       font-family: Arial; font-size: 12px; weight: bold; 
       cursor: pointer; z-index: 99; 
       border: 1px solid #555; border-radius: 3px;
       user-select: none; }
-.k2:hover { background-color: #aaa; }
+.k2:hover { background-color: #444; }
 .k2:active { background-color: #666; }
 .k3 { position: absolute; top: 0px; left: 0px; width: 81px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
       max-width: 81px; max-height: 24px; margin: 0; padding: 4;        
       display: flex; justify-content: center;  align-items: center;      
-      color: white; background-color: #888; text-align: center;
+      color: white; background-color: #222; text-align: center;
       font-family: Arial; font-size: 12px; weight: bold;
       cursor: pointer; z-index: 99; 
       border: 1px solid #555; border-radius: 3px;
       user-select: none; }
-.k3:hover { background-color: #aaa; }
+.k3:hover { background-color: #444; }
 .k3:active { background-color: #666; }
 .k4 { position: absolute; top: 0px; left: 0px; width: 109px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
@@ -185,7 +185,7 @@ var screenHeight = 25;
 var paginationEnabled = true;  // Enable/disable pagination feature
 var paginationPaused = false;  // Is print() currently paused?
 var paginationBuffer = [];     // Queued text waiting to be printed
-var paginationLinesBeforePause = 20;  // Lines to show before pausing
+var paginationLinesBeforePause = 22;  // Lines to show before pausing
 
 var styleBuffer = [];
 var currentStyle = {
@@ -245,29 +245,31 @@ var keyboardData = [
   {id:"l", label:"l", keyCode:76, x:275, y:542, width:28},
   {id:"quote", label:"'", keyCode:222, x:303, y:542, width:28},
   // Row 4: CAPS, ZXCV (y=573)
-  {id:"caps", label:"CAPS", keyCode:20, x:47, y:573, width:52},
-  {id:"z", label:"z", keyCode:90, x:103, y:573, width:28},
-  {id:"x", label:"x", keyCode:88, x:132, y:573, width:28},
-  {id:"c", label:"c", keyCode:67, x:160, y:573, width:28},
-  {id:"v", label:"v", keyCode:86, x:189, y:573, width:28},
-  {id:"b", label:"b", keyCode:66, x:218, y:573, width:28},
-  {id:"n", label:"n", keyCode:78, x:247, y:573, width:28},
-  {id:"m", label:"m", keyCode:77, x:275, y:573, width:28},
-  {id:"enter", label:"ENTER", keyCode:13, x:303, y:573, width:52},
+  {id:"z", label:"z", keyCode:90, x:47, y:573, width:28},
+  {id:"x", label:"x", keyCode:88, x:75, y:573, width:28},
+  {id:"c", label:"c", keyCode:67, x:103, y:573, width:28},
+  {id:"v", label:"v", keyCode:86, x:132, y:573, width:28},
+  {id:"b", label:"b", keyCode:66, x:160, y:573, width:28},
+  {id:"n", label:"n", keyCode:78, x:189, y:573, width:28},
+  {id:"m", label:"m", keyCode:77, x:218, y:573, width:28},
+  {id:"colon", label:";", keyCode:59, x:247, y:573, width:28},
+  {id:"open", label:"[", keyCode:219, x:275, y:573, width:28},
+  {id:"close", label:"]", keyCode:221, x:303, y:573, width:28},
+
   // Row 5: Special keys (y=604)
-  {id:"open", label:"[", keyCode:219, x:47, y:604, width:28},
-  {id:"close", label:"]", keyCode:221, x:75, y:604, width:28},
-  {id:"colon", label:";", keyCode:59, x:103, y:604, width:28},
-  {id:"space", label:"SPACE", keyCode:32, x:132, y:604, width:109},
-  {id:"comma", label:",", keyCode:188, x:247, y:604, width:28},
-  {id:"dot", label:".", keyCode:190, x:275, y:604, width:28},
-  {id:"slash", label:"/", keyCode:191, x:303, y:604, width:28}
+    {id:"caps", label:"CAPS", keyCode:20, x:47, y:604, width:52},
+  {id:"space", label:"SPACE", keyCode:32, x:103, y:604, width:81},
+      {id:"comma", label:",", keyCode:188, x:189, y:604, width:28},
+        {id:"dot", label:".", keyCode:190, x:218, y:604, width:28},
+      {id:"slash", label:"/", keyCode:191, x:247, y:604, width:28},
+  {id:"enter", label:"ENTER", keyCode:13, x:275, y:604, width:52}
 ];
 
-var pop4="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9cKHRUjLyS5OncAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAC5JREFUeNrtzkEBAAAEBDD0z6nGieGzJVgn2Xo09UxAQEBAQEBAQEBAQEBAQOAAuq4EI/9axwQAAAAASUVORK5CYII=";
-var k64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABsAAAAaCAYAAABGiCfwAAAACXBIWXMAAAsSAAALEgHS3X78AAAAKElEQVRIie3NMQEAAAgDILV/51nBywsK0Enqy7xNMplMJpPJZDLZ0QI7tAMxEF7bywAAAABJRU5ErkJggg==";
-var l64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAAYCAYAAAC1Ft6mAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAOklEQVRYhe3PgQkAIRDAsPf33/lcQrBIMkG7ZuZ7yX874DRDdYbqDNUZqjNUZ6jOUJ2hOkN1huoM1W10mgMt7zY1rwAAAABJRU5ErkJggg==";
-var m64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAG0AAAAYCAYAAADwF3MkAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAVUlEQVRoge3RwQkAIBDAMHX/nc8ZfEkhmaDQPTOLlvM7gHemBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWdAFuuAMtk7qVEgAAAABJRU5ErkJggg==";
+// safe to delete these?
+//var pop4="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9cKHRUjLyS5OncAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAC5JREFUeNrtzkEBAAAEBDD0z6nGieGzJVgn2Xo09UxAQEBAQEBAQEBAQEBAQOAAuq4EI/9axwQAAAAASUVORK5CYII=";
+//var k64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABsAAAAaCAYAAABGiCfwAAAACXBIWXMAAAsSAAALEgHS3X78AAAAKElEQVRIie3NMQEAAAgDILV/51nBywsK0Enqy7xNMplMJpPJZDLZ0QI7tAMxEF7bywAAAABJRU5ErkJggg==";
+//var l64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAAYCAYAAAC1Ft6mAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAOklEQVRYhe3PgQkAIRDAsPf33/lcQrBIMkG7ZuZ7yX874DRDdYbqDNUZqjNUZ6jOUJ2hOkN1huoM1W10mgMt7zY1rwAAAABJRU5ErkJggg==";
+//var m64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAG0AAAAYCAYAAADwF3MkAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAVUlEQVRoge3RwQkAIBDAMHX/nc8ZfEkhmaDQPTOLlvM7gHemBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWdAFuuAMtk7qVEgAAAABJRU5ErkJggg==";
 
 img=document.createElement('img');
 img.id="qpc"; img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAMklEQVRYhe3OMQEAMAjEwKei2wHxRQbLxUCu3u2fxc7mHAAAAAAAAAAAAAAAAAAAIEkGzIgCpxq6s7YAAAAASUVORK5CYII="; 
@@ -529,7 +531,7 @@ function button(b) {
     document.getElementById("comma").innerHTML = ",";
     document.getElementById("dot").innerHTML = ".";
     document.getElementById("dash").innerHTML = "-";
-    document.getElementById("caps").style.backgroundColor = "#888";
+    document.getElementById("caps").style.backgroundColor = "#222";
     document.getElementById("caps").style.color = "#fff";
    } else if (caps === 1) {
     // Uppercase
@@ -578,7 +580,7 @@ function button(b) {
     document.getElementById("comma").innerHTML = "<";
     document.getElementById("dot").innerHTML = ">";
     document.getElementById("dash").innerHTML = "_";
-    document.getElementById("caps").style.backgroundColor = "#fff";
+    document.getElementById("caps").style.backgroundColor = "#444";
     document.getElementById("caps").style.color = "#000";
    } else {
     // Extended graphics (caps === 2)
@@ -627,8 +629,8 @@ function button(b) {
     document.getElementById("comma").innerHTML = extendedChars[','];
     document.getElementById("dot").innerHTML = extendedChars['.'];
     document.getElementById("dash").innerHTML = extendedChars['-'];
-    document.getElementById("caps").style.backgroundColor = "#2d7a2d";
-    document.getElementById("caps").style.color = "#fff";
+    document.getElementById("caps").style.backgroundColor = "#888";
+    document.getElementById("caps").style.color = "#000";
    }
   } else {
    // Handle arrow key cursor movement
@@ -1190,7 +1192,6 @@ codes: {
 
 function showFiles() {
   print("\n");
-  print("\x1b[1;36mBUILT-IN PROGRAMS:\x1b[0m\n");
   print("ansi-demo.js\n");
   print("ansi-edit.js\n");
   print("ascii.js\n");
