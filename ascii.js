@@ -38,7 +38,7 @@ function ascii() {
     if ((i + 1) % 3 === 0) print("\n");
     else print("  ");
   }
-  print("\n\n");
+  print("\n\f\n");
   // Printable ASCII (32-127)
   print("\x1b[1;33mPrintable ASCII:\x1b[0m\n");
   for (let i = 32; i < 128; i++) {
@@ -50,7 +50,7 @@ function ascii() {
     if ((i - 31) % 5 === 0) print("\n");
     else print(" ");
   }
-  print("\n\n");
+  print("\n\l\n");
   
   // Extended ASCII (128-255)
   print("\x1b[1;33mExtended ASCII (128-255):\x1b[0m\n");
@@ -63,7 +63,6 @@ function ascii() {
     else print(" ");
   }
   
-  print("\n\x1b[32mPress (A) for All, (N) for Nice, (Q) to Quit\x1b[0m\n");
   keyon = 1;
 }
 

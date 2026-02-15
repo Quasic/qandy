@@ -650,7 +650,7 @@ function button(b) {
 function executeCode(code) {
  try {
   const result=eval(code);
-  if (result !== undefined && typeof result !== 'function') {
+  if (result !== undefined) {
    print(String(result)+"<br>");
   }
   return true;
