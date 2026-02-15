@@ -144,6 +144,7 @@ var shift=0; // shift key pressed
 var keyon=1; // turn keyboard input on/off
 var line=""; // input text line
 var cursorPos=0; // cursor position in input line for editing
+var inputScrollPos=0; // starting position of visible input window
 
 var screenBuffer = [];
 var cursorX = 0;
@@ -342,6 +343,8 @@ function button(b) {
   case 38: k="up"; break;
   case 39: k="right"; break;
   case 40: k="down"; break;
+  case 36: k="home"; break;
+  case 35: k="end"; break;
   case 27: k="esc"; break;
   case 13: k="enter"; break;
   case  8: k="back"; break;
@@ -463,6 +466,10 @@ function button(b) {
     if (cursorPos < line.length) {
      cursorPos++;
     }
+   } else if (k === "home") {
+    cursorPos = 0;
+   } else if (k === "end") {
+    cursorPos = line.length;
    } else if (k === "back") {
     // Backspace - delete character before cursor
     if (cursorPos > 0) {
@@ -478,6 +485,7 @@ function button(b) {
        input(line);
        line = "";
        cursorPos = 0;
+       inputScrollPos = 0;
        print("");
       } else {
        // OS command mode
@@ -496,15 +504,18 @@ function button(b) {
         document.head.appendChild(prg);
         line = "";
         cursorPos = 0;
+        inputScrollPos = 0;
        } else if (line.substr(0, 3) === "cls") {
         initScreen();
         line = "";
         cursorPos = 0;
+        inputScrollPos = 0;
        } else {
         // Execute command/code
         executeCode(line);
         line = "";
         cursorPos = 0;
+        inputScrollPos = 0;
        }
       }
      }
@@ -869,12 +880,28 @@ function updateDisplay() {
   
   if (keyon) {
     let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
-    // Insert cursor at cursorPos
-    let beforeCursor = cleanInput.substring(0, cursorPos)
+    
+    // Calculate input scroll position to keep cursor visible
+    if (cursorPos < inputScrollPos) {
+      // Cursor moved before visible window, scroll back
+      inputScrollPos = cursorPos;
+    } else if (cursorPos > inputScrollPos + screenWidth - 1) {
+      // Cursor moved past visible window, scroll forward
+      inputScrollPos = cursorPos - screenWidth + 1;
+    }
+    
+    // Extract the visible window of the input
+    let visibleInput = cleanInput.substring(inputScrollPos, inputScrollPos + screenWidth);
+    
+    // Calculate cursor position within the visible window
+    let visibleCursorPos = cursorPos - inputScrollPos;
+    
+    // Insert cursor at the correct position in visible window
+    let beforeCursor = visibleInput.substring(0, visibleCursorPos)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
-    let afterCursor = cleanInput.substring(cursorPos)
+    let afterCursor = visibleInput.substring(visibleCursorPos)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
