@@ -78,26 +78,103 @@ if (Types=="C") {
 }
 
 function DrawMap() {
- out="<table cellpadding=0 cellspacing=0 border=1>";
- for (y1=65;y1<75;y1++) {
-  out=out+"<tr>";
-  for (x1=97;x1<123;x1++) {
-   out=out+"<td>";
-   PMap=String.fromCharCode(y1)+String.fromCharCode(x1);
-   if (maps[PMap]) {} else { maps[PMap]="UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUa.."; }
-   for (y2=0; y2<mapy; y2++) {
-    for (x2=0; x2<mapx; x2++) {
-     a=maps[PMap].substring(((y2*(mapx+1))+x2)*2,(((y2*(mapx+1))+x2)*2)+2);
-     out=out+"<img src=\"m/"+a+".png\" height=4 width=4>";
-    }
-    out=out+"<br>";
+ // Clear the page body and add loading message
+ document.body.innerHTML = '<center><div style="color:white; padding: 20px;">Loading world map...</div><div id="mapContainer"></div></center>';
+ 
+ // Create canvas element for efficient rendering
+ var canvas = document.createElement('canvas');
+ var totalWidth = 26 * mapx * 4; // 26 map sections horizontally × 7 tiles × 4 pixels
+ var totalHeight = 10 * mapy * 4; // 10 map sections vertically × 11 tiles × 4 pixels
+ canvas.width = totalWidth;
+ canvas.height = totalHeight;
+ canvas.style.border = '1px solid white';
+ var ctx = canvas.getContext('2d');
+ 
+ // Cache for loaded images
+ var imageCache = {};
+ var imagesToLoad = [];
+ var imagesLoaded = 0;
+ 
+ // First pass: collect all unique tile codes
+ var uniqueTiles = {};
+ for (var y1=65; y1<75; y1++) {
+  for (var x1=97; x1<123; x1++) {
+   var PMap = String.fromCharCode(y1) + String.fromCharCode(x1);
+   if (!maps[PMap]) { 
+    maps[PMap] = "UaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUaUa.."; 
    }
-   out=out+"</td>";
+   for (var y2=0; y2<mapy; y2++) {
+    for (var x2=0; x2<mapx; x2++) {
+     var a = maps[PMap].substring(((y2*(mapx+1))+x2)*2, (((y2*(mapx+1))+x2)*2)+2);
+     if (a && a !== '..' && !uniqueTiles[a]) {
+      uniqueTiles[a] = true;
+      imagesToLoad.push(a);
+     }
+    }
+   }
   }
-  out=out+"</tr>";
  }
- out=out+"</table>";
- document.write(out);
+ 
+ // Update loading message
+ document.body.firstChild.firstChild.innerHTML = 'Loading world map (' + imagesToLoad.length + ' unique tiles)...';
+ 
+ // Load all unique images
+ var totalImages = imagesToLoad.length;
+ if (totalImages === 0) {
+  drawAllTiles();
+  return;
+ }
+ 
+ for (var i = 0; i < imagesToLoad.length; i++) {
+  var tileCode = imagesToLoad[i];
+  var img = new Image();
+  img.onload = function() {
+   imagesLoaded++;
+   if (imagesLoaded === totalImages) {
+    drawAllTiles();
+   }
+  };
+  img.onerror = function() {
+   imagesLoaded++;
+   if (imagesLoaded === totalImages) {
+    drawAllTiles();
+   }
+  };
+  imageCache[tileCode] = img;
+  img.src = "m/" + tileCode + ".png";
+ }
+ 
+ // Draw all tiles once images are loaded
+ function drawAllTiles() {
+  for (var y1=65; y1<75; y1++) {
+   for (var x1=97; x1<123; x1++) {
+    var PMap = String.fromCharCode(y1) + String.fromCharCode(x1);
+    var sectionX = (x1 - 97) * mapx * 4;
+    var sectionY = (y1 - 65) * mapy * 4;
+    
+    for (var y2=0; y2<mapy; y2++) {
+     for (var x2=0; x2<mapx; x2++) {
+      var a = maps[PMap].substring(((y2*(mapx+1))+x2)*2, (((y2*(mapx+1))+x2)*2)+2);
+      if (a && a !== '..' && imageCache[a] && imageCache[a].complete) {
+       var pixelX = sectionX + (x2 * 4);
+       var pixelY = sectionY + (y2 * 4);
+       ctx.drawImage(imageCache[a], pixelX, pixelY, 4, 4);
+      }
+     }
+    }
+   }
+  }
+  
+  // Add canvas to page
+  var container = document.getElementById('mapContainer');
+  container.innerHTML = '';
+  container.appendChild(canvas);
+  
+  // Add back button
+  var backBtn = document.createElement('div');
+  backBtn.innerHTML = '<p><a href="qandy-tileset.htm">Back to Tileset</a></p>';
+  container.appendChild(backBtn);
+ }
 }
 function ImgError(e) {
  e.onerror=null; e.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABsAAAAaCAYAAABGiCfwAAAACXBIWXMAAAsSAAALEgHS3X78AAAAKElEQVRIie3NMQEAAAgDILV/51nBywsK0Enqy7xNMplMJpPJZDLZ0QI7tAMxEF7bywAAAABJRU5ErkJggg=='; 
