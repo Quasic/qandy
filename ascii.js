@@ -11,43 +11,44 @@ var controlCharNames = {
 };
 
 cls();
-print("\x1b[1;36m");
-print("═══════════════════════════════════\n");
-print("  QANDY ASCII CHARACTER DISPLAY\n");
-print("═══════════════════════════════════\x1b[0m\n");
 print("\n");
-print("ascii() to display all ASCII Characters\n\n");
-print("ansi() to display graphic characters\n\n");
-print("alpha() to display alpha-numeric characers\n\n");
+print("ASCII Character Chart:\n");
+print("\n");
+
+ascii();
+
+//print("ascii() to display all ASCII Characters\n\n");
+//print("ansi() to display graphic characters\n\n");
+//print("alpha() to display alpha-numeric characers\n\n");
+
 keyon = 1;
 
 function ascii() {
   cls();
-  print("\x1b[1;36m");
-  print("EXTENDED ASCII CHARACTER TABLE (0-255)\n");
-  print("═══════════════════════════════════\x1b[0m\n\n");
-  
+  print("\x1b[1;36m\n");
+  print("ASCII Character Table:\n\n");
+    
   // Control characters (0-31)
   print("\x1b[1;33mControl Characters (0-31):\x1b[0m\n");
-  for (let i = 0; i < 32; i++) {
-    var name = controlCharNames[i] || "?";
-    var hex = i.toString(16);
-    if (hex.length === 1) hex = "0" + hex;
-    print(String(i).padStart(3) + " (0x" + hex + ") " + name);
-    if ((i + 1) % 4 === 0) print("\n");
+  for (i=0; i<32; i++) {
+    var name=controlCharNames[i] || "?";
+    var hex=i.toString(16);
+    if (hex.length===1) hex="0"+hex;
+    print(String(i).padStart(3)+" "+name);
+    if ((i + 1) % 3 === 0) print("\n");
     else print("  ");
   }
   print("\n\n");
-  
   // Printable ASCII (32-127)
-  print("\x1b[1;33mPrintable ASCII (32-127):\x1b[0m\n");
+  print("\x1b[1;33mPrintable ASCII:\x1b[0m\n");
   for (let i = 32; i < 128; i++) {
     var char = String.fromCharCode(i);
     var hex = i.toString(16);
-    if (hex.length === 1) hex = "0" + hex;
-    print(String(i).padStart(3) + " (0x" + hex + ") " + char);
-    if ((i - 31) % 8 === 0) print("\n");
-    else print("  ");
+    if (hex.length === 1) hex="0"+hex;
+    //print(String(i).padStart(3) + " (0x" + hex + ") " + char);
+    print(String(i).padStart(3) +" "+char);
+    if ((i - 31) % 5 === 0) print("\n");
+    else print(" ");
   }
   print("\n\n");
   
@@ -57,9 +58,9 @@ function ascii() {
     var char = String.fromCharCode(i);
     var hex = i.toString(16);
     if (hex.length === 1) hex = "0" + hex;
-    print(String(i).padStart(3) + " (0x" + hex + ") " + char);
-    if ((i - 127) % 8 === 0) print("\n");
-    else print("  ");
+    print(String(i).padStart(3) +" "+char);
+    if ((i - 127) % 5 === 0) print("\n");
+    else print(" ");
   }
   
   print("\n\x1b[32mPress (A) for All, (N) for Nice, (Q) to Quit\x1b[0m\n");
@@ -101,46 +102,19 @@ function ansi() {
   keyon = 1;
 }
 
-function alpha() {
-  cls();
-  print("\x1b[1;36m");
-  print("ALPHA-NUMERIC CHARACTERS\n");
-  print("═══════════════════════════════════\x1b[0m\n\n");
-  
-  print("\x1b[1;33mUppercase Letters (A-Z):\x1b[0m\n");
-  for (let i = 65; i <= 90; i++) {
-    print(String.fromCharCode(i) + " ");
-    if ((i - 64) % 13 === 0) print("\n");
-  }
-  print("\n\n");
-  
-  print("\x1b[1;33mLowercase Letters (a-z):\x1b[0m\n");
-  for (let i = 97; i <= 122; i++) {
-    print(String.fromCharCode(i) + " ");
-    if ((i - 96) % 13 === 0) print("\n");
-  }
-  print("\n\n");
-  
-  print("\x1b[1;33mDigits (0-9):\x1b[0m\n");
-  for (let i = 48; i <= 57; i++) {
-    print(String.fromCharCode(i) + " ");
-  }
-  print("\n\n");
-  
-  print("Use ascii() ansi() or alpha() to display different character sets\n");
-  keyon = 1;
-}
-
 function keydown(k) {
   var key = k.toUpperCase();
   
   if (key === "A") {
-    ascii();
+    displayAll256();
   } else if (key === "N") {
-    ansi();
+    displayNiceCharacters();
   } else if (key === "Q") {
     cls();
     keyon = 1;
     print("Returned to input mode\n");
   }
 }
+
+// Start the script
+showASCIIMenu();
