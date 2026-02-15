@@ -139,9 +139,24 @@ var run="";
 var txt="";
 var mode="txt"; // gfx or txt display
 
-var caps=0;  // turns caps lock on/off
+var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
 var keyon=1; // turn keyboard input on/off
+
+// Extended graphic character mapping for caps level 2
+var extendedChars = {
+  'q': '┌', 'w': '─', 'e': '┬', 'r': '─', 't': '┐',
+  'a': '├', 's': '─', 'd': '┼', 'f': '─', 'g': '┤',
+  'z': '└', 'x': '─', 'c': '┴', 'v': '─', 'b': '┘',
+  'y': '│', 'u': '╔', 'i': '═', 'o': '╗',
+  'h': '║', 'j': '╠', 'k': '╬', 'l': '╣',
+  'n': '╚', 'm': '╝',
+  'p': '╦', '1': '↑', '2': '↓', '3': '←', '4': '→',
+  '5': '■', '6': '□', '7': '●', '8': '○',
+  '9': '★', '0': '☆', '[': '♠', ']': '♥',
+  ';': '♦', '\'': '♣', ',': '✓', '.': '✗',
+  '/': '÷', '=': '×', '-': '±', ' ': '·'
+};
 var line=""; // input text line
 var cursorPos=0; // cursor position in input line for editing
 var inputScrollPos=0; // starting position of visible input window
@@ -383,52 +398,52 @@ function button(b) {
   case  8: k="back"; break;
   case 46: k="delete"; break;
   case 20: k="caps"; break;
-  case 49: if (shift||caps) { k="!"; l=k; } else { k="1"; l=k; } break;  
-  case 50: if (shift||caps) { k="@"; l=k; } else { k="2"; l=k; } break;  
-  case 51: if (shift||caps) { k="#"; l=k; } else { k="3"; l=k; } break;  
-  case 52: if (shift||caps) { k="$"; l=k; } else { k="4"; l=k; } break;  
-  case 53: if (shift||caps) { k="%"; l=k; } else { k="5"; l=k; } break;  
-  case 54: if (shift||caps) { k="^"; l=k; } else { k="6"; l=k; } break;  
-  case 55: if (shift||caps) { k="&"; l=k; } else { k="7"; l=k; } break;
-  case 56: if (shift||caps) { k="*"; l=k; } else { k="8"; l=k; } break;
-  case 57: if (shift||caps) { k="("; l=k; } else { k="9"; l=k; } break;
-  case 48: if (shift||caps) { k=")"; l=k; } else { k="0"; l=k; } break;
-  case 81: if (shift||caps) { k="Q"; l=k; } else { k="q"; l=k; } break; 
-  case 87: if (shift||caps) { k="W"; l=k; } else { k="w"; l=k; } break; 
-  case 69: if (shift||caps) { k="E"; l=k; } else { k="e"; l=k; } break; 
-  case 82: if (shift||caps) { k="R"; l=k; } else { k="r"; l=k; } break; 
-  case 84: if (shift||caps) { k="T"; l=k; } else { k="t"; l=k; } break; 
-  case 89: if (shift||caps) { k="Y"; l=k; } else { k="y"; l=k; } break; 
-  case 85: if (shift||caps) { k="U"; l=k; } else { k="u"; l=k; } break; 
-  case 73: if (shift||caps) { k="I"; l=k; } else { k="i"; l=k; } break; 
-  case 79: if (shift||caps) { k="O"; l=k; } else { k="o"; l=k; } break; 
-  case 80: if (shift||caps) { k="P"; l=k; } else { k="p"; l=k; } break; 
-  case 65: if (shift||caps) { k="A"; l=k; } else { k="a"; l=k; } break; 
-  case 83: if (shift||caps) { k="S"; l=k; } else { k="s"; l=k; } break; 
-  case 68: if (shift||caps) { k="D"; l=k; } else { k="d"; l=k; } break; 
-  case 70: if (shift||caps) { k="F"; l=k; } else { k="f"; l=k; } break; 
-  case 71: if (shift||caps) { k="G"; l=k; } else { k="g"; l=k; } break; 
-  case 72: if (shift||caps) { k="H"; l=k; } else { k="h"; l=k; } break; 
-  case 74: if (shift||caps) { k="J"; l=k; } else { k="j"; l=k; } break; 
-  case 75: if (shift||caps) { k="K"; l=k; } else { k="k"; l=k; } break; 
-  case 76: if (shift||caps) { k="L"; l=k; } else { k="l"; l=k; } break; 
-  case 90: if (shift||caps) { k="Z"; l=k; } else { k="z"; l=k; } break; 
-  case 88: if (shift||caps) { k="X"; l=k; } else { k="x"; l=k; } break; 
-  case 67: if (shift||caps) { k="C"; l=k; } else { k="c"; l=k; } break; 
-  case 86: if (shift||caps) { k="V"; l=k; } else { k="v"; l=k; } break; 
-  case 66: if (shift||caps) { k="B"; l=k; } else { k="b"; l=k; } break; 
-  case 78: if (shift||caps) { k="N"; l=k; } else { k="n"; l=k; } break;  
-  case 77: if (shift||caps) { k="M"; l=k; } else { k="m"; l=k; } break;
-  case  61: if (shift||caps) { k="equal"; l="+"; } else { k="="; l=k; } break; 
-  case 191: if (shift||caps) { k="slash"; l="?"; } else { k="/"; l=k; } break; 
-  case  59: if (shift||caps) { k="colon"; l=":"; } else { k=";"; l=k; } break; 
-  case 222: if (shift||caps) { k="quote"; l="\""; } else { k="\'"; l=k; } break; 
-  case  32: if (shift||caps) { k="space"; l=" "; } else { k=" "; l=k; } break;
-  case 188: if (shift||caps) { k="comma"; l="<"; } else { k=","; l=k; } break;
-  case 190: if (shift||caps) { k="dot";   l=">"; } else { k="."; l=k; } break;
-  case 173: if (shift||caps) { k="dash";  l="_"; } else { k="-"; l=k; } break;
-  case 219: if (shift||caps) { k="open";  l="{"; } else { k="["; l=k; } break;
-  case 221: if (shift||caps) { k="close"; l="}"; } else { k="]"; l=k; } break;  
+  case 49: if (shift||caps===1) { k="!"; l=k; } else if (caps===2) { l=extendedChars['1']; k=l; } else { k="1"; l=k; } break;  
+  case 50: if (shift||caps===1) { k="@"; l=k; } else if (caps===2) { l=extendedChars['2']; k=l; } else { k="2"; l=k; } break;  
+  case 51: if (shift||caps===1) { k="#"; l=k; } else if (caps===2) { l=extendedChars['3']; k=l; } else { k="3"; l=k; } break;  
+  case 52: if (shift||caps===1) { k="$"; l=k; } else if (caps===2) { l=extendedChars['4']; k=l; } else { k="4"; l=k; } break;  
+  case 53: if (shift||caps===1) { k="%"; l=k; } else if (caps===2) { l=extendedChars['5']; k=l; } else { k="5"; l=k; } break;  
+  case 54: if (shift||caps===1) { k="^"; l=k; } else if (caps===2) { l=extendedChars['6']; k=l; } else { k="6"; l=k; } break;  
+  case 55: if (shift||caps===1) { k="&"; l=k; } else if (caps===2) { l=extendedChars['7']; k=l; } else { k="7"; l=k; } break;
+  case 56: if (shift||caps===1) { k="*"; l=k; } else if (caps===2) { l=extendedChars['8']; k=l; } else { k="8"; l=k; } break;
+  case 57: if (shift||caps===1) { k="("; l=k; } else if (caps===2) { l=extendedChars['9']; k=l; } else { k="9"; l=k; } break;
+  case 48: if (shift||caps===1) { k=")"; l=k; } else if (caps===2) { l=extendedChars['0']; k=l; } else { k="0"; l=k; } break;
+  case 81: if (shift||caps===1) { k="Q"; l=k; } else if (caps===2) { l=extendedChars['q']; k=l; } else { k="q"; l=k; } break; 
+  case 87: if (shift||caps===1) { k="W"; l=k; } else if (caps===2) { l=extendedChars['w']; k=l; } else { k="w"; l=k; } break; 
+  case 69: if (shift||caps===1) { k="E"; l=k; } else if (caps===2) { l=extendedChars['e']; k=l; } else { k="e"; l=k; } break; 
+  case 82: if (shift||caps===1) { k="R"; l=k; } else if (caps===2) { l=extendedChars['r']; k=l; } else { k="r"; l=k; } break; 
+  case 84: if (shift||caps===1) { k="T"; l=k; } else if (caps===2) { l=extendedChars['t']; k=l; } else { k="t"; l=k; } break; 
+  case 89: if (shift||caps===1) { k="Y"; l=k; } else if (caps===2) { l=extendedChars['y']; k=l; } else { k="y"; l=k; } break; 
+  case 85: if (shift||caps===1) { k="U"; l=k; } else if (caps===2) { l=extendedChars['u']; k=l; } else { k="u"; l=k; } break; 
+  case 73: if (shift||caps===1) { k="I"; l=k; } else if (caps===2) { l=extendedChars['i']; k=l; } else { k="i"; l=k; } break; 
+  case 79: if (shift||caps===1) { k="O"; l=k; } else if (caps===2) { l=extendedChars['o']; k=l; } else { k="o"; l=k; } break; 
+  case 80: if (shift||caps===1) { k="P"; l=k; } else if (caps===2) { l=extendedChars['p']; k=l; } else { k="p"; l=k; } break; 
+  case 65: if (shift||caps===1) { k="A"; l=k; } else if (caps===2) { l=extendedChars['a']; k=l; } else { k="a"; l=k; } break; 
+  case 83: if (shift||caps===1) { k="S"; l=k; } else if (caps===2) { l=extendedChars['s']; k=l; } else { k="s"; l=k; } break; 
+  case 68: if (shift||caps===1) { k="D"; l=k; } else if (caps===2) { l=extendedChars['d']; k=l; } else { k="d"; l=k; } break; 
+  case 70: if (shift||caps===1) { k="F"; l=k; } else if (caps===2) { l=extendedChars['f']; k=l; } else { k="f"; l=k; } break; 
+  case 71: if (shift||caps===1) { k="G"; l=k; } else if (caps===2) { l=extendedChars['g']; k=l; } else { k="g"; l=k; } break; 
+  case 72: if (shift||caps===1) { k="H"; l=k; } else if (caps===2) { l=extendedChars['h']; k=l; } else { k="h"; l=k; } break; 
+  case 74: if (shift||caps===1) { k="J"; l=k; } else if (caps===2) { l=extendedChars['j']; k=l; } else { k="j"; l=k; } break; 
+  case 75: if (shift||caps===1) { k="K"; l=k; } else if (caps===2) { l=extendedChars['k']; k=l; } else { k="k"; l=k; } break; 
+  case 76: if (shift||caps===1) { k="L"; l=k; } else if (caps===2) { l=extendedChars['l']; k=l; } else { k="l"; l=k; } break; 
+  case 90: if (shift||caps===1) { k="Z"; l=k; } else if (caps===2) { l=extendedChars['z']; k=l; } else { k="z"; l=k; } break; 
+  case 88: if (shift||caps===1) { k="X"; l=k; } else if (caps===2) { l=extendedChars['x']; k=l; } else { k="x"; l=k; } break; 
+  case 67: if (shift||caps===1) { k="C"; l=k; } else if (caps===2) { l=extendedChars['c']; k=l; } else { k="c"; l=k; } break; 
+  case 86: if (shift||caps===1) { k="V"; l=k; } else if (caps===2) { l=extendedChars['v']; k=l; } else { k="v"; l=k; } break; 
+  case 66: if (shift||caps===1) { k="B"; l=k; } else if (caps===2) { l=extendedChars['b']; k=l; } else { k="b"; l=k; } break; 
+  case 78: if (shift||caps===1) { k="N"; l=k; } else if (caps===2) { l=extendedChars['n']; k=l; } else { k="n"; l=k; } break;  
+  case 77: if (shift||caps===1) { k="M"; l=k; } else if (caps===2) { l=extendedChars['m']; k=l; } else { k="m"; l=k; } break;
+  case  61: if (shift||caps===1) { k="equal"; l="+"; } else if (caps===2) { k="equal"; l=extendedChars['=']; } else { k="="; l=k; } break; 
+  case 191: if (shift||caps===1) { k="slash"; l="?"; } else if (caps===2) { k="slash"; l=extendedChars['/']; } else { k="/"; l=k; } break; 
+  case  59: if (shift||caps===1) { k="colon"; l=":"; } else if (caps===2) { k="colon"; l=extendedChars[';']; } else { k=";"; l=k; } break; 
+  case 222: if (shift||caps===1) { k="quote"; l="\""; } else if (caps===2) { k="quote"; l=extendedChars['\'']; } else { k="\'"; l=k; } break; 
+  case  32: if (shift||caps===1) { k="space"; l=" "; } else if (caps===2) { k="space"; l=extendedChars[' ']; } else { k=" "; l=k; } break;
+  case 188: if (shift||caps===1) { k="comma"; l="<"; } else if (caps===2) { k="comma"; l=extendedChars[',']; } else { k=","; l=k; } break;
+  case 190: if (shift||caps===1) { k="dot";   l=">"; } else if (caps===2) { k="dot"; l=extendedChars['.']; } else { k="."; l=k; } break;
+  case 173: if (shift||caps===1) { k="dash";  l="_"; } else if (caps===2) { k="dash"; l=extendedChars['-']; } else { k="-"; l=k; } break;
+  case 219: if (shift||caps===1) { k="open";  l="{"; } else if (caps===2) { k="open"; l=extendedChars['[']; } else { k="["; l=k; } break;
+  case 221: if (shift||caps===1) { k="close"; l="}"; } else if (caps===2) { k="close"; l=extendedChars[']']; } else { k="]"; l=k; } break;  
  }
  if (k==="esc") {
   if (mode==="txt") {
@@ -442,54 +457,158 @@ function button(b) {
   }
  } else {
   if (k==="caps") {
-   caps=1-caps;
+   // Cycle through three states: 0 (lowercase) -> 1 (uppercase) -> 2 (extended graphics) -> 0
+   caps = (caps + 1) % 3;
+   
    // Update all key labels based on caps lock state
-   document.getElementById("open").innerHTML = caps ? "{" : "[";
-   document.getElementById("close").innerHTML = caps ? "}" : "]";
-   document.getElementById("n1").innerHTML = caps ? "!" : "1";
-   document.getElementById("n2").innerHTML = caps ? "@" : "2";
-   document.getElementById("n3").innerHTML = caps ? "#" : "3";
-   document.getElementById("n4").innerHTML = caps ? "$" : "4";
-   document.getElementById("n5").innerHTML = caps ? "%" : "5";
-   document.getElementById("n6").innerHTML = caps ? "^" : "6";
-   document.getElementById("n7").innerHTML = caps ? "&" : "7";
-   document.getElementById("n8").innerHTML = caps ? "*" : "8";
-   document.getElementById("n9").innerHTML = caps ? "(" : "9";
-   document.getElementById("n0").innerHTML = caps ? ")" : "0";
-   document.getElementById("q").innerHTML = caps ? "Q" : "q";
-   document.getElementById("w").innerHTML = caps ? "W" : "w";
-   document.getElementById("e").innerHTML = caps ? "E" : "e";
-   document.getElementById("r").innerHTML = caps ? "R" : "r";
-   document.getElementById("t").innerHTML = caps ? "T" : "t";
-   document.getElementById("y").innerHTML = caps ? "Y" : "y";
-   document.getElementById("u").innerHTML = caps ? "U" : "u";
-   document.getElementById("i").innerHTML = caps ? "I" : "i";
-   document.getElementById("o").innerHTML = caps ? "O" : "o";
-   document.getElementById("p").innerHTML = caps ? "P" : "p";
-   document.getElementById("a").innerHTML = caps ? "A" : "a";
-   document.getElementById("s").innerHTML = caps ? "S" : "s";
-   document.getElementById("d").innerHTML = caps ? "D" : "d";
-   document.getElementById("f").innerHTML = caps ? "F" : "f";
-   document.getElementById("g").innerHTML = caps ? "G" : "g";
-   document.getElementById("h").innerHTML = caps ? "H" : "h";
-   document.getElementById("j").innerHTML = caps ? "J" : "j";
-   document.getElementById("k").innerHTML = caps ? "K" : "k";
-   document.getElementById("l").innerHTML = caps ? "L" : "l";
-   document.getElementById("z").innerHTML = caps ? "Z" : "z";
-   document.getElementById("x").innerHTML = caps ? "X" : "x";
-   document.getElementById("c").innerHTML = caps ? "C" : "c";
-   document.getElementById("v").innerHTML = caps ? "V" : "v";
-   document.getElementById("b").innerHTML = caps ? "B" : "b";
-   document.getElementById("n").innerHTML = caps ? "N" : "n";
-   document.getElementById("m").innerHTML = caps ? "M" : "m";
-   document.getElementById("equal").innerHTML = caps ? "+" : "=";
-   document.getElementById("slash").innerHTML = caps ? "?" : "/";
-   document.getElementById("colon").innerHTML = caps ? ":" : ";";
-   document.getElementById("quote").innerHTML = caps ? '"' : "'";
-   document.getElementById("comma").innerHTML = caps ? "<" : ",";
-   document.getElementById("dot").innerHTML = caps ? ">" : ".";
-   document.getElementById("caps").style.backgroundColor = caps ? "#fff" : "#888";
-   document.getElementById("caps").style.color = caps ? "#000" : "#fff";
+   if (caps === 0) {
+    // Lowercase
+    document.getElementById("open").innerHTML = "[";
+    document.getElementById("close").innerHTML = "]";
+    document.getElementById("n1").innerHTML = "1";
+    document.getElementById("n2").innerHTML = "2";
+    document.getElementById("n3").innerHTML = "3";
+    document.getElementById("n4").innerHTML = "4";
+    document.getElementById("n5").innerHTML = "5";
+    document.getElementById("n6").innerHTML = "6";
+    document.getElementById("n7").innerHTML = "7";
+    document.getElementById("n8").innerHTML = "8";
+    document.getElementById("n9").innerHTML = "9";
+    document.getElementById("n0").innerHTML = "0";
+    document.getElementById("q").innerHTML = "q";
+    document.getElementById("w").innerHTML = "w";
+    document.getElementById("e").innerHTML = "e";
+    document.getElementById("r").innerHTML = "r";
+    document.getElementById("t").innerHTML = "t";
+    document.getElementById("y").innerHTML = "y";
+    document.getElementById("u").innerHTML = "u";
+    document.getElementById("i").innerHTML = "i";
+    document.getElementById("o").innerHTML = "o";
+    document.getElementById("p").innerHTML = "p";
+    document.getElementById("a").innerHTML = "a";
+    document.getElementById("s").innerHTML = "s";
+    document.getElementById("d").innerHTML = "d";
+    document.getElementById("f").innerHTML = "f";
+    document.getElementById("g").innerHTML = "g";
+    document.getElementById("h").innerHTML = "h";
+    document.getElementById("j").innerHTML = "j";
+    document.getElementById("k").innerHTML = "k";
+    document.getElementById("l").innerHTML = "l";
+    document.getElementById("z").innerHTML = "z";
+    document.getElementById("x").innerHTML = "x";
+    document.getElementById("c").innerHTML = "c";
+    document.getElementById("v").innerHTML = "v";
+    document.getElementById("b").innerHTML = "b";
+    document.getElementById("n").innerHTML = "n";
+    document.getElementById("m").innerHTML = "m";
+    document.getElementById("equal").innerHTML = "=";
+    document.getElementById("slash").innerHTML = "/";
+    document.getElementById("colon").innerHTML = ";";
+    document.getElementById("quote").innerHTML = "'";
+    document.getElementById("comma").innerHTML = ",";
+    document.getElementById("dot").innerHTML = ".";
+    document.getElementById("dash").innerHTML = "-";
+    document.getElementById("caps").style.backgroundColor = "#888";
+    document.getElementById("caps").style.color = "#fff";
+   } else if (caps === 1) {
+    // Uppercase
+    document.getElementById("open").innerHTML = "{";
+    document.getElementById("close").innerHTML = "}";
+    document.getElementById("n1").innerHTML = "!";
+    document.getElementById("n2").innerHTML = "@";
+    document.getElementById("n3").innerHTML = "#";
+    document.getElementById("n4").innerHTML = "$";
+    document.getElementById("n5").innerHTML = "%";
+    document.getElementById("n6").innerHTML = "^";
+    document.getElementById("n7").innerHTML = "&";
+    document.getElementById("n8").innerHTML = "*";
+    document.getElementById("n9").innerHTML = "(";
+    document.getElementById("n0").innerHTML = ")";
+    document.getElementById("q").innerHTML = "Q";
+    document.getElementById("w").innerHTML = "W";
+    document.getElementById("e").innerHTML = "E";
+    document.getElementById("r").innerHTML = "R";
+    document.getElementById("t").innerHTML = "T";
+    document.getElementById("y").innerHTML = "Y";
+    document.getElementById("u").innerHTML = "U";
+    document.getElementById("i").innerHTML = "I";
+    document.getElementById("o").innerHTML = "O";
+    document.getElementById("p").innerHTML = "P";
+    document.getElementById("a").innerHTML = "A";
+    document.getElementById("s").innerHTML = "S";
+    document.getElementById("d").innerHTML = "D";
+    document.getElementById("f").innerHTML = "F";
+    document.getElementById("g").innerHTML = "G";
+    document.getElementById("h").innerHTML = "H";
+    document.getElementById("j").innerHTML = "J";
+    document.getElementById("k").innerHTML = "K";
+    document.getElementById("l").innerHTML = "L";
+    document.getElementById("z").innerHTML = "Z";
+    document.getElementById("x").innerHTML = "X";
+    document.getElementById("c").innerHTML = "C";
+    document.getElementById("v").innerHTML = "V";
+    document.getElementById("b").innerHTML = "B";
+    document.getElementById("n").innerHTML = "N";
+    document.getElementById("m").innerHTML = "M";
+    document.getElementById("equal").innerHTML = "+";
+    document.getElementById("slash").innerHTML = "?";
+    document.getElementById("colon").innerHTML = ":";
+    document.getElementById("quote").innerHTML = '"';
+    document.getElementById("comma").innerHTML = "<";
+    document.getElementById("dot").innerHTML = ">";
+    document.getElementById("dash").innerHTML = "_";
+    document.getElementById("caps").style.backgroundColor = "#fff";
+    document.getElementById("caps").style.color = "#000";
+   } else {
+    // Extended graphics (caps === 2)
+    document.getElementById("open").innerHTML = extendedChars['['] || "♠";
+    document.getElementById("close").innerHTML = extendedChars[']'] || "♥";
+    document.getElementById("n1").innerHTML = extendedChars['1'] || "↑";
+    document.getElementById("n2").innerHTML = extendedChars['2'] || "↓";
+    document.getElementById("n3").innerHTML = extendedChars['3'] || "←";
+    document.getElementById("n4").innerHTML = extendedChars['4'] || "→";
+    document.getElementById("n5").innerHTML = extendedChars['5'] || "■";
+    document.getElementById("n6").innerHTML = extendedChars['6'] || "□";
+    document.getElementById("n7").innerHTML = extendedChars['7'] || "●";
+    document.getElementById("n8").innerHTML = extendedChars['8'] || "○";
+    document.getElementById("n9").innerHTML = extendedChars['9'] || "★";
+    document.getElementById("n0").innerHTML = extendedChars['0'] || "☆";
+    document.getElementById("q").innerHTML = extendedChars['q'] || "┌";
+    document.getElementById("w").innerHTML = extendedChars['w'] || "─";
+    document.getElementById("e").innerHTML = extendedChars['e'] || "┬";
+    document.getElementById("r").innerHTML = extendedChars['r'] || "─";
+    document.getElementById("t").innerHTML = extendedChars['t'] || "┐";
+    document.getElementById("y").innerHTML = extendedChars['y'] || "│";
+    document.getElementById("u").innerHTML = extendedChars['u'] || "╔";
+    document.getElementById("i").innerHTML = extendedChars['i'] || "═";
+    document.getElementById("o").innerHTML = extendedChars['o'] || "╗";
+    document.getElementById("p").innerHTML = extendedChars['p'] || "╦";
+    document.getElementById("a").innerHTML = extendedChars['a'] || "├";
+    document.getElementById("s").innerHTML = extendedChars['s'] || "─";
+    document.getElementById("d").innerHTML = extendedChars['d'] || "┼";
+    document.getElementById("f").innerHTML = extendedChars['f'] || "─";
+    document.getElementById("g").innerHTML = extendedChars['g'] || "┤";
+    document.getElementById("h").innerHTML = extendedChars['h'] || "║";
+    document.getElementById("j").innerHTML = extendedChars['j'] || "╠";
+    document.getElementById("k").innerHTML = extendedChars['k'] || "╬";
+    document.getElementById("l").innerHTML = extendedChars['l'] || "╣";
+    document.getElementById("z").innerHTML = extendedChars['z'] || "└";
+    document.getElementById("x").innerHTML = extendedChars['x'] || "─";
+    document.getElementById("c").innerHTML = extendedChars['c'] || "┴";
+    document.getElementById("v").innerHTML = extendedChars['v'] || "─";
+    document.getElementById("b").innerHTML = extendedChars['b'] || "┘";
+    document.getElementById("n").innerHTML = extendedChars['n'] || "╚";
+    document.getElementById("m").innerHTML = extendedChars['m'] || "╝";
+    document.getElementById("equal").innerHTML = extendedChars['='] || "×";
+    document.getElementById("slash").innerHTML = extendedChars['/'] || "÷";
+    document.getElementById("colon").innerHTML = extendedChars[';'] || "♦";
+    document.getElementById("quote").innerHTML = extendedChars['\''] || "♣";
+    document.getElementById("comma").innerHTML = extendedChars[','] || "✓";
+    document.getElementById("dot").innerHTML = extendedChars['.'] || "✗";
+    document.getElementById("dash").innerHTML = extendedChars['-'] || "±";
+    document.getElementById("caps").style.backgroundColor = "#0f0";
+    document.getElementById("caps").style.color = "#000";
+   }
   } else {
    // Handle arrow key cursor movement
    if (k === "left") {
