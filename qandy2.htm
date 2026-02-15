@@ -1117,7 +1117,8 @@ codes: {
  cursorForward: (n = 1) => `\x1b[${n}C`,
  cursorBack: (n = 1) => `\x1b[${n}D`,
  clearScreen: '\x1b[2J',
- clearLine: '\x1b[K'
+ clearLine: '\x1b[K',
+ pageBreak: '\f'  // Form Feed - explicit page break for pagination
 }};
 
 // system functions
@@ -1152,6 +1153,59 @@ function showFiles() {
   }
 }
 
+function triggerPaginationPause() {
+  // Helper function to trigger pagination pause
+  // Can be called by line count threshold OR Form Feed character
+  paginationPaused = true;
+  keyon = 0;  // Disable normal keyboard input
+  
+  // Save current style
+  const savedStyle = {
+    color: currentStyle.color,
+    bgcolor: currentStyle.bgcolor,
+    bold: currentStyle.bold,
+    inverse: currentStyle.inverse
+  };
+  
+  // Print pause message in bright color
+  currentStyle.color = 32;  // Green
+  currentStyle.bold = true;
+  const pauseMsg = "\n--- Press Any Key to Continue ---";
+  for (let i = 0; i < pauseMsg.length; i++) {
+    if (pauseMsg[i] === '\n') {
+      cursorX = 0;
+      cursorY++;
+    } else {
+      if (cursorX >= screenWidth) {
+        cursorX = 0;
+        cursorY++;
+      }
+      if (cursorY >= screenHeight) {
+        scrollScreenDown();
+        cursorY = screenHeight - 1;
+      }
+      if (screenBuffer[cursorY] && styleBuffer[cursorY]) {
+        screenBuffer[cursorY][cursorX] = pauseMsg[i];
+        styleBuffer[cursorY][cursorX] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+        cursorX++;
+      }
+    }
+  }
+  
+  // Restore style
+  currentStyle.color = savedStyle.color;
+  currentStyle.bgcolor = savedStyle.bgcolor;
+  currentStyle.bold = savedStyle.bold;
+  currentStyle.inverse = savedStyle.inverse;
+  
+  updateDisplay();
+}
+
 function print(inputString) {
   // If pagination is paused, queue the text for later
   if (paginationPaused) {
@@ -1184,62 +1238,32 @@ function print(inputString) {
     } else if (token.type === 'char') {
       const char = token.value;
       
+      // Handle Form Feed (FF) - triggers explicit page break for pagination
+      if (char === '\f') {
+        if (paginationEnabled) {
+          // Form Feed explicitly triggers pagination
+          triggerPaginationPause();
+          return;  // Exit and wait for key press
+        } else {
+          // If pagination disabled, treat as newline
+          cursorX = 0;
+          cursorY++;
+          if (cursorY >= screenHeight) {
+            scrollScreenDown();
+            cursorY = screenHeight - 1;
+          }
+        }
+        continue;
+      }
+      
       // Handle newline - DON'T store it, just move cursor
       if (char === '\n') {
         cursorX = 0;
         cursorY++;
         
-        // Check if we should pause for pagination
+        // Check if we should pause for pagination (line count threshold)
         if (paginationEnabled && cursorY >= paginationLinesBeforePause) {
-          // Pause and show "Press Any Key" message
-          paginationPaused = true;
-          keyon = 0;  // Disable normal keyboard input
-          
-          // Save current style
-          const savedStyle = {
-            color: currentStyle.color,
-            bgcolor: currentStyle.bgcolor,
-            bold: currentStyle.bold,
-            inverse: currentStyle.inverse
-          };
-          
-          // Print pause message in bright color
-          currentStyle.color = 32;  // Green
-          currentStyle.bold = true;
-          const pauseMsg = "\n--- Press Any Key to Continue ---";
-          for (let i = 0; i < pauseMsg.length; i++) {
-            if (pauseMsg[i] === '\n') {
-              cursorX = 0;
-              cursorY++;
-            } else {
-              if (cursorX >= screenWidth) {
-                cursorX = 0;
-                cursorY++;
-              }
-              if (cursorY >= screenHeight) {
-                scrollScreenDown();
-                cursorY = screenHeight - 1;
-              }
-              if (screenBuffer[cursorY] && styleBuffer[cursorY]) {
-                screenBuffer[cursorY][cursorX] = pauseMsg[i];
-                styleBuffer[cursorY][cursorX] = {
-                  color: currentStyle.color,
-                  bgcolor: currentStyle.bgcolor,
-                  bold: currentStyle.bold,
-                  inverse: currentStyle.inverse
-                };
-                cursorX++;
-              }
-            }
-          }
-          
-          // Restore style
-          currentStyle.color = savedStyle.color;
-          currentStyle.bgcolor = savedStyle.bgcolor;
-          currentStyle.bold = savedStyle.bold;
-          currentStyle.inverse = savedStyle.inverse;
-          
-          updateDisplay();
+          triggerPaginationPause();
           return;  // Exit and wait for key press
         }
         
