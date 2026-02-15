@@ -175,6 +175,12 @@ var cursorY = 0;
 var screenWidth = 29;
 var screenHeight = 25;
 
+// Pagination support for overflow text
+var paginationEnabled = true;  // Enable/disable pagination feature
+var paginationPaused = false;  // Is print() currently paused?
+var paginationBuffer = [];     // Queued text waiting to be printed
+var paginationLinesBeforePause = 20;  // Lines to show before pausing
+
 var styleBuffer = [];
 var currentStyle = {
   color: 37,      // white foreground
@@ -388,6 +394,12 @@ function press() {
 }
 
 function button(b) {
+ // Handle pagination resume - any key continues
+ if (paginationPaused) {
+   resumePagination();
+   return;
+ }
+ 
  k=""; l=""; switch (b) {
   case 37: k="left"; break;
   case 38: k="up"; break;
@@ -1141,6 +1153,12 @@ function showFiles() {
 }
 
 function print(inputString) {
+  // If pagination is paused, queue the text for later
+  if (paginationPaused) {
+    paginationBuffer.push(inputString);
+    return;
+  }
+  
   // Make sure buffers are initialized
   if (!screenBuffer || screenBuffer.length === 0) {
     initScreen();
@@ -1158,6 +1176,9 @@ function print(inputString) {
   }
   txt = txt + plainText;
   
+  // Track lines printed in this call
+  let linesPrintedThisCall = 0;
+  
   // Process each token
   for (const token of tokens) {
     if (token.type === 'code') {
@@ -1170,6 +1191,61 @@ function print(inputString) {
       if (char === '\n') {
         cursorX = 0;
         cursorY++;
+        linesPrintedThisCall++;
+        
+        // Check if we should pause for pagination
+        if (paginationEnabled && cursorY >= paginationLinesBeforePause) {
+          // Pause and show "Press Any Key" message
+          paginationPaused = true;
+          keyon = 0;  // Disable normal keyboard input
+          
+          // Save current style
+          const savedStyle = {
+            color: currentStyle.color,
+            bgcolor: currentStyle.bgcolor,
+            bold: currentStyle.bold,
+            inverse: currentStyle.inverse
+          };
+          
+          // Print pause message in bright color
+          currentStyle.color = 32;  // Green
+          currentStyle.bold = true;
+          const pauseMsg = "\n--- Press Any Key to Continue ---";
+          for (let i = 0; i < pauseMsg.length; i++) {
+            if (pauseMsg[i] === '\n') {
+              cursorX = 0;
+              cursorY++;
+            } else {
+              if (cursorX >= screenWidth) {
+                cursorX = 0;
+                cursorY++;
+              }
+              if (cursorY >= screenHeight) {
+                scrollScreenDown();
+                cursorY = screenHeight - 1;
+              }
+              if (screenBuffer[cursorY] && styleBuffer[cursorY]) {
+                screenBuffer[cursorY][cursorX] = pauseMsg[i];
+                styleBuffer[cursorY][cursorX] = {
+                  color: currentStyle.color,
+                  bgcolor: currentStyle.bgcolor,
+                  bold: currentStyle.bold,
+                  inverse: currentStyle.inverse
+                };
+                cursorX++;
+              }
+            }
+          }
+          
+          // Restore style
+          currentStyle.color = savedStyle.color;
+          currentStyle.bgcolor = savedStyle.bgcolor;
+          currentStyle.bold = savedStyle.bold;
+          currentStyle.inverse = savedStyle.inverse;
+          
+          updateDisplay();
+          return;  // Exit and wait for key press
+        }
         
         // Auto-scroll at screen height
         if (cursorY >= screenHeight) {
@@ -1218,6 +1294,39 @@ function print(inputString) {
   }
   
   updateDisplay();
+}
+
+function resumePagination() {
+  // Clear the pause message by removing last few lines
+  if (screenBuffer.length > 0) {
+    // Remove the "Press Any Key" message line
+    const lastLineIdx = screenBuffer.length - 1;
+    for (let x = 0; x < screenWidth; x++) {
+      screenBuffer[lastLineIdx][x] = ' ';
+      styleBuffer[lastLineIdx][x] = {
+        color: 37,
+        bgcolor: 40,
+        bold: false,
+        inverse: false
+      };
+    }
+  }
+  
+  // Reset pagination state
+  paginationPaused = false;
+  keyon = 1;  // Re-enable keyboard input
+  
+  // Clear the screen and reset cursor
+  initScreen();
+  
+  // Process queued print calls
+  const bufferedText = paginationBuffer.slice();  // Copy array
+  paginationBuffer = [];  // Clear buffer
+  
+  // Print all buffered content
+  for (let i = 0; i < bufferedText.length; i++) {
+    print(bufferedText[i]);
+  }
 }
 
 
@@ -1347,7 +1456,14 @@ function updateDisplay() {
   txtElement.scrollTop = txtElement.scrollHeight;
 }
 
-function cls() { var screenBuffer=[]; initScreen(); }
+function cls() { 
+  var screenBuffer=[]; 
+  initScreen(); 
+  // Reset pagination state
+  paginationPaused = false;
+  paginationBuffer = [];
+  keyon = 1;
+}
 
 function gfx(scr) { a=0; for (b=0; b<=mapy; b++) { for (c=0; c<=mapx; c++) { e=document.getElementById("T"+a).src="t/"+scr.charAt(a*2)+scr.charAt((a*2)+1)+".png"; a++; }}}
 function hpop() { document.getElementById("pop").style.visibility="hidden"; }
