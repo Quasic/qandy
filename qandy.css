@@ -1,0 +1,130 @@
+/* Qandy Pocket Computer Styles */
+
+body { background-color: #333 }
+#cursor { background-color: #CCC; }
+.qpc { position: absolute; top: 0px; left: 0px; width: 160px; height: 24px;
+       padding-left: 0px; padding-right: 0px; align-items: center;
+       background-color: grey; z-index: 0; }
+.txt { 
+  position: absolute; 
+  left: 54px; 
+  top: 64px;  
+  width: 256px; 
+  height: 384px; 
+  z-index: 254;     
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: normal;
+  color: #fff;
+  background-color: #000;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding: 4px;
+  line-height: 1.1;
+  box-sizing: border-box;
+  white-space: pre;
+  word-wrap: break-word;
+  display: block;
+  scrollbar-width: thin;
+  scrollbar-color: #0f0 #000;
+}
+
+#cursor {
+  display: inline-block;
+  background-color: #fff;
+  width: 8px;
+  height: 14px;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.txt::-webkit-scrollbar { width: 14px; }
+.txt::-webkit-scrollbar-track { background: #000; }
+.txt::-webkit-scrollbar-thumb { background: #0f0; border-radius: 7px; }
+.txt::-webkit-scrollbar-thumb:hover { background: #0f0; }
+
+.ansi-black { color: #000; }
+.ansi-red { color: #f00; }
+.ansi-green { color: #0f0; }
+.ansi-yellow { color: #ff0; }
+.ansi-blue { color: #00f; }
+.ansi-magenta { color: #f0f; }
+.ansi-cyan { color: #0ff; }
+.ansi-white { color: #fff; }
+
+.ansi-bg-black { background-color: #000; }
+.ansi-bg-red { background-color: #f00; }
+.ansi-bg-green { background-color: #0f0; }
+.ansi-bg-yellow { background-color: #ff0; }
+.ansi-bg-blue { background-color: #00f; }
+.ansi-bg-magenta { background-color: #f0f; }
+.ansi-bg-cyan { background-color: #0ff; }
+.ansi-bg-white { background-color: #fff; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-inverse { filter: invert(1); }
+
+.pop { position:absolute; top:260; left:190; z-index:250;
+       font-family: arial; font-size: 14px; weight: bold;
+       color: navy; background-color: #999; visibility:hidden;
+       text-align: center;
+       padding-top: 0px; padding-bottom: 0px;  
+       padding-right: 4px; padding-left: 4px; }
+.run { position: absolute; top: 446px; left: 103px; width: 80px; height: 28px;
+       font-family: courier; font-size: 12px; weight: bold; 
+       color: #000; background-color: #aaa; 
+       text-align: center; padding: 0px; padding-top: 6px; z-index: 100; }
+.tile { position: absolute; top: 0px; left: 0px; }
+.item { position: absolute; top: 0px; left: 0px; }
+.char { position: absolute; top: 0px; left: 0px; }
+
+.k1 { position: absolute; top: 0px; left: 0px; width: 30px; height: 30px;
+      padding-left: 0px; padding-right: 0px; align-items: center;
+      max-width: 24px; max-height: 24px; margin: 0; padding: 4; 
+      display: flex; justify-content: center;  align-items: center;       
+      color: white; background-color: #222; text-align: center;
+      font-family: Arial; font-size: 14px; weight: bold;
+      cursor: pointer; z-index: 99; 
+      border: 1px solid #555; border-radius: 3px;
+      user-select: none; }
+.k1:hover { background-color: #444; }
+.k1:active { background-color: #666; }
+.k2 { position: absolute; top: 0px; left: 0px; width: 52px; height: 30px;
+      padding-left: 0px; padding-right: 0px; align-items: center;
+      max-width: 52px; max-height: 24px; margin: 0; padding: 4;        
+      display: flex; justify-content: center;  align-items: center;      
+      color: white; background-color: #222; text-align: center;
+      font-family: Arial; font-size: 12px; weight: bold; 
+      cursor: pointer; z-index: 99; 
+      border: 1px solid #555; border-radius: 3px;
+      user-select: none; }
+.k2:hover { background-color: #444; }
+.k2:active { background-color: #666; }
+.k3 { position: absolute; top: 0px; left: 0px; width: 81px; height: 30px;
+      padding-left: 0px; padding-right: 0px; align-items: center;
+      max-width: 81px; max-height: 24px; margin: 0; padding: 4;        
+      display: flex; justify-content: center;  align-items: center;      
+      color: white; background-color: #222; text-align: center;
+      font-family: Arial; font-size: 12px; weight: bold;
+      cursor: pointer; z-index: 99; 
+      border: 1px solid #555; border-radius: 3px;
+      user-select: none; }
+.k3:hover { background-color: #444; }
+.k3:active { background-color: #666; }
+.k4 { position: absolute; top: 0px; left: 0px; width: 109px; height: 30px;
+      padding-left: 0px; padding-right: 0px; align-items: center;
+      max-width: 109px; max-height: 24px; margin: 0; padding: 4;        
+      display: flex; justify-content: center;  align-items: center;      
+      color: white; background-color: #888; text-align: center;
+      font-family: Arial; font-size: 12px; weight: bold;
+      cursor: pointer; z-index: 99; 
+      border: 1px solid #555; border-radius: 3px;
+      user-select: none; }
+.k4:hover { background-color: #aaa; }
+.k4:active { background-color: #666; }
+
+
