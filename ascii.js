@@ -132,16 +132,9 @@ function ansi() {
 function keydown(k) {
   var key = k.toUpperCase();
   
-  if (key === "A") {
-    displayAll256();
-  } else if (key === "N") {
-    displayNiceCharacters();
-  } else if (key === "Q") {
+  if (key === "Q") {
     cls();
     keyon = 1;
     print("Returned to input mode\n");
   }
 }
-
-// Start the script
-showASCIIMenu();
