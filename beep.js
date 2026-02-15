@@ -28,20 +28,21 @@ print("Press \x1b[1;32mQ\x1b[0m to quit\n\n");
 // Create Web Audio context (lazily initialized on first beep)
 var audioContext = null;
 
-function beep(frequency, duration) {
-  // Default values
-  if (typeof frequency === 'undefined') frequency = 800;  // Hz
-  if (typeof duration === 'undefined') duration = 200;    // milliseconds
+function beep(frequency = 800, duration = 200) {
+  // Default values: 800 Hz, 200 milliseconds
   
   try {
     // Initialize audio context on first use (must be triggered by user interaction)
     if (!audioContext) {
+      if (!window.AudioContext && !window.webkitAudioContext) {
+        throw new Error('Web Audio API is not supported in this browser');
+      }
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
     
     // Create oscillator (tone generator)
-    var oscillator = audioContext.createOscillator();
-    var gainNode = audioContext.createGain();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
     
     // Configure oscillator
     oscillator.type = 'sine';  // sine wave for a pure tone
@@ -55,8 +56,8 @@ function beep(frequency, duration) {
     gainNode.connect(audioContext.destination);
     
     // Start and stop the tone
-    var startTime = audioContext.currentTime;
-    var endTime = startTime + (duration / 1000);
+    const startTime = audioContext.currentTime;
+    const endTime = startTime + (duration / 1000);
     
     oscillator.start(startTime);
     oscillator.stop(endTime);
