@@ -126,22 +126,23 @@ function DrawMap() {
  }
  
  for (var i = 0; i < imagesToLoad.length; i++) {
-  var tileCode = imagesToLoad[i];
-  var img = new Image();
-  img.onload = function() {
-   imagesLoaded++;
-   if (imagesLoaded === totalImages) {
-    drawAllTiles();
-   }
-  };
-  img.onerror = function() {
-   imagesLoaded++;
-   if (imagesLoaded === totalImages) {
-    drawAllTiles();
-   }
-  };
-  imageCache[tileCode] = img;
-  img.src = "m/" + tileCode + ".png";
+  (function(tileCode) {
+   var img = new Image();
+   img.onload = function() {
+    imagesLoaded++;
+    if (imagesLoaded === totalImages) {
+     drawAllTiles();
+    }
+   };
+   img.onerror = function() {
+    imagesLoaded++;
+    if (imagesLoaded === totalImages) {
+     drawAllTiles();
+    }
+   };
+   imageCache[tileCode] = img;
+   img.src = "m/" + tileCode + ".png";
+  })(imagesToLoad[i]);
  }
  
  // Draw all tiles once images are loaded
