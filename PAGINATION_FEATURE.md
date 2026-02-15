@@ -8,14 +8,50 @@ The text pagination feature has been implemented in `qandy2.htm` to address the 
 
 ### How It Works
 
-1. **Automatic Pause**: When text output reaches 20 lines, the system automatically pauses and displays:
+The pagination system supports two trigger mechanisms:
+
+1. **Automatic Pause (Line Counting)**: When text output reaches 20 lines, the system automatically pauses and displays:
    ```
    --- Press Any Key to Continue ---
    ```
 
-2. **User Interaction**: Any key press resumes printing, clearing the screen and showing the next page of output.
+2. **Explicit Pause (Form Feed)**: Programs can use the Form Feed character (`\f`) to explicitly trigger a page break:
+   ```javascript
+   print("End of section\f");  // Triggers pagination immediately
+   ```
 
-3. **Buffering**: While paused, any `print()` calls are queued in a buffer and processed after the user resumes.
+3. **User Interaction**: Any key press resumes printing, clearing the screen and showing the next page of output.
+
+4. **Buffering**: While paused, any `print()` calls are queued in a buffer and processed after the user resumes.
+
+### Form Feed (FF) Character
+
+The Form Feed character is ASCII 12 (0x0C, `\f`) and is the traditional page break character:
+
+```javascript
+// Three ways to use Form Feed:
+print("text\f");                    // Inline
+print(ANSI.codes.pageBreak);        // Using ANSI.codes object
+print("\f");                        // Standalone
+```
+
+**Benefits of Form Feed**:
+- Explicit control over page breaks
+- Independent of line counting
+- Works with automatic pagination
+- Standard across systems
+- Program decides when to pause
+
+**Example**:
+```javascript
+print("Section 1\n");
+print("Line 1\n");
+print("Line 2\n");
+print("\f");  // Page break here, regardless of line count
+
+print("Section 2\n");
+print("More content...\n");
+```
 
 ### Key Components
 
@@ -28,10 +64,16 @@ var paginationLinesBeforePause = 20; // Lines to show before pausing
 ```
 
 #### Modified Functions
-- **`print()`**: Checks line count and pauses when threshold is reached
+- **`print()`**: Checks line count and Form Feed, pauses when triggered
+- **`triggerPaginationPause()`**: Helper function that displays pause message
 - **`resumePagination()`**: Clears screen, resets state, and processes buffered output
 - **`button()`**: Intercepts any key press when paused to resume
 - **`cls()`**: Resets pagination state when screen is cleared
+
+#### ANSI Codes
+```javascript
+ANSI.codes.pageBreak = '\f';  // Form Feed character
+```
 
 ## Pros and Cons
 
@@ -53,6 +95,10 @@ var paginationLinesBeforePause = 20; // Lines to show before pausing
 6. **Configurable**: The `paginationLinesBeforePause` variable can be adjusted based on screen size or user preference
 
 7. **Non-Intrusive**: Can be disabled by setting `paginationEnabled = false`
+
+8. **Flexible Control**: Programs can use Form Feed (`\f`) for explicit page breaks or rely on automatic line counting
+
+9. **Standard Compliance**: Form Feed is a standard ASCII control character, making scripts portable
 
 ### Disadvantages (Cons)
 

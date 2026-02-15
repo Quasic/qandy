@@ -12,13 +12,23 @@ Press any key to see the next page of content.
 
 ## When Does It Activate?
 
-Pagination automatically activates when:
+Pagination activates in two ways:
+
+### 1. Automatic (Line Counting)
 - A program prints more than **20 lines** of text
-- You're using **qandy2.htm** (the advanced version with screen buffer)
+- Happens automatically without special codes
+
+### 2. Explicit (Form Feed)
+- A program uses the Form Feed character (`\f`) for explicit page breaks
+- Triggers immediately, regardless of line count
+- Gives programs control over pagination
+
+You're using **qandy2.htm** (the advanced version with screen buffer).
 
 Programs that benefit from pagination:
 - **ascii.js** - Displays 256 ASCII characters (~67 lines)
 - **ansi-demo.js** - Shows ANSI color demonstrations
+- **form-feed-test.js** - Demonstrates explicit Form Feed control
 - Any script that prints extensive output
 
 ## How to Use
@@ -30,6 +40,35 @@ Programs that benefit from pagination:
 3. Read the first page of output (20 lines)
 4. When you see the pause message, press **any key** to continue
 5. Repeat until all content is displayed
+
+### Using Form Feed in Your Scripts
+
+Programs can explicitly control page breaks using the Form Feed character:
+
+```javascript
+// Method 1: Inline
+print("Section 1 content\f");
+
+// Method 2: Standalone
+print("Section 1 content\n");
+print("\f");  // Page break here
+
+// Method 3: Using ANSI.codes
+print("Section 1 content\n");
+print(ANSI.codes.pageBreak);
+```
+
+**Example Script**:
+```javascript
+cls();
+print("Welcome to my program!\n\n");
+print("This is page 1.\n");
+print("You can read this at your own pace.\n");
+print("\f");  // Explicit page break
+
+print("Page 2 starts here.\n");
+print("The Form Feed triggered the pause.\n");
+```
 
 ### Example Session
 
