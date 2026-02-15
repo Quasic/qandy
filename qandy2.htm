@@ -1176,9 +1176,6 @@ function print(inputString) {
   }
   txt = txt + plainText;
   
-  // Track lines printed in this call
-  let linesPrintedThisCall = 0;
-  
   // Process each token
   for (const token of tokens) {
     if (token.type === 'code') {
@@ -1191,7 +1188,6 @@ function print(inputString) {
       if (char === '\n') {
         cursorX = 0;
         cursorY++;
-        linesPrintedThisCall++;
         
         // Check if we should pause for pagination
         if (paginationEnabled && cursorY >= paginationLinesBeforePause) {
@@ -1457,7 +1453,7 @@ function updateDisplay() {
 }
 
 function cls() { 
-  var screenBuffer=[]; 
+  screenBuffer = [];  // Reset global screenBuffer (removed 'var' to avoid shadowing)
   initScreen(); 
   // Reset pagination state
   paginationPaused = false;
