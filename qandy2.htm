@@ -879,6 +879,9 @@ function button(b) {
         line = "";
         cursorPos = 0;
         inputScrollPos = 0;
+       } else if (line.substr(0, 4) === "help") {
+        // display list of install .js files
+        showFiles(); line="";        
        } else {
         // Execute command/code
         executeCode(line);
@@ -1104,6 +1107,18 @@ codes: {
 }};
 
 // system functions
+
+function showFiles() {
+  print("\n");
+  print("ansi-demo.js\n");
+  print("ansi-edit.js\n");
+  print("ascii.js\n");
+  print("beep.js\n");
+  print("demo.js\n");
+  print("q.js\n");
+  print("world.js\n");
+  print("\n");
+}
 
 function print(inputString) {
   // Make sure buffers are initialized
@@ -1498,8 +1513,9 @@ function initScreen() {
 }
 
 window.ANSI=ANSI;
-print("\nQandy Pocket\nComputer v1.j\n\n"); 
+print("\nQandy Pocket\nComputer v1.j\n"); 
 
+SFiles=1;
 mySearch=location.search.substr(1).split("&")
 for (i=0;i<mySearch.length;i++) {
  nameVal=mySearch[i].split("=");
@@ -1508,6 +1524,9 @@ for (i=0;i<mySearch.length;i++) {
   script=document.createElement('script');
   script.src=nameVal[1];
   document.head.appendChild(script);
+  SFiles=0;
  }
 }
+if (SFiles) { showFiles(); }
+
 </script></body></html>
