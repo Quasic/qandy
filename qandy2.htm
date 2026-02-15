@@ -327,6 +327,9 @@ document.addEventListener('paste', function (event) {
    line += pastedText;
    cursorPos = line.length; // Update cursor position to end
    updateDisplay();
+   // Scroll to bottom to show cursor
+   const textElement = document.getElementById("txt");
+   textElement.scrollTop = textElement.scrollHeight;
   }
  }
 });
