@@ -175,6 +175,14 @@ var cursorY = 0;
 var screenWidth = 29;
 var screenHeight = 25;
 
+var styleBuffer = [];
+var currentStyle = {
+  color: 37,      // white foreground
+  bgcolor: 40,    // black background
+  bold: false,
+  inverse: false
+};
+
 var PopX=0;
 var PopY=0;
 var PopHide="hidden";
@@ -736,6 +744,91 @@ function executeCode(code) {
  }
 }
 
+function parseANSIString(str) {
+  const tokens = [];
+  const ansiRegex = /(\x1b|\033|\u001b)\[([\d;]*)([A-Za-z])/g;
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = ansiRegex.exec(str)) !== null) {
+    // Add text before the ANSI code
+    if (match.index > lastIndex) {
+      const text = str.substring(lastIndex, match.index);
+      for (let i = 0; i < text.length; i++) {
+        tokens.push({ type: 'char', value: text[i] });
+      }
+    }
+    
+    // Add the ANSI code
+    const params = match[2] ? match[2].split(';').map(Number) : [0];
+    const command = match[3];
+    
+    if (command === 'm') {
+      // SGR (Select Graphic Rendition) - color/style codes
+      tokens.push({ type: 'code', codes: params });
+    }
+    // Ignore other ANSI commands for now (cursor movement, etc.)
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  if (lastIndex < str.length) {
+    const text = str.substring(lastIndex);
+    for (let i = 0; i < text.length; i++) {
+      tokens.push({ type: 'char', value: text[i] });
+    }
+  }
+  
+  return tokens;
+}
+
+function applyANSICode(codes) {
+  codes.forEach(code => {
+    if (code === 0) {
+      // Reset all
+      currentStyle.color = 37;
+      currentStyle.bgcolor = 40;
+      currentStyle.bold = false;
+      currentStyle.inverse = false;
+    } else if (code === 1) {
+      // Bold
+      currentStyle.bold = true;
+    } else if (code === 7) {
+      // Inverse
+      currentStyle.inverse = true;
+    } else if (code === 27) {
+      // No inverse
+      currentStyle.inverse = false;
+    } else if (code >= 30 && code <= 37) {
+      // Foreground color
+      currentStyle.color = code;
+    } else if (code >= 40 && code <= 47) {
+      // Background color
+      currentStyle.bgcolor = code;
+    }
+  });
+}
+
+function scrollScreenDown() {
+  screenBuffer.shift();
+  styleBuffer.shift();
+  
+  const newLine = [];
+  const newStyleLine = [];
+  for (let j = 0; j < screenWidth; j++) {
+    newLine[j] = ' ';
+    newStyleLine[j] = {
+      color: currentStyle.color,
+      bgcolor: currentStyle.bgcolor,
+      bold: currentStyle.bold,
+      inverse: currentStyle.inverse
+    };
+  }
+  screenBuffer.push(newLine);
+  styleBuffer.push(newStyleLine);
+}
+
 const ANSI={
  colors: { 30: 'black', 31: 'red', 32: 'green', 33: 'yellow', 34: 'blue', 35: 'magenta', 36: 'cyan', 37: 'white' },
  bgColors: { 40: 'black', 41: 'red', 42: 'green', 43: 'yellow', 44: 'blue', 45: 'magenta', 46: 'cyan', 47: 'white' },
@@ -837,120 +930,162 @@ codes: {
 
 // system functions
 
-function printChar(char) {
-  // Make sure screenBuffer is initialized
+function print(inputString) {
+  // Make sure buffers are initialized
   if (!screenBuffer || screenBuffer.length === 0) {
     initScreen();
   }
   
-  // Handle newline - DON'T store it, just move cursor
-  if (char === '\n') {
-    cursorX = 0;
-    cursorY++;
-    
-    // Auto-scroll at screen height
-    if (cursorY >= screenHeight) {
-      screenBuffer.shift();
-      const newLine = [];
-      for (let j = 0; j < screenWidth; j++) {
-        newLine[j] = ' ';
+  // Parse ANSI codes in input string
+  const tokens = parseANSIString(inputString);
+  
+  // Build plain text (no ANSI codes) for txt variable
+  let plainText = '';
+  for (const token of tokens) {
+    if (token.type === 'char') {
+      plainText += token.value;
+    }
+  }
+  txt = txt + plainText;
+  
+  // Process each token
+  for (const token of tokens) {
+    if (token.type === 'code') {
+      // Update current style
+      applyANSICode(token.codes);
+    } else if (token.type === 'char') {
+      const char = token.value;
+      
+      // Handle newline - DON'T store it, just move cursor
+      if (char === '\n') {
+        cursorX = 0;
+        cursorY++;
+        
+        // Auto-scroll at screen height
+        if (cursorY >= screenHeight) {
+          scrollScreenDown();
+          cursorY = screenHeight - 1;
+        }
+        continue;
       }
-      screenBuffer.push(newLine);
-      cursorY = screenHeight - 1;
-    }
-    return;  // EXIT - don't store the \n
-  }
-  
-  // Handle carriage return
-  if (char === '\r') {
-    cursorX = 0;
-    return;  // EXIT - don't store it
-  }
-  
-  // Check if we need to scroll before writing
-  if (cursorY >= screenHeight) {
-    screenBuffer.shift();
-    const newLine = [];
-    for (let j = 0; j < screenWidth; j++) {
-      newLine[j] = ' ';
-    }
-    screenBuffer.push(newLine);
-    cursorY = screenHeight - 1;
-  }
-  
-  // Auto-wrap at screen width
-  if (cursorX >= screenWidth) {
-    cursorX = 0;
-    cursorY++;
-    
-    // Check again if we need to scroll
-    if (cursorY >= screenHeight) {
-      screenBuffer.shift();
-      const newLine = [];
-      for (let j = 0; j < screenWidth; j++) {
-        newLine[j] = ' ';
+      
+      // Handle carriage return
+      if (char === '\r') {
+        cursorX = 0;
+        continue;
       }
-      screenBuffer.push(newLine);
-      cursorY = screenHeight - 1;
+      
+      // Check if we need to scroll before writing
+      if (cursorY >= screenHeight) {
+        scrollScreenDown();
+        cursorY = screenHeight - 1;
+      }
+      
+      // Auto-wrap at screen width
+      if (cursorX >= screenWidth) {
+        cursorX = 0;
+        cursorY++;
+        
+        // Check again if we need to scroll
+        if (cursorY >= screenHeight) {
+          scrollScreenDown();
+          cursorY = screenHeight - 1;
+        }
+      }
+      
+      // Store character and style in buffers
+      if (screenBuffer[cursorY] && styleBuffer[cursorY]) {
+        screenBuffer[cursorY][cursorX] = char;
+        styleBuffer[cursorY][cursorX] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+        cursorX++;
+      }
     }
   }
   
-  // Store regular character in buffer
-  if (screenBuffer[cursorY]) {
-    screenBuffer[cursorY][cursorX] = char;
-    cursorX++;
-  }
+  updateDisplay();
 }
 
-function renderScreen() {
- let html='';
- if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
- for (let y = 0; y < screenHeight; y++) {
-  if (!screenBuffer[y]) { screenBuffer[y] = []; for (let j = 0; j < screenWidth; j++) { screenBuffer[y][j] = ' '; }}
-  let lineContent = '';
-  for (let x = 0; x < screenWidth; x++) {
-   const char = (screenBuffer[y] && screenBuffer[y][x]) ? screenBuffer[y][x] : ' ';
-   lineContent += char;
-  }
-  html += lineContent;
-  if (y < screenHeight - 1) {
-   html += '\n';
-  }
- }
- return html;
-}
-
-function print(a) {
- if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
- txt=txt+a; if (typeof a === 'string') { for (let i = 0; i < a.length; i++) { const char = a[i]; printChar(char); }}
- updateDisplay();
-}
 
 function updateDisplay() {
- if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
- const txtElement=document.getElementById("txt");
- let htmlContent='';
- const rowsToRender=cursorY;
- for (y=0;y<rowsToRender; y++) {
-  let lineContent='';
-  for (x=0; x<screenWidth; x++) { lineContent+=screenBuffer[y][x]; }
-  lineContent=lineContent.replace(/\s+$/, '');
-  htmlContent+=lineContent
-   .replace(/&/g, '&amp;')
-   .replace(/</g, '&lt;')
-   .replace(/>/g, '&gt;');
-  htmlContent+='<br>';
- }
- if (keyon) {
-  let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
-  htmlContent+=cleanInput
-   .replace(/&/g, '&amp;')
-   .replace(/</g, '&lt;')
-   .replace(/>/g, '&gt;');
-  htmlContent += '<span id="cursor">&nbsp;</span>';
- }
- txtElement.innerHTML=htmlContent;
- txtElement.scrollTop=txtElement.scrollHeight;
+  if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
+  const txtElement = document.getElementById("txt");
+  let htmlContent = '';
+  const rowsToRender = cursorY;
+  
+  for (y = 0; y < rowsToRender; y++) {
+    let lineContent = '';
+    let currentSpanStyle = null;
+    let spanContent = '';
+    
+    for (x = 0; x < screenWidth; x++) {
+      const char = screenBuffer[y][x];
+      const style = styleBuffer[y][x];
+      
+      // Build style identifier for this character
+      const styleKey = `${style.color}-${style.bgcolor}-${style.bold}-${style.inverse}`;
+      
+      // If style changed, close previous span and open new one
+      if (currentSpanStyle !== styleKey) {
+        if (spanContent.length > 0) {
+          // Close previous span
+          lineContent += spanContent + '</span>';
+          spanContent = '';
+        }
+        
+        // Open new span with current style
+        let classes = [];
+        
+        if (style.inverse) {
+          // Swap foreground and background when inverse
+          classes.push(`ansi-${ANSI.bgColors[style.bgcolor]}`);
+          classes.push(`ansi-bg-${ANSI.colors[style.color]}`);
+        } else {
+          classes.push(`ansi-${ANSI.colors[style.color]}`);
+          classes.push(`ansi-bg-${ANSI.bgColors[style.bgcolor]}`);
+        }
+        
+        if (style.bold) {
+          classes.push('ansi-bold');
+        }
+        
+        lineContent += `<span class="${classes.join(' ')}">`;
+        currentSpanStyle = styleKey;
+      }
+      
+      // Escape HTML and add to span content
+      const escapedChar = char
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      spanContent += escapedChar;
+    }
+    
+    // Close final span
+    if (spanContent.length > 0) {
+      lineContent += spanContent + '</span>';
+    }
+    
+    // Trim trailing spaces
+    lineContent = lineContent.replace(/(&nbsp;|\s)+<\/span>$/, '</span>');
+    htmlContent += lineContent + '<br>';
+  }
+  
+  if (keyon) {
+    let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
+    htmlContent += cleanInput
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    htmlContent += '<span id="cursor">&nbsp;</span>';
+  }
+  
+  txtElement.innerHTML = htmlContent;
+  txtElement.scrollTop = txtElement.scrollHeight;
 }
 
 function cls() { var screenBuffer=[]; initScreen(); }
@@ -1118,8 +1253,24 @@ function ClickChar(Z) {
 
 initScreen();
 function initScreen() {
-  screenBuffer=[]; cursorX = 0; cursorY = 0;
-  for (i=0; i<screenHeight; i++) { screenBuffer[i]=[]; for (j=0; j<screenWidth; j++) { screenBuffer[i][j]=' '; } }
+  screenBuffer = [];
+  styleBuffer = [];
+  cursorX = 0;
+  cursorY = 0;
+  
+  for (i = 0; i < screenHeight; i++) {
+    screenBuffer[i] = [];
+    styleBuffer[i] = [];
+    for (j = 0; j < screenWidth; j++) {
+      screenBuffer[i][j] = ' ';
+      styleBuffer[i][j] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: currentStyle.bold,
+        inverse: currentStyle.inverse
+      };
+    }
+  }
 }
 
 window.ANSI=ANSI;
