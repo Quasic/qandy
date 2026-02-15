@@ -163,6 +163,12 @@ var line=""; // input text line
 var cursorPos=0; // cursor position in input line for editing
 var inputScrollPos=0; // starting position of visible input window
 
+// Command history support (like Linux terminal)
+var commandHistory = [];  // Array to store command history
+var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)
+var maxHistorySize = 50;  // Maximum number of commands to remember
+var tempCommand = "";     // Temporary storage for command being typed when browsing history
+
 // Text selection state
 var selectionStart = -1;  // Start position of selection (-1 = no selection)
 var selectionEnd = -1;    // End position of selection
@@ -174,6 +180,12 @@ var cursorX = 0;
 var cursorY = 0;
 var screenWidth = 29;
 var screenHeight = 25;
+
+// Pagination support for overflow text
+var paginationEnabled = true;  // Enable/disable pagination feature
+var paginationPaused = false;  // Is print() currently paused?
+var paginationBuffer = [];     // Queued text waiting to be printed
+var paginationLinesBeforePause = 20;  // Lines to show before pausing
 
 var styleBuffer = [];
 var currentStyle = {
@@ -388,6 +400,12 @@ function press() {
 }
 
 function button(b) {
+ // Handle pagination resume - any key continues
+ if (paginationPaused) {
+   resumePagination();
+   return;
+ }
+ 
  k=""; l=""; switch (b) {
   case 37: k="left"; break;
   case 38: k="up"; break;
@@ -683,77 +701,118 @@ function button(b) {
      selectionEnd = -1;
     }
    } else if (k === "up") {
-    // Arrow Up - move cursor to line above
+    // Arrow Up - command history (previous) or move cursor to line above
     const cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
     const charsPerLine = screenWidth;
     const currentLine = Math.floor(cursorPos / charsPerLine);
     const currentColumn = cursorPos % charsPerLine;
     
-    if (shift) {
-     // Selection mode
-     if (selectionStart === -1) {
-      selectionStart = cursorPos;
+    // If on first line and not in selection mode, navigate command history
+    if (currentLine === 0 && !shift && keyon) {
+     if (commandHistory.length > 0) {
+      // Save current command if starting to browse history
+      if (historyIndex === -1) {
+       tempCommand = line;
+       historyIndex = commandHistory.length;
+      }
+      
+      // Move to previous command in history
+      if (historyIndex > 0) {
+       historyIndex--;
+       line = commandHistory[historyIndex];
+       cursorPos = line.length;
+       inputScrollPos = 0;
+      }
      }
-    }
-    
-    if (currentLine > 0) {
-     // Not on first line, can move up
-     const prevLineStart = (currentLine - 1) * charsPerLine;
-     const prevLineLength = Math.min(charsPerLine, cleanInput.length - prevLineStart);
+    } else {
+     // Multi-line navigation
+     if (shift) {
+      // Selection mode
+      if (selectionStart === -1) {
+       selectionStart = cursorPos;
+      }
+     }
      
-     // Move to same column on line above, or end of line if column doesn't exist
-     const newPos = prevLineStart + Math.min(currentColumn, prevLineLength);
-     cursorPos = newPos;
-    }
-    
-    if (shift && selectionStart !== -1) {
-     selectionEnd = cursorPos;
-     // Normalize selection
-     if (selectionStart > selectionEnd) {
-      const temp = selectionStart;
-      selectionStart = selectionEnd;
-      selectionEnd = temp;
+     if (currentLine > 0) {
+      // Not on first line, can move up
+      const prevLineStart = (currentLine - 1) * charsPerLine;
+      const prevLineLength = Math.min(charsPerLine, cleanInput.length - prevLineStart);
+      
+      // Move to same column on line above, or end of line if column doesn't exist
+      const newPos = prevLineStart + Math.min(currentColumn, prevLineLength);
+      cursorPos = newPos;
      }
-    } else if (!shift) {
-     selectionStart = -1;
-     selectionEnd = -1;
+     
+     if (shift && selectionStart !== -1) {
+      selectionEnd = cursorPos;
+      // Normalize selection
+      if (selectionStart > selectionEnd) {
+       const temp = selectionStart;
+       selectionStart = selectionEnd;
+       selectionEnd = temp;
+      }
+     } else if (!shift) {
+      selectionStart = -1;
+      selectionEnd = -1;
+     }
     }
    } else if (k === "down") {
-    // Arrow Down - move cursor to line below
+    // Arrow Down - command history (next) or move cursor to line below
     const cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
     const charsPerLine = screenWidth;
     const currentLine = Math.floor(cursorPos / charsPerLine);
     const currentColumn = cursorPos % charsPerLine;
     const totalLines = Math.ceil(cleanInput.length / charsPerLine);
     
-    if (shift) {
-     // Selection mode
-     if (selectionStart === -1) {
-      selectionStart = cursorPos;
+    // If on last line and not in selection mode, navigate command history
+    if (currentLine >= totalLines - 1 && !shift && keyon) {
+     if (historyIndex !== -1) {
+      // Move to next command in history
+      if (historyIndex < commandHistory.length - 1) {
+       historyIndex++;
+       line = commandHistory[historyIndex];
+       cursorPos = line.length;
+       inputScrollPos = 0;
+      } else if (historyIndex === commandHistory.length - 1) {
+       // At newest history entry, go back to what user was typing
+       historyIndex = -1;
+       line = tempCommand;
+       cursorPos = line.length;
+       inputScrollPos = 0;
+       tempCommand = "";
+      }
      }
-    }
-    
-    if (currentLine < totalLines - 1) {
-     // Not on last line, can move down
-     const nextLineStart = (currentLine + 1) * charsPerLine;
-     const nextLineLength = Math.min(charsPerLine, cleanInput.length - nextLineStart);
+    } else {
+     // Multi-line navigation
+     if (shift) {
+      // Selection mode
+      if (selectionStart === -1) {
+       selectionStart = cursorPos;
+      }
+     }
      
-     // Move to same column on line below, or end of line if column doesn't exist
-     const newPos = nextLineStart + Math.min(currentColumn, nextLineLength);
-     cursorPos = newPos;
-    }
-    
-    if (shift && selectionStart !== -1) {
-     selectionEnd = cursorPos;
-     // Normalize selection
-     if (selectionStart > selectionEnd) {
-      const temp = selectionStart;
-      selectionStart = selectionEnd;
-      selectionEnd = temp;
+     if (currentLine < totalLines - 1) {
+      // Not on last line, can move down
+      const nextLineStart = (currentLine + 1) * charsPerLine;
+      const nextLineLength = Math.min(charsPerLine, cleanInput.length - nextLineStart);
+      
+      // Move to same column on line below, or end of line if column doesn't exist
+      const newPos = nextLineStart + Math.min(currentColumn, nextLineLength);
+      cursorPos = newPos;
      }
-    } else if (!shift) {
-     selectionStart = -1;
-     selectionEnd = -1;
+     
+     if (shift && selectionStart !== -1) {
+      selectionEnd = cursorPos;
+      // Normalize selection
+      if (selectionStart > selectionEnd) {
+       const temp = selectionStart;
+       selectionStart = selectionEnd;
+       selectionEnd = temp;
+      }
+     } else if (!shift) {
+      selectionStart = -1;
+      selectionEnd = -1;
+     }
     }
    } else if (k === "home") {
     if (shift) {
@@ -850,6 +909,21 @@ function button(b) {
    } else {
     if (k === "enter") {
      if (keyon) {
+      // Add command to history (skip empty commands and duplicates)
+      if (line.trim().length > 0) {
+       // Don't add if it's the same as the last command
+       if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== line) {
+        commandHistory.push(line);
+        // Limit history size
+        if (commandHistory.length > maxHistorySize) {
+         commandHistory.shift();
+        }
+       }
+      }
+      // Reset history navigation
+      historyIndex = -1;
+      tempCommand = "";
+      
       if (run) {
        // Program is running
        txt = txt + line + "<br>";
@@ -901,6 +975,9 @@ function button(b) {
       // Clear selection when typing
       selectionStart = -1;
       selectionEnd = -1;
+      // Reset history navigation when user types
+      historyIndex = -1;
+      tempCommand = "";
      }
     }
    }
@@ -1105,7 +1182,8 @@ codes: {
  cursorForward: (n = 1) => `\x1b[${n}C`,
  cursorBack: (n = 1) => `\x1b[${n}D`,
  clearScreen: '\x1b[2J',
- clearLine: '\x1b[K'
+ clearLine: '\x1b[K',
+ pageBreak: '\f'  // Form Feed (ASCII 12, 0x0C) - explicit page break for pagination
 }};
 
 // system functions
@@ -1140,7 +1218,66 @@ function showFiles() {
   }
 }
 
+function triggerPaginationPause() {
+  // Pauses pagination output and displays "Press Any Key to Continue" prompt.
+  // Can be triggered by: line count threshold (20 lines) OR Form Feed character (\f)
+  paginationPaused = true;
+  keyon = 0;  // Disable normal keyboard input
+  
+  // Save current style
+  const savedStyle = {
+    color: currentStyle.color,
+    bgcolor: currentStyle.bgcolor,
+    bold: currentStyle.bold,
+    inverse: currentStyle.inverse
+  };
+  
+  // Print pause message in bright color
+  currentStyle.color = 32;  // Green
+  currentStyle.bold = true;
+  const pauseMsg = "\n--- Press Any Key to Continue ---";
+  for (let i = 0; i < pauseMsg.length; i++) {
+    if (pauseMsg[i] === '\n') {
+      cursorX = 0;
+      cursorY++;
+    } else {
+      if (cursorX >= screenWidth) {
+        cursorX = 0;
+        cursorY++;
+      }
+      if (cursorY >= screenHeight) {
+        scrollScreenDown();
+        cursorY = screenHeight - 1;
+      }
+      if (screenBuffer[cursorY] && styleBuffer[cursorY]) {
+        screenBuffer[cursorY][cursorX] = pauseMsg[i];
+        styleBuffer[cursorY][cursorX] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+        cursorX++;
+      }
+    }
+  }
+  
+  // Restore style
+  currentStyle.color = savedStyle.color;
+  currentStyle.bgcolor = savedStyle.bgcolor;
+  currentStyle.bold = savedStyle.bold;
+  currentStyle.inverse = savedStyle.inverse;
+  
+  updateDisplay();
+}
+
 function print(inputString) {
+  // If pagination is paused, queue the text for later
+  if (paginationPaused) {
+    paginationBuffer.push(inputString);
+    return;
+  }
+  
   // Make sure buffers are initialized
   if (!screenBuffer || screenBuffer.length === 0) {
     initScreen();
@@ -1166,10 +1303,34 @@ function print(inputString) {
     } else if (token.type === 'char') {
       const char = token.value;
       
+      // Handle Form Feed (FF) - triggers explicit page break for pagination
+      if (char === '\f') {
+        if (paginationEnabled) {
+          // Form Feed explicitly triggers pagination
+          triggerPaginationPause();
+          return;  // Exit and wait for key press
+        } else {
+          // If pagination disabled, treat as newline
+          cursorX = 0;
+          cursorY++;
+          if (cursorY >= screenHeight) {
+            scrollScreenDown();
+            cursorY = screenHeight - 1;
+          }
+        }
+        continue;
+      }
+      
       // Handle newline - DON'T store it, just move cursor
       if (char === '\n') {
         cursorX = 0;
         cursorY++;
+        
+        // Check if we should pause for pagination (line count threshold)
+        if (paginationEnabled && cursorY >= paginationLinesBeforePause) {
+          triggerPaginationPause();
+          return;  // Exit and wait for key press
+        }
         
         // Auto-scroll at screen height
         if (cursorY >= screenHeight) {
@@ -1218,6 +1379,39 @@ function print(inputString) {
   }
   
   updateDisplay();
+}
+
+function resumePagination() {
+  // Clear the pause message by removing last few lines
+  if (screenBuffer.length > 0) {
+    // Remove the "Press Any Key" message line
+    const lastLineIdx = screenBuffer.length - 1;
+    for (let x = 0; x < screenWidth; x++) {
+      screenBuffer[lastLineIdx][x] = ' ';
+      styleBuffer[lastLineIdx][x] = {
+        color: 37,
+        bgcolor: 40,
+        bold: false,
+        inverse: false
+      };
+    }
+  }
+  
+  // Reset pagination state
+  paginationPaused = false;
+  keyon = 1;  // Re-enable keyboard input
+  
+  // Clear the screen and reset cursor
+  initScreen();
+  
+  // Process queued print calls
+  const bufferedText = paginationBuffer.slice();  // Copy array
+  paginationBuffer = [];  // Clear buffer
+  
+  // Print all buffered content
+  for (let i = 0; i < bufferedText.length; i++) {
+    print(bufferedText[i]);
+  }
 }
 
 
@@ -1347,7 +1541,14 @@ function updateDisplay() {
   txtElement.scrollTop = txtElement.scrollHeight;
 }
 
-function cls() { var screenBuffer=[]; initScreen(); }
+function cls() { 
+  screenBuffer = [];  // Reset global screenBuffer (removed 'var' to avoid shadowing)
+  initScreen(); 
+  // Reset pagination state
+  paginationPaused = false;
+  paginationBuffer = [];
+  keyon = 1;
+}
 
 function gfx(scr) { a=0; for (b=0; b<=mapy; b++) { for (c=0; c<=mapx; c++) { e=document.getElementById("T"+a).src="t/"+scr.charAt(a*2)+scr.charAt((a*2)+1)+".png"; a++; }}}
 function hpop() { document.getElementById("pop").style.visibility="hidden"; }
