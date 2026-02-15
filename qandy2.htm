@@ -326,12 +326,6 @@ document.addEventListener('paste', function (event) {
   if (pastedText) {
    line += pastedText;
    cursorPos = line.length; // Update cursor position to end
-   // Calculate scroll position to show end of text
-   if (line.length > screenWidth) {
-    inputScrollPos = line.length - screenWidth;
-   } else {
-    inputScrollPos = 0;
-   }
    updateDisplay();
   }
  }
@@ -893,41 +887,45 @@ function updateDisplay() {
   if (keyon) {
     let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
     
-    // Calculate input scroll position to keep cursor visible
-    if (cursorPos < inputScrollPos) {
-      // Cursor moved before visible window, scroll back
-      inputScrollPos = cursorPos;
-    } else if (cursorPos > inputScrollPos + screenWidth - 1) {
-      // Cursor moved past visible window, scroll forward
-      inputScrollPos = cursorPos - screenWidth + 1;
-    }
+    // Calculate how many display lines we need
+    const charsPerLine = 29;
+    const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine));
     
-    // Extract the visible window of the input
-    let visibleInput = cleanInput.substring(inputScrollPos, inputScrollPos + screenWidth);
-    
-    // Calculate cursor position within the visible window
-    let visibleCursorPos = cursorPos - inputScrollPos;
-    
-    // Build the input line with inverted cursor character
-    for (let i = 0; i < screenWidth; i++) {
-      let charIndex = inputScrollPos + i;
-      let char = charIndex < cleanInput.length ? cleanInput[charIndex] : ' ';
+    // Render input across multiple wrapped lines
+    for (let lineIndex = 0; lineIndex < numLines; lineIndex++) {
+      let lineStart = lineIndex * charsPerLine;
+      let lineEnd = Math.min(lineStart + charsPerLine, cleanInput.length);
+      let displayLine = cleanInput.substring(lineStart, lineEnd);
       
-      // Escape HTML characters
-      char = char
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/ /g, '&nbsp;');
+      let lineHtml = '';
       
-      if (i === visibleCursorPos) {
-        // Cursor position - invert colors (black text on white background)
-        htmlContent += '<span style="background-color: white; color: black;">' + char + '</span>';
-      } else if (charIndex < cleanInput.length) {
-        // Normal character from input
-        htmlContent += char;
+      // Build this line character by character
+      for (let charIndex = 0; charIndex < charsPerLine; charIndex++) {
+        let charPos = lineStart + charIndex;
+        
+        if (charIndex < displayLine.length) {
+          // We have a character to display
+          let char = displayLine[charIndex];
+          
+          if (charPos === cursorPos) {
+            // This is the cursor position - invert colors
+            lineHtml += '<span style="background-color: white; color: black;">' + 
+                        char.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;') + 
+                        '</span>';
+          } else {
+            // Normal character
+            lineHtml += char.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
+          }
+        } else if (charPos === cursorPos && charPos === cleanInput.length) {
+          // Cursor is at the end of input (after last character)
+          lineHtml += '<span style="background-color: white; color: black;">&nbsp;</span>';
+        } else {
+          // Empty space (input doesn't extend this far on this line)
+          lineHtml += '&nbsp;';
+        }
       }
-      // Don't render trailing spaces beyond the input
+      
+      htmlContent += lineHtml + '<br>';
     }
   }
   
