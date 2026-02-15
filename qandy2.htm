@@ -145,14 +145,14 @@ var keyon=1; // turn keyboard input on/off
 
 // Extended graphic character mapping for caps level 2
 var extendedChars = {
-  'q': '┌', 'w': '─', 'e': '┬', 'r': '─', 't': '┐',
-  'a': '├', 's': '─', 'd': '┼', 'f': '─', 'g': '┤',
-  'z': '└', 'x': '─', 'c': '┴', 'v': '─', 'b': '┘',
-  'y': '│', 'u': '╔', 'i': '═', 'o': '╗',
-  'h': '║', 'j': '╠', 'k': '╬', 'l': '╣',
-  'n': '╚', 'm': '╝',
-  'p': '╦', '1': '↑', '2': '↓', '3': '←', '4': '→',
-  '5': '■', '6': '□', '7': '●', '8': '○',
+  'q': '┌', 'w': '┬', 'e': '┐', 'r': '─', 't': '╔',
+  'a': '├', 's': '┼', 'd': '┤', 'f': '│', 'g': '╠',
+  'z': '└', 'x': '┴', 'c': '┘', 'v': '╚', 'b': '╝',
+  'y': '╦', 'u': '╗', 'i': '═', 'o': '╣',
+  'h': '╬', 'j': '╩', 'k': '║', 'l': '▬',
+  'n': '▀', 'm': '▄',
+  'p': '●', '1': '↑', '2': '↓', '3': '←', '4': '→',
+  '5': '■', '6': '□', '7': '◆', '8': '○',
   '9': '★', '0': '☆', '[': '♠', ']': '♥',
   ';': '♦', '\'': '♣', ',': '✓', '.': '✗',
   '/': '÷', '=': '×', '-': '±', ' ': '·'
@@ -561,51 +561,51 @@ function button(b) {
     document.getElementById("caps").style.color = "#000";
    } else {
     // Extended graphics (caps === 2)
-    document.getElementById("open").innerHTML = extendedChars['['] || "♠";
-    document.getElementById("close").innerHTML = extendedChars[']'] || "♥";
-    document.getElementById("n1").innerHTML = extendedChars['1'] || "↑";
-    document.getElementById("n2").innerHTML = extendedChars['2'] || "↓";
-    document.getElementById("n3").innerHTML = extendedChars['3'] || "←";
-    document.getElementById("n4").innerHTML = extendedChars['4'] || "→";
-    document.getElementById("n5").innerHTML = extendedChars['5'] || "■";
-    document.getElementById("n6").innerHTML = extendedChars['6'] || "□";
-    document.getElementById("n7").innerHTML = extendedChars['7'] || "●";
-    document.getElementById("n8").innerHTML = extendedChars['8'] || "○";
-    document.getElementById("n9").innerHTML = extendedChars['9'] || "★";
-    document.getElementById("n0").innerHTML = extendedChars['0'] || "☆";
-    document.getElementById("q").innerHTML = extendedChars['q'] || "┌";
-    document.getElementById("w").innerHTML = extendedChars['w'] || "─";
-    document.getElementById("e").innerHTML = extendedChars['e'] || "┬";
-    document.getElementById("r").innerHTML = extendedChars['r'] || "─";
-    document.getElementById("t").innerHTML = extendedChars['t'] || "┐";
-    document.getElementById("y").innerHTML = extendedChars['y'] || "│";
-    document.getElementById("u").innerHTML = extendedChars['u'] || "╔";
-    document.getElementById("i").innerHTML = extendedChars['i'] || "═";
-    document.getElementById("o").innerHTML = extendedChars['o'] || "╗";
-    document.getElementById("p").innerHTML = extendedChars['p'] || "╦";
-    document.getElementById("a").innerHTML = extendedChars['a'] || "├";
-    document.getElementById("s").innerHTML = extendedChars['s'] || "─";
-    document.getElementById("d").innerHTML = extendedChars['d'] || "┼";
-    document.getElementById("f").innerHTML = extendedChars['f'] || "─";
-    document.getElementById("g").innerHTML = extendedChars['g'] || "┤";
-    document.getElementById("h").innerHTML = extendedChars['h'] || "║";
-    document.getElementById("j").innerHTML = extendedChars['j'] || "╠";
-    document.getElementById("k").innerHTML = extendedChars['k'] || "╬";
-    document.getElementById("l").innerHTML = extendedChars['l'] || "╣";
-    document.getElementById("z").innerHTML = extendedChars['z'] || "└";
-    document.getElementById("x").innerHTML = extendedChars['x'] || "─";
-    document.getElementById("c").innerHTML = extendedChars['c'] || "┴";
-    document.getElementById("v").innerHTML = extendedChars['v'] || "─";
-    document.getElementById("b").innerHTML = extendedChars['b'] || "┘";
-    document.getElementById("n").innerHTML = extendedChars['n'] || "╚";
-    document.getElementById("m").innerHTML = extendedChars['m'] || "╝";
-    document.getElementById("equal").innerHTML = extendedChars['='] || "×";
-    document.getElementById("slash").innerHTML = extendedChars['/'] || "÷";
-    document.getElementById("colon").innerHTML = extendedChars[';'] || "♦";
-    document.getElementById("quote").innerHTML = extendedChars['\''] || "♣";
-    document.getElementById("comma").innerHTML = extendedChars[','] || "✓";
-    document.getElementById("dot").innerHTML = extendedChars['.'] || "✗";
-    document.getElementById("dash").innerHTML = extendedChars['-'] || "±";
+    document.getElementById("open").innerHTML = extendedChars['['];
+    document.getElementById("close").innerHTML = extendedChars[']'];
+    document.getElementById("n1").innerHTML = extendedChars['1'];
+    document.getElementById("n2").innerHTML = extendedChars['2'];
+    document.getElementById("n3").innerHTML = extendedChars['3'];
+    document.getElementById("n4").innerHTML = extendedChars['4'];
+    document.getElementById("n5").innerHTML = extendedChars['5'];
+    document.getElementById("n6").innerHTML = extendedChars['6'];
+    document.getElementById("n7").innerHTML = extendedChars['7'];
+    document.getElementById("n8").innerHTML = extendedChars['8'];
+    document.getElementById("n9").innerHTML = extendedChars['9'];
+    document.getElementById("n0").innerHTML = extendedChars['0'];
+    document.getElementById("q").innerHTML = extendedChars['q'];
+    document.getElementById("w").innerHTML = extendedChars['w'];
+    document.getElementById("e").innerHTML = extendedChars['e'];
+    document.getElementById("r").innerHTML = extendedChars['r'];
+    document.getElementById("t").innerHTML = extendedChars['t'];
+    document.getElementById("y").innerHTML = extendedChars['y'];
+    document.getElementById("u").innerHTML = extendedChars['u'];
+    document.getElementById("i").innerHTML = extendedChars['i'];
+    document.getElementById("o").innerHTML = extendedChars['o'];
+    document.getElementById("p").innerHTML = extendedChars['p'];
+    document.getElementById("a").innerHTML = extendedChars['a'];
+    document.getElementById("s").innerHTML = extendedChars['s'];
+    document.getElementById("d").innerHTML = extendedChars['d'];
+    document.getElementById("f").innerHTML = extendedChars['f'];
+    document.getElementById("g").innerHTML = extendedChars['g'];
+    document.getElementById("h").innerHTML = extendedChars['h'];
+    document.getElementById("j").innerHTML = extendedChars['j'];
+    document.getElementById("k").innerHTML = extendedChars['k'];
+    document.getElementById("l").innerHTML = extendedChars['l'];
+    document.getElementById("z").innerHTML = extendedChars['z'];
+    document.getElementById("x").innerHTML = extendedChars['x'];
+    document.getElementById("c").innerHTML = extendedChars['c'];
+    document.getElementById("v").innerHTML = extendedChars['v'];
+    document.getElementById("b").innerHTML = extendedChars['b'];
+    document.getElementById("n").innerHTML = extendedChars['n'];
+    document.getElementById("m").innerHTML = extendedChars['m'];
+    document.getElementById("equal").innerHTML = extendedChars['='];
+    document.getElementById("slash").innerHTML = extendedChars['/'];
+    document.getElementById("colon").innerHTML = extendedChars[';'];
+    document.getElementById("quote").innerHTML = extendedChars['\''];
+    document.getElementById("comma").innerHTML = extendedChars[','];
+    document.getElementById("dot").innerHTML = extendedChars['.'];
+    document.getElementById("dash").innerHTML = extendedChars['-'];
     document.getElementById("caps").style.backgroundColor = "#0f0";
     document.getElementById("caps").style.color = "#000";
    }
