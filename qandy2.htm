@@ -326,6 +326,12 @@ document.addEventListener('paste', function (event) {
   if (pastedText) {
    line += pastedText;
    cursorPos = line.length; // Update cursor position to end
+   // Calculate scroll position to show end of text
+   if (line.length > screenWidth) {
+    inputScrollPos = line.length - screenWidth;
+   } else {
+    inputScrollPos = 0;
+   }
    updateDisplay();
   }
  }
@@ -348,6 +354,7 @@ function button(b) {
   case 27: k="esc"; break;
   case 13: k="enter"; break;
   case  8: k="back"; break;
+  case 46: k="delete"; break;
   case 20: k="caps"; break;
   case 49: if (shift||caps) { k="!"; l=k; } else { k="1"; l=k; } break;  
   case 50: if (shift||caps) { k="@"; l=k; } else { k="2"; l=k; } break;  
@@ -475,6 +482,11 @@ function button(b) {
     if (cursorPos > 0) {
      line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
      cursorPos--;
+    }
+   } else if (k === "delete") {
+    // Delete - delete character at cursor
+    if (cursorPos < line.length) {
+     line = line.substring(0, cursorPos) + line.substring(cursorPos + 1);
     }
    } else {
     if (k === "enter") {
@@ -896,16 +908,27 @@ function updateDisplay() {
     // Calculate cursor position within the visible window
     let visibleCursorPos = cursorPos - inputScrollPos;
     
-    // Insert cursor at the correct position in visible window
-    let beforeCursor = visibleInput.substring(0, visibleCursorPos)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    let afterCursor = visibleInput.substring(visibleCursorPos)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    htmlContent += beforeCursor + '<span id="cursor">&nbsp;</span>' + afterCursor;
+    // Build the input line with inverted cursor character
+    for (let i = 0; i < screenWidth; i++) {
+      let charIndex = inputScrollPos + i;
+      let char = charIndex < cleanInput.length ? cleanInput[charIndex] : ' ';
+      
+      // Escape HTML characters
+      char = char
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/ /g, '&nbsp;');
+      
+      if (i === visibleCursorPos) {
+        // Cursor position - invert colors (black text on white background)
+        htmlContent += '<span style="background-color: white; color: black;">' + char + '</span>';
+      } else if (charIndex < cleanInput.length) {
+        // Normal character from input
+        htmlContent += char;
+      }
+      // Don't render trailing spaces beyond the input
+    }
   }
   
   txtElement.innerHTML = htmlContent;
