@@ -746,7 +746,8 @@ function executeCode(code) {
 
 function parseANSIString(str) {
   const tokens = [];
-  const ansiRegex = /(\x1b|\033|\u001b)\[([\d;]*)([A-Za-z])/g;
+  // Match ANSI escape sequences in hex (\x1b), octal (\033 = \x1b), and unicode (\u001b) formats
+  const ansiRegex = /(\x1b|\x1b|\u001b)\[([\d;]*)([A-Za-z])/g;
   let lastIndex = 0;
   let match;
   
@@ -760,7 +761,7 @@ function parseANSIString(str) {
     }
     
     // Add the ANSI code
-    const params = match[2] ? match[2].split(';').map(Number) : [0];
+    const params = match[2] ? match[2].split(';').filter(s => s !== '').map(Number) : [0];
     const command = match[3];
     
     if (command === 'm') {
@@ -1017,12 +1018,12 @@ function updateDisplay() {
   let htmlContent = '';
   const rowsToRender = cursorY;
   
-  for (y = 0; y < rowsToRender; y++) {
+  for (let y = 0; y < rowsToRender; y++) {
     let lineContent = '';
     let currentSpanStyle = null;
     let spanContent = '';
     
-    for (x = 0; x < screenWidth; x++) {
+    for (let x = 0; x < screenWidth; x++) {
       const char = screenBuffer[y][x];
       const style = styleBuffer[y][x];
       
@@ -1070,8 +1071,8 @@ function updateDisplay() {
       lineContent += spanContent + '</span>';
     }
     
-    // Trim trailing spaces
-    lineContent = lineContent.replace(/(&nbsp;|\s)+<\/span>$/, '</span>');
+    // Trim trailing spaces before the final </span>
+    lineContent = lineContent.replace(/\s+<\/span>$/, '</span>');
     htmlContent += lineContent + '<br>';
   }
   
@@ -1258,10 +1259,10 @@ function initScreen() {
   cursorX = 0;
   cursorY = 0;
   
-  for (i = 0; i < screenHeight; i++) {
+  for (let i = 0; i < screenHeight; i++) {
     screenBuffer[i] = [];
     styleBuffer[i] = [];
-    for (j = 0; j < screenWidth; j++) {
+    for (let j = 0; j < screenWidth; j++) {
       screenBuffer[i][j] = ' ';
       styleBuffer[i][j] = {
         color: currentStyle.color,
