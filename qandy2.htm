@@ -163,6 +163,12 @@ var line=""; // input text line
 var cursorPos=0; // cursor position in input line for editing
 var inputScrollPos=0; // starting position of visible input window
 
+// Command history support (like Linux terminal)
+var commandHistory = [];  // Array to store command history
+var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)
+var maxHistorySize = 50;  // Maximum number of commands to remember
+var tempCommand = "";     // Temporary storage for command being typed when browsing history
+
 // Text selection state
 var selectionStart = -1;  // Start position of selection (-1 = no selection)
 var selectionEnd = -1;    // End position of selection
@@ -695,73 +701,113 @@ function button(b) {
      selectionEnd = -1;
     }
    } else if (k === "up") {
-    // Arrow Up - move cursor to line above
+    // Arrow Up - command history (previous) or move cursor to line above
     const cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
     const charsPerLine = screenWidth;
     const currentLine = Math.floor(cursorPos / charsPerLine);
     const currentColumn = cursorPos % charsPerLine;
     
-    if (shift) {
-     // Selection mode
-     if (selectionStart === -1) {
-      selectionStart = cursorPos;
+    // If on first line and not in selection mode, navigate command history
+    if (currentLine === 0 && !shift && keyon) {
+     if (commandHistory.length > 0) {
+      // Save current command if starting to browse history
+      if (historyIndex === -1) {
+       tempCommand = line;
+       historyIndex = commandHistory.length;
+      }
+      
+      // Move to previous command in history
+      if (historyIndex > 0) {
+       historyIndex--;
+       line = commandHistory[historyIndex];
+       cursorPos = line.length;
+       inputScrollPos = 0;
+      }
      }
-    }
-    
-    if (currentLine > 0) {
-     // Not on first line, can move up
-     const prevLineStart = (currentLine - 1) * charsPerLine;
-     const prevLineLength = Math.min(charsPerLine, cleanInput.length - prevLineStart);
+    } else {
+     // Multi-line navigation
+     if (shift) {
+      // Selection mode
+      if (selectionStart === -1) {
+       selectionStart = cursorPos;
+      }
+     }
      
-     // Move to same column on line above, or end of line if column doesn't exist
-     const newPos = prevLineStart + Math.min(currentColumn, prevLineLength);
-     cursorPos = newPos;
-    }
-    
-    if (shift && selectionStart !== -1) {
-     selectionEnd = cursorPos;
-     // Normalize selection
-     if (selectionStart > selectionEnd) {
-      const temp = selectionStart;
-      selectionStart = selectionEnd;
-      selectionEnd = temp;
+     if (currentLine > 0) {
+      // Not on first line, can move up
+      const prevLineStart = (currentLine - 1) * charsPerLine;
+      const prevLineLength = Math.min(charsPerLine, cleanInput.length - prevLineStart);
+      
+      // Move to same column on line above, or end of line if column doesn't exist
+      const newPos = prevLineStart + Math.min(currentColumn, prevLineLength);
+      cursorPos = newPos;
      }
-    } else if (!shift) {
-     selectionStart = -1;
-     selectionEnd = -1;
+     
+     if (shift && selectionStart !== -1) {
+      selectionEnd = cursorPos;
+      // Normalize selection
+      if (selectionStart > selectionEnd) {
+       const temp = selectionStart;
+       selectionStart = selectionEnd;
+       selectionEnd = temp;
+      }
+     } else if (!shift) {
+      selectionStart = -1;
+      selectionEnd = -1;
+     }
     }
    } else if (k === "down") {
-    // Arrow Down - move cursor to line below
+    // Arrow Down - command history (next) or move cursor to line below
     const cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
     const charsPerLine = screenWidth;
     const currentLine = Math.floor(cursorPos / charsPerLine);
     const currentColumn = cursorPos % charsPerLine;
     const totalLines = Math.ceil(cleanInput.length / charsPerLine);
     
-    if (shift) {
-     // Selection mode
-     if (selectionStart === -1) {
-      selectionStart = cursorPos;
+    // If on last line and not in selection mode, navigate command history
+    if (currentLine >= totalLines - 1 && !shift && keyon) {
+     if (historyIndex !== -1) {
+      // Move to next command in history
+      if (historyIndex < commandHistory.length - 1) {
+       historyIndex++;
+       line = commandHistory[historyIndex];
+       cursorPos = line.length;
+       inputScrollPos = 0;
+      } else if (historyIndex === commandHistory.length - 1) {
+       // At newest history entry, go back to what user was typing
+       historyIndex = -1;
+       line = tempCommand;
+       cursorPos = line.length;
+       inputScrollPos = 0;
+       tempCommand = "";
+      }
      }
-    }
-    
-    if (currentLine < totalLines - 1) {
-     // Not on last line, can move down
-     const nextLineStart = (currentLine + 1) * charsPerLine;
-     const nextLineLength = Math.min(charsPerLine, cleanInput.length - nextLineStart);
+    } else {
+     // Multi-line navigation
+     if (shift) {
+      // Selection mode
+      if (selectionStart === -1) {
+       selectionStart = cursorPos;
+      }
+     }
      
-     // Move to same column on line below, or end of line if column doesn't exist
-     const newPos = nextLineStart + Math.min(currentColumn, nextLineLength);
-     cursorPos = newPos;
-    }
-    
-    if (shift && selectionStart !== -1) {
-     selectionEnd = cursorPos;
-     // Normalize selection
-     if (selectionStart > selectionEnd) {
-      const temp = selectionStart;
-      selectionStart = selectionEnd;
-      selectionEnd = temp;
+     if (currentLine < totalLines - 1) {
+      // Not on last line, can move down
+      const nextLineStart = (currentLine + 1) * charsPerLine;
+      const nextLineLength = Math.min(charsPerLine, cleanInput.length - nextLineStart);
+      
+      // Move to same column on line below, or end of line if column doesn't exist
+      const newPos = nextLineStart + Math.min(currentColumn, nextLineLength);
+      cursorPos = newPos;
+     }
+     
+     if (shift && selectionStart !== -1) {
+      selectionEnd = cursorPos;
+      // Normalize selection
+      if (selectionStart > selectionEnd) {
+       const temp = selectionStart;
+       selectionStart = selectionEnd;
+       selectionEnd = temp;
      }
     } else if (!shift) {
      selectionStart = -1;
@@ -862,6 +908,21 @@ function button(b) {
    } else {
     if (k === "enter") {
      if (keyon) {
+      // Add command to history (skip empty commands and duplicates)
+      if (line.trim().length > 0) {
+       // Don't add if it's the same as the last command
+       if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== line) {
+        commandHistory.push(line);
+        // Limit history size
+        if (commandHistory.length > maxHistorySize) {
+         commandHistory.shift();
+        }
+       }
+      }
+      // Reset history navigation
+      historyIndex = -1;
+      tempCommand = "";
+      
       if (run) {
        // Program is running
        txt = txt + line + "<br>";
@@ -913,6 +974,9 @@ function button(b) {
       // Clear selection when typing
       selectionStart = -1;
       selectionEnd = -1;
+      // Reset history navigation when user types
+      historyIndex = -1;
+      tempCommand = "";
      }
     }
    }
