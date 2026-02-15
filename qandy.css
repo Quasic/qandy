@@ -1,6 +1,6 @@
 /* Qandy Pocket Computer Styles */
 
-/* Import Google Fonts for better extended ASCII character support */
+/* Import Google Fonts for better extended ASCII character support (optional enhancement) */
 @import url('https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;700&display=swap');
 
 body { background-color: #333 }
@@ -15,7 +15,9 @@ body { background-color: #333 }
   width: 256px; 
   height: 384px; 
   z-index: 254;     
-  font-family: 'VT323', 'IBM Plex Mono', 'Courier New', monospace;
+  /* Font stack optimized for extended ASCII support with good fallbacks */
+  /* Priority: Web fonts -> System monospace fonts with Unicode -> Generic fallback */
+  font-family: 'VT323', 'IBM Plex Mono', 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', 'Menlo', 'Monaco', 'Courier New', 'Courier', monospace;
   font-size: 16px;
   font-weight: normal;
   color: #fff;
