@@ -161,10 +161,11 @@ var qandyConfig = {
   
   /**
    * Display Options
-   * Additional configuration options can be added here
+   * Note: These are currently for documentation/reference purposes only.
+   * Future versions may implement functionality to override qandy2.htm defaults.
    */
   displayOptions: {
-    // Screen dimensions (currently read-only from qandy2.htm)
+    // Screen dimensions (defined in qandy2.htm)
     screenWidth: 29,
     screenHeight: 25,
     
@@ -186,10 +187,10 @@ var qandyConfig = {
    * BACKTICK SECURITY CONSIDERATIONS:
    * 
    * In Perl, backticks execute shell commands:
-   *   $output = `ls -la`;  # DANGEROUS - executes system command
+   *   $output = `ls -la`;  // DANGEROUS - executes system command
    * 
    * In JavaScript/Node.js, backticks are for template literals:
-   *   const output = `Hello ${name}`;  # Safe - string interpolation only
+   *   const output = `Hello ${name}`;  // Safe - string interpolation only
    * 
    * In Qandy:
    * - User input is stored as plain text strings
