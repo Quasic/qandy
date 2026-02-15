@@ -467,6 +467,39 @@ function button(b) {
     if (cursorPos < line.length) {
      cursorPos++;
     }
+   } else if (k === "up") {
+    // Arrow Up - move cursor to line above
+    const cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
+    const charsPerLine = screenWidth;
+    const currentLine = Math.floor(cursorPos / charsPerLine);
+    const currentColumn = cursorPos % charsPerLine;
+    
+    if (currentLine > 0) {
+     // Not on first line, can move up
+     const prevLineStart = (currentLine - 1) * charsPerLine;
+     const prevLineLength = Math.min(charsPerLine, cleanInput.length - prevLineStart);
+     
+     // Move to same column on line above, or end of line if column doesn't exist
+     const newPos = prevLineStart + Math.min(currentColumn, prevLineLength);
+     cursorPos = newPos;
+    }
+   } else if (k === "down") {
+    // Arrow Down - move cursor to line below
+    const cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
+    const charsPerLine = screenWidth;
+    const currentLine = Math.floor(cursorPos / charsPerLine);
+    const currentColumn = cursorPos % charsPerLine;
+    const totalLines = Math.ceil(cleanInput.length / charsPerLine);
+    
+    if (currentLine < totalLines - 1) {
+     // Not on last line, can move down
+     const nextLineStart = (currentLine + 1) * charsPerLine;
+     const nextLineLength = Math.min(charsPerLine, cleanInput.length - nextLineStart);
+     
+     // Move to same column on line below, or end of line if column doesn't exist
+     const newPos = nextLineStart + Math.min(currentColumn, nextLineLength);
+     cursorPos = newPos;
+    }
    } else if (k === "home") {
     cursorPos = 0;
    } else if (k === "end") {
