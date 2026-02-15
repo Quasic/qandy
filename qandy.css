@@ -44,7 +44,7 @@ body { background-color: #333 }
   /* Font stack optimized for authentic retro PC look with extended ASCII support */
   /* Priority: Authentic IBM VGA -> Retro web fonts -> System monospace -> Generic fallback */
   font-family: 'IBM VGA 8x16', 'IBM VGA 9x16', 'VT323', 'IBM Plex Mono', 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', 'Menlo', 'Monaco', 'Courier New', 'Courier', monospace;
-  font-size: 16px;
+  font-size: 8px;
   font-weight: normal;
   color: #fff;
   background-color: #000;
