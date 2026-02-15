@@ -508,14 +508,14 @@ document.addEventListener('keydown', function () { press(); });
 document.addEventListener('paste', function (event) {
  if (keyon) {
   event.preventDefault();
-  var pastedText = '';
+  var pastedText;
   if (event.clipboardData && event.clipboardData.getData) {
    pastedText = event.clipboardData.getData('text/plain');
   } else if (window.clipboardData && window.clipboardData.getData) {
    pastedText = window.clipboardData.getData('Text');
   }
   if (pastedText) {
-   line = line + pastedText;
+   line += pastedText;
    updateDisplay();
   }
  }
