@@ -44,7 +44,7 @@ body { background-color: #333 }
   /* Font stack optimized for readability with extended character support */
   /* Priority: Courier (readable) -> System monospace with Unicode -> Generic fallback */
   font-family: 'Courier New', Courier, 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', 'Menlo', Monaco, monospace;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: normal;
   color: #fff;
   background-color: #000;
