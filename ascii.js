@@ -101,19 +101,46 @@ function ansi() {
   keyon = 1;
 }
 
+function alpha() {
+  cls();
+  print("\x1b[1;36m");
+  print("ALPHA-NUMERIC CHARACTERS\n");
+  print("═══════════════════════════════════\x1b[0m\n\n");
+  
+  print("\x1b[1;33mUppercase Letters (A-Z):\x1b[0m\n");
+  for (let i = 65; i <= 90; i++) {
+    print(String.fromCharCode(i) + " ");
+    if ((i - 64) % 13 === 0) print("\n");
+  }
+  print("\n\n");
+  
+  print("\x1b[1;33mLowercase Letters (a-z):\x1b[0m\n");
+  for (let i = 97; i <= 122; i++) {
+    print(String.fromCharCode(i) + " ");
+    if ((i - 96) % 13 === 0) print("\n");
+  }
+  print("\n\n");
+  
+  print("\x1b[1;33mDigits (0-9):\x1b[0m\n");
+  for (let i = 48; i <= 57; i++) {
+    print(String.fromCharCode(i) + " ");
+  }
+  print("\n\n");
+  
+  print("Use ascii() ansi() or alpha() to display different character sets\n");
+  keyon = 1;
+}
+
 function keydown(k) {
   var key = k.toUpperCase();
   
   if (key === "A") {
-    displayAll256();
+    ascii();
   } else if (key === "N") {
-    displayNiceCharacters();
+    ansi();
   } else if (key === "Q") {
     cls();
     keyon = 1;
     print("Returned to input mode\n");
   }
 }
-
-// Start the script
-showASCIIMenu();
