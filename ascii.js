@@ -51,17 +51,18 @@ function ascii() {
   // Display in columns (top to bottom): 19 rows × 5 columns
   print("\x1b[1;33mPrintable ASCII (32-126):\x1b[0m\n");
   var printableCount = 95;  // 32 to 126 inclusive
-  var cols = 5;
-  var rows = Math.ceil(printableCount / cols);  // 19 rows
-  for (var row = 0; row < rows; row++) {
-    for (var col = 0; col < cols; col++) {
-      var i = 32 + row + (col * rows);
+  var printableCols = 5;
+  var printableRows = Math.ceil(printableCount / printableCols);  // 19 rows
+  for (var row = 0; row < printableRows; row++) {
+    for (var col = 0; col < printableCols; col++) {
+      var i = 32 + row + (col * printableRows);
       if (i <= 126) {  // Stop at 126, not 127
         var char = String.fromCharCode(i);
         var hex = i.toString(16);
         if (hex.length === 1) hex = "0" + hex;
         print(String(i).padStart(3) + " " + char);
-        if (col < cols - 1 && (32 + row + ((col + 1) * rows)) <= 126) print(" ");  // Add spacing between columns
+        var nextI = 32 + row + ((col + 1) * printableRows);
+        if (col < printableCols - 1 && nextI <= 126) print(" ");  // Add spacing between columns
       }
     }
     print("\n");
@@ -75,17 +76,18 @@ function ascii() {
   print("\x1b[1;33mExtended ASCII (128-255):\x1b[0m\n");
   print("\x1b[0;37m(Note: Some characters may not display due to font limitations)\x1b[0m\n");
   var extendedCount = 128;  // 128 to 255 inclusive
-  var cols = 5;
-  var rows = Math.ceil(extendedCount / cols);  // 26 rows
-  for (var row = 0; row < rows; row++) {
-    for (var col = 0; col < cols; col++) {
-      var i = 128 + row + (col * rows);
+  var extendedCols = 5;
+  var extendedRows = Math.ceil(extendedCount / extendedCols);  // 26 rows
+  for (var row = 0; row < extendedRows; row++) {
+    for (var col = 0; col < extendedCols; col++) {
+      var i = 128 + row + (col * extendedRows);
       if (i <= 255) {
         var char = String.fromCharCode(i);
         var hex = i.toString(16);
         if (hex.length === 1) hex = "0" + hex;
         print(String(i).padStart(3) + " " + char);
-        if (col < cols - 1 && (128 + row + ((col + 1) * rows)) <= 255) print(" ");  // Add spacing between columns
+        var nextI = 128 + row + ((col + 1) * extendedRows);
+        if (col < extendedCols - 1 && nextI <= 255) print(" ");  // Add spacing between columns
       }
     }
     print("\n");
