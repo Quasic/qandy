@@ -67,42 +67,35 @@ var pianoKeyLabels = {
 var pressedKeys = {};
 
 // Track the line number where we display the currently playing note
-var noteDisplayLine = 27; // Line after all the piano display content
+var noteDisplayLine = 20; // Updated for compact layout
 
 function drawPiano() {
   cls();
-  print("\x1b[1;36m╔═════════════════════════════════════════════════════════════╗\x1b[0m\n");
-  print("\x1b[1;36m║\x1b[0m              \x1b[1;35mQANDY PIANO - MUSICAL KEYBOARD\x1b[0m              \x1b[1;36m║\x1b[0m\n");
-  print("\x1b[1;36m╚═════════════════════════════════════════════════════════════╝\x1b[0m\n");
+  // Compact header (32 chars max)
+  print("\x1b[1;36m╔══════════════════════════════╗\x1b[0m\n");
+  print("\x1b[1;36m║\x1b[0m \x1b[1;35mQANDY PIANO KEYBOARD\x1b[0m    \x1b[1;36m║\x1b[0m\n");
+  print("\x1b[1;36m╚══════════════════════════════╝\x1b[0m\n");
   print("\n");
   
-  // Draw the piano keyboard with ANSI art
-  // Black keys (sharps/flats) - row 1
-  print("    \x1b[40;37m W \x1b[0m  \x1b[40;37m E \x1b[0m      \x1b[40;37m T \x1b[0m  \x1b[40;37m Y \x1b[0m  \x1b[40;37m U \x1b[0m\n");
-  print("   \x1b[40;37m│C#│\x1b[0m\x1b[40;37m│D#│\x1b[0m    \x1b[40;37m│F#│\x1b[0m\x1b[40;37m│G#│\x1b[0m\x1b[40;37m│A#│\x1b[0m\n");
-  print("   \x1b[40;37m└─┘\x1b[0m\x1b[40;37m└─┘\x1b[0m    \x1b[40;37m└─┘\x1b[0m\x1b[40;37m└─┘\x1b[0m\x1b[40;37m└─┘\x1b[0m\n");
-  
-  // White keys (natural notes) - row 2
-  print("  \x1b[47;30m│ A ││ S ││ D ││ F ││ G ││ H ││ J ││ K │\x1b[0m\n");
-  print("  \x1b[47;30m│ C ││ D ││ E ││ F ││ G ││ A ││ B ││ C │\x1b[0m\n");
-  print("  \x1b[47;30m│ 4 ││ 4 ││ 4 ││ 4 ││ 4 ││ 4 ││ 4 ││ 5 │\x1b[0m\n");
-  print("  \x1b[47;30m└───┘└───┘└───┘└───┘└───┘└───┘└───┘└───┘\x1b[0m\n");
+  // Compact piano keyboard (32 chars max)
+  // Black keys row
+  print("  \x1b[40;37mW\x1b[0m \x1b[40;37mE\x1b[0m    \x1b[40;37mT\x1b[0m \x1b[40;37mY\x1b[0m \x1b[40;37mU\x1b[0m\n");
+  print(" \x1b[40;37mC#D#\x1b[0m  \x1b[40;37mF#G#A#\x1b[0m\n");
+  // White keys row
+  print(" \x1b[47;30mA S D F G H J K\x1b[0m\n");
+  print(" \x1b[47;30mC D E F G A B C\x1b[0m\n");
+  print(" \x1b[47;30m4 4 4 4 4 4 4 5\x1b[0m\n");
   
   print("\n");
-  print("\x1b[1;33mHow to Play:\x1b[0m\n");
-  print("  • Press keyboard keys: \x1b[1;37mA S D F G H J K\x1b[0m (white keys)\n");
-  print("  • Press keyboard keys: \x1b[1;37mW E T Y U\x1b[0m (black keys)\n");
-  print("  • Or click on the piano keys above\n");
+  print("\x1b[1;33mKeys:\x1b[0m White:\x1b[37mA-K\x1b[0m Black:\x1b[37mWETYU\x1b[0m\n");
   print("\n");
-  print("\x1b[1;33mExample Songs:\x1b[0m\n");
-  print("  • \x1b[1;32mplayTwinkleTwinkle()\x1b[0m - Twinkle Twinkle Little Star\n");
-  print("  • \x1b[1;32mplayMaryHadALamb()\x1b[0m - Mary Had a Little Lamb\n");
-  print("  • \x1b[1;32mplayHappyBirthday()\x1b[0m - Happy Birthday\n");
-  print("  • \x1b[1;32mplayScale()\x1b[0m - C Major Scale\n");
+  print("\x1b[1;33mSongs:\x1b[0m\n");
+  print(" \x1b[32mplayScale()\x1b[0m\n");
+  print(" \x1b[32mplayTwinkleTwinkle()\x1b[0m\n");
+  print(" \x1b[32mplayMaryHadALamb()\x1b[0m\n");
+  print(" \x1b[32mplayHappyBirthday()\x1b[0m\n");
   print("\n");
-  print("\x1b[37mPress ESC to return to normal mode.\x1b[0m\n");
-  print("\n"); // Extra line for note display
-  print("Now playing: (press a key)\n"); // Placeholder for note display
+  print("Now playing:\n"); // Placeholder for note display
 }
 
 // Key press handler for piano keys
