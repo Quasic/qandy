@@ -324,8 +324,8 @@ resize(); function resize() {
  }
 }
 
-document.addEventListener('keydown', function () { press(); });
-document.addEventListener('keyup', function () { pressup(); });
+document.addEventListener('keydown', function (event) { press(event); });
+document.addEventListener('keyup', function (event) { pressup(event); });
 document.addEventListener('paste', function (event) {
  if (keyon) {
   event.preventDefault();
@@ -345,7 +345,7 @@ document.addEventListener('paste', function (event) {
   }
  }
 });
-function press() { 
+function press(event) { 
  key=""; k=event.keyCode; shift=event.shiftKey;
  
  // Handle physical CTRL key press (highlight while pressed)
@@ -399,7 +399,7 @@ function press() {
  button(k);
 }
 
-function pressup() {
+function pressup(event) {
  // Handle physical CTRL key release (unhighlight)
  if (event.keyCode === 17 && ctrlPhysical) {
   ctrl = 0;
@@ -411,6 +411,7 @@ function pressup() {
  
  // Handle physical ALT key release (unhighlight)
  if (event.keyCode === 18 && altPhysical) {
+  event.preventDefault(); // Prevent browser menu from opening
   alt = 0;
   altPhysical = false;
   document.getElementById("alt").style.backgroundColor = "#222";
