@@ -167,12 +167,12 @@ var keyboardData = [
   {id:"enter", label:"ENTER", keyCode:13, x:275, y:573, width:56},
 
   // Row 5: Bottom row with modifiers (y=604)
-  {id:"ctrl", label:"CTRL", keyCode:17, x:47, y:604, width:28},
-  {id:"alt", label:"ALT", keyCode:18, x:76, y:604, width:28},
-  {id:"space", label:"SPACE", keyCode:32, x:105, y:604, width:84},
-  {id:"caps", label:"CAPS", keyCode:20, x:191, y:604, width:40},
-  {id:"comma", label:",", keyCode:188, x:233, y:604, width:28},
-  {id:"dot", label:".", keyCode:190, x:261, y:604, width:28},
+  {id:"caps", label:"CAPS", keyCode:20, x:47, y:604, width:40},
+  {id:"space", label:"SPACE", keyCode:32, x:88, y:604, width:84},
+  {id:"ctrl", label:"CTRL", keyCode:17, x:173, y:604, width:28},
+  {id:"alt", label:"ALT", keyCode:18, x:202, y:604, width:28},
+  {id:"comma", label:",", keyCode:188, x:231, y:604, width:28},
+  {id:"dot", label:".", keyCode:190, x:260, y:604, width:28},
   {id:"slash", label:"/", keyCode:191, x:289, y:604, width:28}
 ];
 
@@ -215,6 +215,11 @@ initKeyboard(); function initKeyboard() {
   // Set explicit width for custom-sized keys
   if (key.width === 40 || key.width === 56 || key.width === 84) {
    btn.style.width = key.width + 'px';
+  }
+  
+  // Reduce font size for CTRL and ALT keys to fit text better
+  if (key.id === 'ctrl' || key.id === 'alt') {
+   btn.style.fontSize = '9px';
   }
   
   // Position the button
