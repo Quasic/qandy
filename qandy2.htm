@@ -357,6 +357,7 @@ function press() {
  
  // Handle physical ALT key press (highlight while pressed)
  if (event.keyCode === 18 && !alt) {
+  event.preventDefault(); // Prevent browser menu from opening
   alt = 1;
   altPhysical = true;
   document.getElementById("alt").style.backgroundColor = "#0a0";
