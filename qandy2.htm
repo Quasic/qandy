@@ -685,12 +685,8 @@ function button(b) {
      // Selection mode - extend selection left
      if (selectionStart === -1) {
       // Start new selection
+      selectionStart = cursorPos - 1;
       selectionEnd = cursorPos;
-      if (cursorPos > 0) {
-       selectionStart = cursorPos - 1;
-      } else {
-       selectionStart = 0;
-      }
      } else {
       // Extend existing selection
       if (cursorPos > 0) {
@@ -703,9 +699,9 @@ function button(b) {
      cursorPos--;
     }
     
-    // Adjust selection end
-    if (shift && selectionStart !== -1) {
-     selectionEnd = cursorPos;
+    // Update selection after cursor moves
+    if (shift && selectionStart !== -1 && selectionEnd !== -1) {
+     selectionStart = Math.min(selectionStart, cursorPos);
      // Clear selection if start >= end
      if (selectionStart >= selectionEnd) {
       selectionStart = -1;
