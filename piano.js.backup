@@ -9,26 +9,6 @@ if (typeof document !== 'undefined' && document.getElementById("run")) {
   document.getElementById("run").innerHTML = run;
 }
 
-// Check if sound.js is loaded, if not load it automatically
-if (typeof beep === 'undefined' || typeof playNote === 'undefined') {
-  print("\x1b[1;33mLoading sound.js...\x1b[0m\n");
-  var soundScript = document.createElement('script');
-  soundScript.src = 'sound.js';
-  soundScript.onload = function() {
-    print("\x1b[1;32m✓ Sound system loaded\x1b[0m\n\n");
-    // Continue with piano initialization after sound.js loads
-    initializePiano();
-  };
-  soundScript.onerror = function() {
-    print("\x1b[1;31mError: Could not load sound.js\x1b[0m\n");
-    print("Please ensure sound.js is in the same directory.\n");
-  };
-  document.head.appendChild(soundScript);
-  
-  // Define initializePiano as a placeholder that will be called after sound.js loads
-  var initializePiano;
-}
-
 // Piano keyboard mapping
 // Top row (black keys): W E  T Y U  (sharps/flats)
 // Bottom row (white keys): A S D F G H J K (natural notes C-C)
@@ -224,15 +204,7 @@ function keydown(key) {
   }
 }
 
-// Function to initialize the piano display
-initializePiano = function() {
-  drawPiano();
-  // Don't print extra messages that would cause scrolling
-  // The piano keyboard display already shows all needed information
-};
+} // End of initializePiano function
 
-// If sound.js is already loaded, initialize immediately
-// Otherwise, initialization happens in the onload callback above
-if (typeof beep !== 'undefined' && typeof playNote !== 'undefined') {
-  initializePiano();
-}
+// Note: The actual initialization is called either immediately (if sound.js is loaded)
+// or after sound.js finishes loading (see the check at the top of this file)

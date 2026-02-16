@@ -36,6 +36,10 @@
 
 beep();
 
+// Sound.js is a library script, not an interactive program
+// Clear the run variable so the command prompt returns after loading
+run = "";
+
 // Create Web Audio context (lazily initialized on first beep)
 var audioContext = null;
 
