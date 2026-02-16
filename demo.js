@@ -1,5 +1,9 @@
 
-run="demo.js"; 
+run="demo.js";
+
+// Enable script to handle ESC key instead of universal termination
+allowScriptESC=true;
+
 keyon=0; scr=""; cls(); print("\nWelcome to Queville\n (N)orth (E)ast\n (S)outh (W)est\n (I)nven (H)ealth\n (M)ap\n\nPress ESC key:<p>");
 cdir=1; // character direction, 0=left, 1=right
 pz=66; py=Math.floor(pz/mapx); px=pz-(py*mapx); po="";
@@ -206,6 +210,18 @@ function input(l) {
 }
 
 function keydown(key) {
+ // Handle ESC key to toggle between text and graphics screen
+ if (key=="esc") {
+  if (mode==="txt") {
+   mode="gfx";
+   document.getElementById("txt").style.left = "350px";
+  } else {
+   mode="txt";
+   document.getElementById("txt").style.left = "54px";
+  }
+  return; // Don't process further
+ }
+ 
  if (d!="") { 
   if (key=="y") { hit(); } else { retreat(); }
  } else { 
