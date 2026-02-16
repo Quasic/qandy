@@ -1,6 +1,6 @@
 
-run="demo.js"; e=document.getElementById("run").innerHTML=run;
-keyon=0; scr=""; cls(); print("<p>Welcome to Queville<p>&nbsp;(N)orth (E)ast<br>&nbsp;(S)outh (W)est<br>&nbsp;(I)nven (H)ealth<br>&nbsp;(M)ap<p>Press ESC key:<p>");
+run="demo.js"; 
+keyon=0; scr=""; cls(); print("\nWelcome to Queville\n (N)orth (E)ast\n (S)outh (W)est\n (I)nven (H)ealth\n (M)ap\n\nPress ESC key:<p>");
 cdir=1; // character direction, 0=left, 1=right
 pz=66; py=Math.floor(pz/mapx); px=pz-(py*mapx); po="";
 
