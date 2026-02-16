@@ -263,13 +263,6 @@ function highlightKey(keyCode) {
     clearTimeout(keyTimeouts[elementId]);
   }
   
-  // Store original background color if not already stored
-  // Use getComputedStyle to capture the actual rendered background color
-  if (!element.dataset.originalBg) {
-    var computedStyle = window.getComputedStyle(element);
-    element.dataset.originalBg = computedStyle.backgroundColor;
-  }
-  
   // Apply hover effect (using the same color as :hover in CSS)
   element.style.backgroundColor = '#444';
   
@@ -285,8 +278,8 @@ function unhighlightKey(elementId) {
   var element = document.getElementById(elementId);
   if (!element) return;
   
-  // Restore original background color
-  // Use empty string to allow CSS styles to take effect again
+  // Restore original background by clearing inline style
+  // This allows CSS stylesheet rules to take effect again
   element.style.backgroundColor = '';
 }
 
