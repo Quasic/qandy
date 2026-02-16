@@ -1,61 +1,6 @@
-/**
- * DOS (Disk Operating System) API for Qandy
- * 
- * A simple file system API that abstracts storage devices.
- * Developers include this script to get DOS access in their programs.
- * 
- * DESIGN PHILOSOPHY:
- * - Text-only storage (all files saved as strings)
- * - Device abstraction (local, cookie, disk in future)
- * - Simple API: save(), load(), dir(), ls(), loadDir()
- * - Developer responsibility for data format (arrays, JSON, etc.)
- * - Simple error handling: Check if result.substring(0,5) === "ERROR"
- * 
- * USAGE:
- *   <script src="dos.js"></script>
- *   
- *   // Save a file - returns "OK" or "ERROR: message"
- *   var result = save("myfile.txt", "Hello, World!");
- *   if (result.substring(0, 5) === "ERROR") {
- *     print(result + "\n");
- *   }
- *   
- *   // Load a file - returns content or "ERROR: message"
- *   var content = load("myfile.txt");
- *   if (content.substring(0, 5) === "ERROR") {
- *     print(content + "\n");
- *   } else {
- *     print(content);
- *   }
- *   
- *   // Display directory
- *   dir();    // or ls();
- *   
- *   // Get directory list programmatically
- *   var fileList = loadDir();
- *   var files = fileList.split("\n");
- */
 
-// ==================================================================
-// GLOBAL CONFIGURATION
-// ==================================================================
-
-/**
- * Current storage device
- * Options: "local" (localStorage), "cookie" (future), "disk" (future)
- * 
- * Changing this is like changing drives in DOS (A:, B:, C:)
- * or changing directories in Linux
- */
 var device = "local";
 
-// ==================================================================
-// PRIVATE HELPERS
-// ==================================================================
-
-/**
- * Get storage prefix for current device
- */
 function _getPrefix() {
   switch(device) {
     case "local":
@@ -124,13 +69,11 @@ function _filenameToKey(filename) {
 function save(filename, data) {
   if (!filename || typeof filename !== 'string') {
     var errorMsg = "ERROR: Filename must be a non-empty string";
-    console.error("DOS.save(): " + errorMsg);
     return errorMsg;
   }
   
   if (typeof data !== 'string') {
     var errorMsg = "ERROR: Data must be a string";
-    console.error("DOS.save(): " + errorMsg);
     return errorMsg;
   }
   
@@ -144,9 +87,7 @@ function save(filename, data) {
       return "ERROR: Device '" + device + "' not implemented yet";
     }
   } catch (e) {
-    console.error("DOS.save() error:", e.message);
     if (e.name === 'QuotaExceededError') {
-      console.error("Storage quota exceeded!");
       return "ERROR: Storage quota exceeded - disk full";
     } else {
       return "ERROR: Save failed: " + e.message;
@@ -171,7 +112,6 @@ function save(filename, data) {
 function load(filename) {
   if (!filename || typeof filename !== 'string') {
     var errorMsg = "ERROR: Filename must be a non-empty string";
-    console.error("DOS.load(): " + errorMsg);
     return errorMsg;
   }
   
@@ -188,7 +128,6 @@ function load(filename) {
       return "ERROR: Device '" + device + "' not implemented yet";
     }
   } catch (e) {
-    console.error("DOS.load() error:", e.message);
     return "ERROR: Load failed: " + e.message;
   }
 }
@@ -214,7 +153,6 @@ function loadDir() {
     var filenames = keys.map(_keyToFilename).sort();
     return filenames.join("\n");
   } catch (e) {
-    console.error("DOS.loadDir() error:", e.message);
     return "";
   }
 }
@@ -227,19 +165,12 @@ function loadDir() {
  *   dir();
  */
 function dir() {
-  if (typeof print !== 'function') {
-    console.log("DOS.dir(): print() function not available");
-    console.log("Directory listing:");
-    var listing = loadDir();
-    console.log(listing || "(empty)");
-    return;
-  }
   
   var files = loadDir().split("\n").filter(function(f) { return f.length > 0; });
   
   print("\n");
   print("Directory of " + device + ":\n");
-  print("─────────────────────────────────\n");
+  print("────────────────────────────────\n");
   
   if (files.length === 0) {
     print("(no files)\n");
@@ -286,7 +217,6 @@ function ls() {
 function del(filename) {
   if (!filename || typeof filename !== 'string') {
     var errorMsg = "ERROR: Filename must be a non-empty string";
-    console.error("DOS.del(): " + errorMsg);
     return errorMsg;
   }
   
@@ -303,7 +233,6 @@ function del(filename) {
       return "ERROR: Device '" + device + "' not implemented yet";
     }
   } catch (e) {
-    console.error("DOS.del() error:", e.message);
     return "ERROR: Delete failed: " + e.message;
   }
 }
@@ -355,11 +284,4 @@ if (typeof window !== 'undefined') {
   window.del = del;
   window.exists = exists;
   window.device = device;
-}
-
-// Console notification
-if (typeof console !== 'undefined') {
-  console.log("DOS API loaded - device: " + device);
-  console.log("Functions: save(), load(), dir(), ls(), loadDir(), del(), exists()");
-  console.log("Error handling: Check if result.substring(0,5) === 'ERROR'");
 }
