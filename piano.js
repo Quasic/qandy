@@ -4,6 +4,11 @@
 // Click on keys or press keyboard keys to play notes
 // Requires: sound.js to be loaded
 
+run="piano.js"; 
+if (typeof document !== 'undefined' && document.getElementById("run")) {
+  document.getElementById("run").innerHTML = run;
+}
+
 // Piano keyboard mapping
 // Top row (black keys): W E  T Y U  (sharps/flats)
 // Bottom row (white keys): A S D F G H J K (natural notes C-C)
