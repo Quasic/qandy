@@ -1,6 +1,8 @@
 
 run="queville.js";
-e=document.getElementById("run").innerHTML=run;
+if (document.getElementById("run")) {
+ document.getElementById("run").innerHTML=run;
+}
 
 // Enable script to handle ESC key instead of universal termination
 allowScriptESC=true;
