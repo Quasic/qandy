@@ -353,6 +353,11 @@ function press(event) {
   event.preventDefault(); // Prevent browser menu from opening
  }
  
+ // Prevent browser from handling ESC key - must be done before any conditionals
+ if (event.keyCode === 27) {
+  event.preventDefault(); // Prevent browser from handling ESC
+ }
+ 
  // Handle physical CTRL key press (highlight while pressed)
  if (event.keyCode === 17 && !ctrl) {
   ctrl = 1;
