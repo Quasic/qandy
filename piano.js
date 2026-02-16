@@ -93,6 +93,7 @@ function drawPiano() {
   
   print("\n");
   print("\x1b[1;33mKeys:\x1b[0m White:\x1b[37mA-K\x1b[0m Black:\x1b[37mWETYU\x1b[0m\n");
+  print("\x1b[1;33mESC:\x1b[0m Quit\n");
   print("\n");
   print("\x1b[1;33mSongs:\x1b[0m\n");
   print(" \x1b[32mplayScale()\x1b[0m\n");
@@ -105,6 +106,12 @@ function drawPiano() {
 
 // Key press handler for piano keys
 function pianoKeyHandler(key) {
+  // Check for ESC key to quit
+  if (key === "esc") {
+    quitPiano();
+    return true;
+  }
+  
   // Convert to lowercase for comparison
   var keyLower = key.toLowerCase();
   
@@ -123,6 +130,25 @@ function pianoKeyHandler(key) {
   }
   
   return false;
+}
+
+// Quit the piano and return to qandy OS
+function quitPiano() {
+  // Clear pressed keys
+  pressedKeys = {};
+  
+  // Clear the screen
+  cls();
+  
+  // Show exit message
+  print("\x1b[1;32mPiano exited.\x1b[0m\n");
+  print("Returning to Qandy OS...\n\n");
+  
+  // Clear the run variable to return control to qandy
+  run = "";
+  if (typeof document !== 'undefined' && document.getElementById("run")) {
+    document.getElementById("run").innerHTML = run;
+  }
 }
 
 // Key release handler for piano keys
