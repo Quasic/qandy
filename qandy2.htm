@@ -373,7 +373,7 @@ function press(event) {
   altPhysical = true;
   document.getElementById("alt").style.backgroundColor = "#0a0";
   document.getElementById("alt").style.color = "#000";
-  return;
+  // Don't return - let the key be passed to button() so apps can handle "alt"
  }
  
  // Handle Ctrl+C for copy
