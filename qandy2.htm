@@ -1051,8 +1051,14 @@ function button(b) {
         cursorPos = 0;
         inputScrollPos = 0;
        } else if (line.substr(0, 3) === "dir") {
-        // DOS DIR command
-        dosCommand_dir();
+        // DOS DIR command - use new API
+        dir();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 2) === "ls") {
+        // Linux LS command - alias for dir
+        ls();
         line = "";
         cursorPos = 0;
         inputScrollPos = 0;
