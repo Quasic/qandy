@@ -15,6 +15,8 @@ var mode="txt"; // gfx or txt display
 
 var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
+var ctrl=0;  // ctrl key pressed
+var alt=0;   // alt key pressed
 var keyon=1; // turn keyboard input on/off
 
 // Normal character mapping for lowercase (caps level 0)
@@ -164,13 +166,17 @@ var keyboardData = [
   {id:"open", label:"[", keyCode:219, x:275, y:573, width:28},
   {id:"close", label:"]", keyCode:221, x:303, y:573, width:28},
 
-  // Row 5: Special keys (y=604)
-    {id:"caps", label:"CAPS", keyCode:20, x:47, y:604, width:52},
-  {id:"space", label:"SPACE", keyCode:32, x:103, y:604, width:81},
-      {id:"comma", label:",", keyCode:188, x:189, y:604, width:28},
-        {id:"dot", label:".", keyCode:190, x:218, y:604, width:28},
-      {id:"slash", label:"/", keyCode:191, x:247, y:604, width:28},
-  {id:"enter", label:"ENTER", keyCode:13, x:275, y:604, width:52}
+  // Row 5: Bottom row with modifiers (y=604)
+  {id:"ctrl", label:"CTRL", keyCode:17, x:47, y:604, width:40},
+  {id:"alt", label:"ALT", keyCode:18, x:89, y:604, width:37},
+  {id:"space", label:"SPACE", keyCode:32, x:128, y:604, width:81},
+  {id:"shift", label:"SHIFT", keyCode:16, x:211, y:604, width:40},
+  {id:"comma", label:",", keyCode:188, x:253, y:604, width:28},
+  {id:"dot", label:".", keyCode:190, x:281, y:604, width:28},
+  {id:"slash", label:"/", keyCode:191, x:309, y:604, width:28},
+  // Row 6: Enter and special keys (y=635)
+  {id:"caps", label:"CAPS", keyCode:20, x:47, y:635, width:40},
+  {id:"enter", label:"ENTER", keyCode:13, x:89, y:635, width:248}
 ];
 
 // safe to delete these?
@@ -195,12 +201,23 @@ initKeyboard(); function initKeyboard() {
   // Assign appropriate CSS class based on width
   if (key.width === 28) {
    btn.className = 'k1';
+  } else if (key.width === 37) {
+   btn.className = 'k-alt';  // ALT key
+  } else if (key.width === 40) {
+   btn.className = 'k-ctrl';  // CTRL, SHIFT, CAPS keys
   } else if (key.width === 52) {
    btn.className = 'k2';
   } else if (key.width === 81) {
    btn.className = 'k3';
   } else if (key.width === 109) {
    btn.className = 'k4';
+  } else if (key.width === 248) {
+   btn.className = 'k-enter';  // Wide ENTER key
+  }
+  
+  // Set explicit width for custom-sized keys
+  if (key.width === 37 || key.width === 40 || key.width === 248) {
+   btn.style.width = key.width + 'px';
   }
   
   // Position the button
@@ -279,7 +296,10 @@ document.addEventListener('paste', function (event) {
  }
 });
 function press() { 
- key=""; k=event.keyCode; shift=event.shiftKey; 
+ key=""; k=event.keyCode; shift=event.shiftKey;
+ // Track ctrl and alt from physical keyboard
+ if (event.ctrlKey) ctrl = 1;
+ if (event.altKey) alt = 1;
  
  // Handle Ctrl+C for copy
  if (event.ctrlKey && event.key === 'c') {
@@ -317,6 +337,9 @@ function button(b) {
  }
  
  k=""; l=""; switch (b) {
+  case 17: k="ctrl"; break;   // CTRL key
+  case 18: k="alt"; break;    // ALT key  
+  case 16: k="shift"; break;  // SHIFT key
   case 37: k="left"; break;
   case 38: k="up"; break;
   case 39: k="right"; break;
@@ -386,6 +409,36 @@ function button(b) {
    mode = "txt";
    document.getElementById("txt").style.top = "50px";
    document.getElementById("txt").style.left = "54px";
+  }
+ } else if (k==="ctrl") {
+  // Toggle ctrl key state
+  ctrl = ctrl ? 0 : 1;
+  if (ctrl) {
+   document.getElementById("ctrl").style.backgroundColor = "#0a0";
+   document.getElementById("ctrl").style.color = "#000";
+  } else {
+   document.getElementById("ctrl").style.backgroundColor = "#222";
+   document.getElementById("ctrl").style.color = "#fff";
+  }
+ } else if (k==="alt") {
+  // Toggle alt key state
+  alt = alt ? 0 : 1;
+  if (alt) {
+   document.getElementById("alt").style.backgroundColor = "#0a0";
+   document.getElementById("alt").style.color = "#000";
+  } else {
+   document.getElementById("alt").style.backgroundColor = "#222";
+   document.getElementById("alt").style.color = "#fff";
+  }
+ } else if (k==="shift") {
+  // Toggle shift key state
+  shift = shift ? 0 : 1;
+  if (shift) {
+   document.getElementById("shift").style.backgroundColor = "#0a0";
+   document.getElementById("shift").style.color = "#000";
+  } else {
+   document.getElementById("shift").style.backgroundColor = "#222";
+   document.getElementById("shift").style.color = "#fff";
   }
  } else {
   if (k==="caps") {
@@ -888,8 +941,23 @@ function button(b) {
     } else if (l) {
      // Insert character at cursor position
      if (keyon) {
-      line = line.substring(0, cursorPos) + l + line.substring(cursorPos);
-      cursorPos++;
+      // Prepend modifier keys if active
+      let finalChar = l;
+      if (ctrl || alt) {
+       let modifiers = [];
+       if (ctrl) modifiers.push("ctrl");
+       if (alt) modifiers.push("alt");
+       finalChar = modifiers.join(" ") + " " + l;
+       // Reset modifier keys after use (they're consumed)
+       ctrl = 0;
+       alt = 0;
+       document.getElementById("ctrl").style.backgroundColor = "#222";
+       document.getElementById("ctrl").style.color = "#fff";
+       document.getElementById("alt").style.backgroundColor = "#222";
+       document.getElementById("alt").style.color = "#fff";
+      }
+      line = line.substring(0, cursorPos) + finalChar + line.substring(cursorPos);
+      cursorPos += finalChar.length;
       // Clear selection when typing
       selectionStart = -1;
       selectionEnd = -1;
