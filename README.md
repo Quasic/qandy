@@ -30,6 +30,9 @@ Visit the [Qandy GitHub Pages site](https://quintrix.github.io/qandy/) for the r
 - qandy-itemid.js: ItemID(item) function, returns item name
 - queville.js: Queville ported to Qandy        
 - demo.js: Queville v.Zero ported to Qandy
+- **sound.js**: Sound card API for beeps, tones, and music
+- **piano.js**: Interactive ANSI piano keyboard
+- **[Sound API Documentation](SOUND_API_DOCS.md)**: Complete guide to the sound system
 
 #### Readme and reference
 
