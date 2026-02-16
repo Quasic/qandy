@@ -3,33 +3,20 @@
 // Modern browsers don't support ASCII BEL character (\x07) for security reasons
 // This provides an alternative using actual audio generation
 
-run="beep.js";
-keyon=0;
+//
+//              beep() plays standard "beep"
+//            beep(Hz) custom frequency
+//       beep(Hz, dur) frequency plus duration
+//      playNote(note) play note from music scale
+//
+//              beep() Standard beep (800Hz, 200ms
+//          beep(1000) 1000Hz beep
+//       playNote('C') Play middle C (C4)
+//      playNote('A4') Play A4 (440Hz)
+// playNote('C#5',500) C sharp octave 5, 500ms
+//
 
-cls();
-print("\n");
-print("\x1b[1;36mQANDY BEEP UTILITY\x1b[0m\n");
-print("\x1b[0;37m══════════════════════════════════════════\x1b[0m\n\n");
-print("The ASCII BEL character (\\x07 or \\a) doesn't\n");
-print("work in modern browsers like Firefox due to\n");
-print("security restrictions.\n\n");
-print("This utility provides working alternatives:\n\n");
-print("\x1b[1;33mCommands:\x1b[0m\n");
-print("  \x1b[1;32mbeep()\x1b[0m      - Play a standard beep\n");
-print("  \x1b[1;32mbeep(freq)\x1b[0m  - Custom frequency (Hz)\n");
-print("  \x1b[1;32mbeep(freq, duration)\x1b[0m - Custom freq + duration\n");
-print("  \x1b[1;32mplayNote(note)\x1b[0m - Play a musical note\n");
-print("  \x1b[1;32mplayNote(note, duration)\x1b[0m - Note with duration\n\n");
-print("\x1b[1;33mExamples:\x1b[0m\n");
-print("  beep()           - Standard beep (800Hz, 200ms)\n");
-print("  beep(1000)       - 1000Hz beep\n");
-print("  beep(440, 500)   - A4 note for 500ms\n");
-print("  playNote('C')    - Play middle C (C4)\n");
-print("  playNote('A4')   - Play A4 (440Hz)\n");
-print("  playNote('C#5', 500) - C sharp octave 5, 500ms\n\n");
-print("Press \x1b[1;32mB\x1b[0m to test beep\n");
-print("Press \x1b[1;32mN\x1b[0m to play a note scale\n");
-print("Press \x1b[1;32mQ\x1b[0m to quit\n\n");
+beep();
 
 // Create Web Audio context (lazily initialized on first beep)
 var audioContext = null;
@@ -151,38 +138,3 @@ function beep(frequency = 800, duration = 200) {
     return false;
   }
 }
-
-function keydown(k) {
-  const key = k.toUpperCase();
-  
-  if (key === "B") {
-    print("\x1b[1;33mPlaying beep...\x1b[0m\n");
-    if (beep()) {
-      print("\x1b[1;32m✓ Beep played successfully!\x1b[0m\n\n");
-    }
-  } else if (key === "N") {
-    print("\x1b[1;33mPlaying C major scale (C4-C5)...\x1b[0m\n");
-    // Play a C major scale with 300ms per note
-    const scale = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'];
-    let delay = 0;
-    for (let i = 0; i < scale.length; i++) {
-      (function(note, waitTime) {
-        setTimeout(function() {
-          playNote(note, 300);
-          print("  " + note + " ♪\n");
-        }, waitTime);
-      })(scale[i], delay);
-      delay += 350; // 300ms note + 50ms gap
-    }
-    setTimeout(function() {
-      print("\x1b[1;32m✓ Scale complete!\x1b[0m\n\n");
-    }, delay);
-  } else if (key === "Q") {
-    cls();
-    keyon = 1;
-    run = "";
-    print("Returned to command mode\n");
-  }
-}
-
-keyon = 1;
