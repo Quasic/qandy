@@ -199,7 +199,12 @@ function parseMusicString(musicString) {
     const token = tokens[i];
     const parts = token.split(':');
     const noteName = parts[0].trim().toUpperCase();
-    const duration = parts[1] ? parseInt(parts[1]) : 200;
+    let duration = parts[1] ? parseInt(parts[1]) : 200;
+    
+    // Validate duration is a positive number
+    if (isNaN(duration) || duration <= 0) {
+      duration = 200; // Default to 200ms if invalid
+    }
     
     if (noteName === 'R' || noteName === 'REST') {
       // Rest/pause

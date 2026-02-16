@@ -137,9 +137,11 @@ function playChord(notes, duration) {
   duration = duration || 500;
   
   for (var i = 0; i < notes.length; i++) {
-    setTimeout(function(note) {
-      playNote(note, duration);
-    }, i * 10, notes[i]); // Slight delay to create chord effect
+    (function(note, delay) {
+      setTimeout(function() {
+        playNote(note, duration);
+      }, delay);
+    })(notes[i], i * 10); // IIFE to capture note and delay correctly
   }
   
   print("\x1b[1;35m♫ Chord: " + notes.join(' ') + "\x1b[0m\n");
