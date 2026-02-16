@@ -170,7 +170,7 @@ var keyboardData = [
 
   // Row 5: Bottom row with modifiers (y=604)
   {id:"caps", label:"CAPS", keyCode:20, x:47, y:604, width:52},
-  {id:"space", label:"SPACE", keyCode:32, x:103, y:604, width:74},
+  {id:"space", label:"SPACE", keyCode:32, x:103, y:604, width:85},
   {id:"ctrl", label:"CTRL", keyCode:17, x:189, y:604, width:28},
   {id:"alt", label:"ALT", keyCode:18, x:218, y:604, width:28},
   {id:"comma", label:",", keyCode:188, x:247, y:604, width:28},
@@ -209,14 +209,14 @@ initKeyboard(); function initKeyboard() {
    }
   } else if (key.width === 52) {
    btn.className = 'k2';
-  } else if (key.width === 74) {
+  } else if (key.width === 85) {
    btn.className = 'k-space';  // SPACE key
   } else if (key.width === 109) {
    btn.className = 'k4';
   }
   
   // Set explicit width for custom-sized keys
-  if (key.width === 40 || key.width === 74) {
+  if (key.width === 40 || key.width === 85) {
    btn.style.width = key.width + 'px';
   }
   
