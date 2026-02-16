@@ -95,6 +95,7 @@ var paginationEnabled = true;  // Enable/disable pagination feature
 var paginationPaused = false;  // Is print() currently paused?
 var paginationBuffer = [];     // Queued text waiting to be printed
 var paginationLinesBeforePause = 22;  // Lines to show before pausing
+var inInputMode = false;       // True when processing user input (prevents pagination)
 
 var styleBuffer = [];
 var currentStyle = {
@@ -988,7 +989,9 @@ function button(b) {
        print("");
       } else {
        // OS command mode
+       inInputMode = true;  // Prevent pagination during command echo
        print(line); print("\n");
+       inInputMode = false;  // Re-enable pagination after command echo
        if (line.slice(-3) === ".js") {
         // Load external .js file
         keyon = 0;
@@ -1460,7 +1463,8 @@ function print(inputString) {
         cursorY++;
         
         // Check if we should pause for pagination (line count threshold)
-        if (paginationEnabled && cursorY >= paginationLinesBeforePause) {
+        // Don't trigger pagination during user input operations
+        if (paginationEnabled && !inInputMode && cursorY >= paginationLinesBeforePause) {
           triggerPaginationPause();
           return;  // Exit and wait for key press
         }
