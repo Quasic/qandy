@@ -16,6 +16,11 @@ if (typeof beep === 'undefined' || typeof playNote === 'undefined') {
   soundScript.src = 'sound.js';
   soundScript.onload = function() {
     print("\x1b[1;32m✓ Sound system loaded\x1b[0m\n\n");
+    // sound.js clears the run variable, so we need to restore it
+    run = "piano.js";
+    if (typeof document !== 'undefined' && document.getElementById("run")) {
+      document.getElementById("run").innerHTML = run;
+    }
     // Continue with piano initialization after sound.js loads
     initializePiano();
   };
