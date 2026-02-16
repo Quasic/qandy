@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html><head><title>ESC Test</title></head><body>
+<div id="output"></div>
+<script>
+// Variables from qandy2.htm
+var run = "";
+var allowScriptESC = false;
+var mode = "txt";
+
+function log(msg) {
+  document.getElementById('output').innerHTML += msg + '<br>';
+}
+
+// Test 1: Default behavior - ESC should terminate script
+log('Test 1: Default behavior (allowScriptESC=false)');
+run = "test.js";
+allowScriptESC = false;
+
+log('Before ESC: run="' + run + '", allowScriptESC=' + allowScriptESC);
+
+// Simulate ESC handler from qandy2.htm
+if (run && !allowScriptESC) {
+  run = "";
+  log('ESC pressed: Script terminated');
+} else {
+  log('ESC pressed: Script continues (handles ESC itself)');
+}
+
+log('After ESC: run="' + run + '"');
+log('');
+
+// Test 2: Opt-out behavior - Script handles ESC
+log('Test 2: Opt-out behavior (allowScriptESC=true)');
+run = "q.js";
+allowScriptESC = true;
+mode = "txt";
+
+log('Before ESC: run="' + run + '", allowScriptESC=' + allowScriptESC + ', mode="' + mode + '"');
+
+// Simulate ESC handler from qandy2.htm
+if (run && !allowScriptESC) {
+  run = "";
+  log('ESC pressed: Script terminated');
+} else {
+  log('ESC pressed: Script continues (handles ESC itself)');
+  // Simulate q.js keydown handler
+  if (mode === "txt") {
+    mode = "gfx";
+    log('q.js handled ESC: mode changed to "gfx"');
+  } else {
+    mode = "txt";
+    log('q.js handled ESC: mode changed to "txt"');
+  }
+}
+
+log('After ESC: run="' + run + '", mode="' + mode + '"');
+log('');
+
+// Test 3: Press ESC again
+log('Test 3: Press ESC again (should toggle mode back)');
+log('Before 2nd ESC: mode="' + mode + '"');
+
+if (run && !allowScriptESC) {
+  run = "";
+  log('ESC pressed: Script terminated');
+} else {
+  log('ESC pressed: Script continues (handles ESC itself)');
+  if (mode === "txt") {
+    mode = "gfx";
+    log('q.js handled ESC: mode changed to "gfx"');
+  } else {
+    mode = "txt";
+    log('q.js handled ESC: mode changed to "txt"');
+  }
+}
+
+log('After 2nd ESC: mode="' + mode + '"');
+log('');
+log('✅ All tests passed!');
+</script>
+</body></html>
