@@ -170,7 +170,7 @@ var keyboardData = [
 
   // Row 5: Bottom row with modifiers (y=604)
   {id:"caps", label:"CAPS", keyCode:20, x:47, y:604, width:52},
-  {id:"space", label:"SPACE", keyCode:32, x:103, y:604, width:85},
+  {id:"space", label:"SPACE", keyCode:32, x:103, y:604, width:81},
   {id:"ctrl", label:"CTRL", keyCode:17, x:189, y:604, width:28},
   {id:"alt", label:"ALT", keyCode:18, x:218, y:604, width:28},
   {id:"comma", label:",", keyCode:188, x:247, y:604, width:28},
@@ -209,14 +209,14 @@ initKeyboard(); function initKeyboard() {
    }
   } else if (key.width === 52) {
    btn.className = 'k2';
-  } else if (key.width === 85) {
-   btn.className = 'k-space';  // SPACE key (same width as c+v+b combined)
+  } else if (key.width === 81) {
+   btn.className = 'k-space';  // SPACE key
   } else if (key.width === 109) {
    btn.className = 'k4';
   }
   
   // Set explicit width for custom-sized keys
-  if (key.width === 40 || key.width === 85) {
+  if (key.width === 40 || key.width === 81) {
    btn.style.width = key.width + 'px';
   }
   
@@ -239,6 +239,48 @@ initKeyboard(); function initKeyboard() {
  // Position the QPC and other elements
  document.getElementById("qpc").style.top = "32px"; 
  document.getElementById("qpc").style.left = "32px";
+}
+
+// Create a mapping from keyCode to element ID for quick lookup
+var keyCodeToId = {};
+keyboardData.forEach(function(key) {
+  keyCodeToId[key.keyCode] = key.id;
+});
+
+// Store timeout IDs for each key to handle rapid key presses
+var keyTimeouts = {};
+
+// Function to highlight a virtual key
+function highlightKey(keyCode) {
+  var elementId = keyCodeToId[keyCode];
+  if (!elementId) return; // Key not in virtual keyboard
+  
+  var element = document.getElementById(elementId);
+  if (!element) return; // Element not found
+  
+  // Clear any existing timeout for this key to prevent race conditions
+  if (keyTimeouts[elementId]) {
+    clearTimeout(keyTimeouts[elementId]);
+  }
+  
+  // Apply hover effect (using the same color as :hover in CSS)
+  element.style.backgroundColor = '#444';
+  
+  // Set a timeout to restore original color
+  keyTimeouts[elementId] = setTimeout(function() {
+    unhighlightKey(elementId);
+    delete keyTimeouts[elementId]; // Clean up timeout reference
+  }, 200); // 200ms flash effect
+}
+
+// Function to unhighlight a virtual key
+function unhighlightKey(elementId) {
+  var element = document.getElementById(elementId);
+  if (!element) return;
+  
+  // Restore original background by clearing inline style
+  // This allows CSS stylesheet rules to take effect again
+  element.style.backgroundColor = '';
 }
 
 tiles(); function tiles() {
@@ -315,6 +357,7 @@ function press() {
  
  // Handle physical ALT key press (highlight while pressed)
  if (event.keyCode === 18 && !alt) {
+  event.preventDefault(); // Prevent browser menu from opening
   alt = 1;
   altPhysical = true;
   document.getElementById("alt").style.backgroundColor = "#0a0";
@@ -347,6 +390,10 @@ function press() {
  
  // Don't handle keydown if Ctrl is pressed (let paste event handle it)
  if (event.ctrlKey) { return; }
+ 
+ // Highlight the virtual key for visual feedback
+ highlightKey(k);
+ 
  button(k);
 }
 
@@ -638,12 +685,8 @@ function button(b) {
      // Selection mode - extend selection left
      if (selectionStart === -1) {
       // Start new selection
+      selectionStart = Math.max(0, cursorPos - 1);
       selectionEnd = cursorPos;
-      if (cursorPos > 0) {
-       selectionStart = cursorPos - 1;
-      } else {
-       selectionStart = 0;
-      }
      } else {
       // Extend existing selection
       if (cursorPos > 0) {
@@ -656,9 +699,9 @@ function button(b) {
      cursorPos--;
     }
     
-    // Adjust selection end
-    if (shift && selectionStart !== -1) {
-     selectionEnd = cursorPos;
+    // Update selection after cursor moves
+    if (shift && selectionStart !== -1 && selectionEnd !== -1) {
+     selectionStart = Math.max(0, Math.min(selectionStart, cursorPos));
      // Clear selection if start >= end
      if (selectionStart >= selectionEnd) {
       selectionStart = -1;
