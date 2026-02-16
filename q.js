@@ -1,6 +1,5 @@
 
-run="queville.js";
-e=document.getElementById("run").innerHTML=run;
+run="queville.js"; allowScriptESC=true;
 
 var now=new Date(); function pad(num) { return num.toString().padStart(2, '0'); }
 
@@ -556,6 +555,18 @@ function SaveMap() {
 }
 
 function keydown(k) {
+ // Handle ESC key to toggle between text and graphics screen
+ if (k=="esc") {
+  if (mode==="txt") {
+   mode="gfx";
+   document.getElementById("txt").style.left = "350px";
+  } else {
+   mode="txt";
+   document.getElementById("txt").style.left = "54px";
+  }
+  return; // Don't process further
+ }
+ 
  if (TMode) {
   if (k.length==1) {
    a=k.charCodeAt(0)

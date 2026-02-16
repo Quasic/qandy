@@ -1,6 +1,15 @@
 
-run="demo.js"; e=document.getElementById("run").innerHTML=run;
-keyon=0; scr=""; cls(); print("<p>Welcome to Queville<p>&nbsp;(N)orth (E)ast<br>&nbsp;(S)outh (W)est<br>&nbsp;(I)nven (H)ealth<br>&nbsp;(M)ap<p>Press ESC key:<p>");
+run="demo.js";
+
+script=document.createElement('script');
+script.src="qandy-gfx.js";
+script.onload=Begin;
+document.head.appendChild(script);
+
+// Enable script to handle ESC key instead of universal termination
+allowScriptESC=true;
+
+keyon=0; scr=""; cls(); print("\nWelcome to Queville\n (N)orth (E)ast\n (S)outh (W)est\n (I)nven (H)ealth\n (M)ap\n\nPress ESC key:<p>");
 cdir=1; // character direction, 0=left, 1=right
 pz=66; py=Math.floor(pz/mapx); px=pz-(py*mapx); po="";
 
@@ -9,6 +18,9 @@ pz=66; py=Math.floor(pz/mapx); px=pz-(py*mapx); po="";
 var k=""; var i=0; var b=""; var c=0; var d=""; var g=""; var r=""; 
 var x=7; var y=4; var h=10; var a=0; var s=0; var t=0; var m=0; var f=0;
 
+var PName="demo";
+
+function Begin() {
 atkr=document.createElement("img");
 atkr.id="atkr";
 atkr.src=item['Za']; 
@@ -205,7 +217,22 @@ function input(l) {
  keyon=0; print("");
 }
 
+} // End of Begin() function
+
+// Global keydown function - must be accessible from qandy2.htm
 function keydown(key) {
+ // Handle ESC key to toggle between text and graphics screen
+ if (key=="esc") {
+  if (mode==="txt") {
+   mode="gfx";
+   document.getElementById("txt").style.left = "350px";
+  } else {
+   mode="txt";
+   document.getElementById("txt").style.left = "54px";
+  }
+  return; // Don't process further
+ }
+ 
  if (d!="") { 
   if (key=="y") { hit(); } else { retreat(); }
  } else { 
@@ -226,4 +253,4 @@ function keydown(key) {
    mainloop();
   }
  }
-} 
+}

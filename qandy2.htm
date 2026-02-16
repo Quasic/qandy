@@ -11,6 +11,7 @@ var devteam=1;  // developer mode
 var run="";
 var txt="";
 var mode="txt"; // gfx or txt display
+var allowScriptESC=false; // if true, script handles ESC instead of universal termination
 
 var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
@@ -496,8 +497,9 @@ function button(b) {
  }
  if (k==="esc") {
   // Universal ESC handler: terminate any running script and return to OS
-  if (run) {
-   // Script is running - terminate it
+  // UNLESS script has set allowScriptESC=true to handle ESC itself
+  if (run && !allowScriptESC) {
+   // Script is running and hasn't opted out - terminate it
    run = "";
    if (typeof document !== 'undefined' && document.getElementById("run")) {
     document.getElementById("run").innerHTML = run;
@@ -507,7 +509,8 @@ function button(b) {
    // Prevent key from being passed to the terminated script
    k = "";
   }
-  // If no script running, ESC does nothing (old screen toggle removed)
+  // If allowScriptESC is true, ESC will be passed to script's keydown() handler
+  // If no script running, ESC does nothing
  } else if (k==="ctrl") {
   // Toggle ctrl key state
   ctrl = ctrl ? 0 : 1;
@@ -1060,9 +1063,10 @@ function button(b) {
      }
     }
    }
-   if (run) { keydown(k); }
   }
  }
+ // Pass key to script's keydown() handler if script is running and key wasn't consumed
+ if (run && k) { keydown(k); }
  updateDisplay();
 }
 
