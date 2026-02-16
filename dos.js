@@ -9,15 +9,24 @@
  * - Device abstraction (local, cookie, disk in future)
  * - Simple API: save(), load(), dir(), ls(), loadDir()
  * - Developer responsibility for data format (arrays, JSON, etc.)
+ * - Simple error handling: Check if result.substring(0,5) === "ERROR"
  * 
  * USAGE:
  *   <script src="dos.js"></script>
  *   
- *   // Save a file
- *   save("myfile.txt", "Hello, World!");
+ *   // Save a file - returns "OK" or "ERROR: message"
+ *   var result = save("myfile.txt", "Hello, World!");
+ *   if (result.substring(0, 5) === "ERROR") {
+ *     print(result + "\n");
+ *   }
  *   
- *   // Load a file (returns data as string)
+ *   // Load a file - returns content or "ERROR: message"
  *   var content = load("myfile.txt");
+ *   if (content.substring(0, 5) === "ERROR") {
+ *     print(content + "\n");
+ *   } else {
+ *     print(content);
+ *   }
  *   
  *   // Display directory
  *   dir();    // or ls();
@@ -39,18 +48,6 @@
  * or changing directories in Linux
  */
 var device = "local";
-
-/**
- * Last error message (like errno in C or $? in shell)
- * Check this after operations that return null or false
- * 
- * @example
- *   var data = load("missing.txt");
- *   if (data === null) {
- *     print("Error: " + lastError + "\n");
- *   }
- */
-var lastError = "";
 
 // ==================================================================
 // PRIVATE HELPERS
@@ -116,27 +113,25 @@ function _filenameToKey(filename) {
  * 
  * @param {string} filename - Name of file (any extension: .txt, .js, .b64, .me, etc.)
  * @param {string} data - Text data to save (must be string)
- * @returns {boolean} - true if successful, false otherwise
+ * @returns {string} - "OK" if successful, "ERROR: [message]" if failed
  * 
  * @example
- *   save("myfile.txt", "Hello, World!");
- *   save("program.js", "print('Hello!\\n');");
- *   save("data.b64", btoa("binary data"));
- *   save("readme.me", "This is a readme file");
+ *   var result = save("myfile.txt", "Hello, World!");
+ *   if (result.substring(0, 5) === "ERROR") {
+ *     print(result + "\n");
+ *   }
  */
 function save(filename, data) {
-  lastError = "";  // Clear previous error
-  
   if (!filename || typeof filename !== 'string') {
-    lastError = "Filename must be a non-empty string";
-    console.error("DOS.save(): " + lastError);
-    return false;
+    var errorMsg = "ERROR: Filename must be a non-empty string";
+    console.error("DOS.save(): " + errorMsg);
+    return errorMsg;
   }
   
   if (typeof data !== 'string') {
-    lastError = "Data must be a string";
-    console.error("DOS.save(): " + lastError);
-    return false;
+    var errorMsg = "ERROR: Data must be a string";
+    console.error("DOS.save(): " + errorMsg);
+    return errorMsg;
   }
   
   try {
@@ -144,20 +139,18 @@ function save(filename, data) {
     
     if (device === "local") {
       localStorage.setItem(key, data);
-      return true;
+      return "OK";
     } else {
-      lastError = "Device '" + device + "' not implemented yet";
-      return false;
+      return "ERROR: Device '" + device + "' not implemented yet";
     }
   } catch (e) {
     console.error("DOS.save() error:", e.message);
     if (e.name === 'QuotaExceededError') {
-      lastError = "Storage quota exceeded - disk full";
       console.error("Storage quota exceeded!");
+      return "ERROR: Storage quota exceeded - disk full";
     } else {
-      lastError = "Save failed: " + e.message;
+      return "ERROR: Save failed: " + e.message;
     }
-    return false;
   }
 }
 
@@ -165,21 +158,21 @@ function save(filename, data) {
  * Load data from a file on the current device
  * 
  * @param {string} filename - Name of file to load
- * @returns {string|null} - File content as string, or null if not found
+ * @returns {string} - File content as string, or "ERROR: [message]" if failed
  * 
  * @example
  *   var content = load("myfile.txt");
- *   if (content !== null) {
+ *   if (content.substring(0, 5) === "ERROR") {
+ *     print(content + "\n");
+ *   } else {
  *     print(content);
  *   }
  */
 function load(filename) {
-  lastError = "";  // Clear previous error
-  
   if (!filename || typeof filename !== 'string') {
-    lastError = "Filename must be a non-empty string";
-    console.error("DOS.load(): " + lastError);
-    return null;
+    var errorMsg = "ERROR: Filename must be a non-empty string";
+    console.error("DOS.load(): " + errorMsg);
+    return errorMsg;
   }
   
   try {
@@ -188,17 +181,15 @@ function load(filename) {
     if (device === "local") {
       var data = localStorage.getItem(key);
       if (data === null) {
-        lastError = "File not found: " + filename;
+        return "ERROR: File not found: " + filename;
       }
-      return data;  // Returns null if not found
+      return data;
     } else {
-      lastError = "Device '" + device + "' not implemented yet";
-      return null;
+      return "ERROR: Device '" + device + "' not implemented yet";
     }
   } catch (e) {
-    lastError = "Load failed: " + e.message;
     console.error("DOS.load() error:", e.message);
-    return null;
+    return "ERROR: Load failed: " + e.message;
   }
 }
 
@@ -282,20 +273,21 @@ function ls() {
  * Delete a file from the current device
  * 
  * @param {string} filename - Name of file to delete
- * @returns {boolean} - true if successful, false otherwise
+ * @returns {string} - "OK" if successful, "ERROR: [message]" if failed
  * 
  * @example
- *   if (del("oldfile.txt")) {
+ *   var result = del("oldfile.txt");
+ *   if (result.substring(0, 5) === "ERROR") {
+ *     print(result + "\n");
+ *   } else {
  *     print("File deleted\n");
  *   }
  */
 function del(filename) {
-  lastError = "";  // Clear previous error
-  
   if (!filename || typeof filename !== 'string') {
-    lastError = "Filename must be a non-empty string";
-    console.error("DOS.del(): " + lastError);
-    return false;
+    var errorMsg = "ERROR: Filename must be a non-empty string";
+    console.error("DOS.del(): " + errorMsg);
+    return errorMsg;
   }
   
   try {
@@ -304,18 +296,15 @@ function del(filename) {
     if (device === "local") {
       if (localStorage.getItem(key) !== null) {
         localStorage.removeItem(key);
-        return true;
+        return "OK";
       }
-      lastError = "File not found: " + filename;
-      return false;
+      return "ERROR: File not found: " + filename;
     } else {
-      lastError = "Device '" + device + "' not implemented yet";
-      return false;
+      return "ERROR: Device '" + device + "' not implemented yet";
     }
   } catch (e) {
-    lastError = "Delete failed: " + e.message;
     console.error("DOS.del() error:", e.message);
-    return false;
+    return "ERROR: Delete failed: " + e.message;
   }
 }
 
@@ -366,12 +355,11 @@ if (typeof window !== 'undefined') {
   window.del = del;
   window.exists = exists;
   window.device = device;
-  window.lastError = lastError;
 }
 
 // Console notification
 if (typeof console !== 'undefined') {
   console.log("DOS API loaded - device: " + device);
   console.log("Functions: save(), load(), dir(), ls(), loadDir(), del(), exists()");
-  console.log("Global variables: device (current: '" + device + "'), lastError");
+  console.log("Error handling: Check if result.substring(0,5) === 'ERROR'");
 }
