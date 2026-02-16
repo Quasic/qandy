@@ -347,6 +347,18 @@ function clearAll() {
 
 function runCode() {
   closeMenu();
+  
+  // Helper function to wait for keypress and return to editor
+  var waitForKeyAndReturnToEditor = function() {
+    keyon = 1;
+    var originalInput = input;
+    input = function() {
+      input = originalInput;
+      keyon = 0;
+      renderEditor();
+    };
+  };
+  
   try {
     var code = editorState.lines.join("\n");
     cls();
@@ -355,24 +367,11 @@ function runCode() {
     // This allows dynamic code execution in the emulator context
     eval(code);
     print("\n\n\x1b[33mPress any key to return to editor...\x1b[0m\n");
-    keyon = 1;
-    // Wait for keypress to return to editor
-    var originalInput = input;
-    input = function() {
-      input = originalInput;
-      keyon = 0;
-      renderEditor();
-    };
+    waitForKeyAndReturnToEditor();
   } catch (err) {
     print("\x1b[1;31mError: " + err.message + "\x1b[0m\n");
     print("\n\x1b[33mPress any key to return to editor...\x1b[0m\n");
-    keyon = 1;
-    var originalInput = input;
-    input = function() {
-      input = originalInput;
-      keyon = 0;
-      renderEditor();
-    };
+    waitForKeyAndReturnToEditor();
   }
 }
 
