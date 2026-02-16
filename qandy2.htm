@@ -200,10 +200,8 @@ initKeyboard(); function initKeyboard() {
   // Assign appropriate CSS class based on width
   if (key.width === 28) {
    btn.className = 'k1';
-  } else if (key.width === 37) {
-   btn.className = 'k-alt';  // ALT key
   } else if (key.width === 40) {
-   btn.className = 'k-ctrl';  // CTRL, SHIFT, CAPS keys
+   btn.className = 'k-ctrl';  // SHIFT, CAPS keys (CTRL and ALT now use 28px)
   } else if (key.width === 52) {
    btn.className = 'k2';
   } else if (key.width === 81) {
@@ -217,7 +215,7 @@ initKeyboard(); function initKeyboard() {
   }
   
   // Set explicit width for custom-sized keys
-  if (key.width === 37 || key.width === 40 || key.width === 104 || key.width === 248) {
+  if (key.width === 40 || key.width === 104 || key.width === 248) {
    btn.style.width = key.width + 'px';
   }
   
