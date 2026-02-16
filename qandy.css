@@ -161,7 +161,7 @@ body { background-color: #333 }
 /* New key classes for full keyboard */
 .k-ctrl { position: absolute; top: 0px; left: 0px; width: 40px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 40px; max-height: 24px; margin: 0; padding: 4;        
+      max-width: 40px; max-height: 24px; margin: 0; padding: 4px;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
       font-family: Arial; font-size: 11px; font-weight: bold;
@@ -172,7 +172,7 @@ body { background-color: #333 }
 .k-ctrl:active { background-color: #666; }
 .k-alt { position: absolute; top: 0px; left: 0px; width: 37px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 37px; max-height: 24px; margin: 0; padding: 4;        
+      max-width: 37px; max-height: 24px; margin: 0; padding: 4px;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
       font-family: Arial; font-size: 11px; font-weight: bold;
@@ -183,7 +183,7 @@ body { background-color: #333 }
 .k-alt:active { background-color: #666; }
 .k-enter { position: absolute; top: 0px; left: 0px; width: 248px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 248px; max-height: 24px; margin: 0; padding: 4;        
+      max-width: 248px; max-height: 24px; margin: 0; padding: 4px;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
       font-family: Arial; font-size: 12px; font-weight: bold;
