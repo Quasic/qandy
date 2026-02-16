@@ -164,18 +164,16 @@ var keyboardData = [
   {id:"n", label:"n", keyCode:78, x:189, y:573, width:28},
   {id:"m", label:"m", keyCode:77, x:218, y:573, width:28},
   {id:"colon", label:";", keyCode:59, x:247, y:573, width:28},
+  {id:"enter", label:"ENTER", keyCode:13, x:275, y:573, width:56},
 
   // Row 5: Bottom row with modifiers (y=604)
   {id:"ctrl", label:"CTRL", keyCode:17, x:47, y:604, width:28},
   {id:"alt", label:"ALT", keyCode:18, x:76, y:604, width:28},
   {id:"space", label:"SPACE", keyCode:32, x:105, y:604, width:84},
-  {id:"shift", label:"SHIFT", keyCode:16, x:191, y:604, width:40},
+  {id:"caps", label:"CAPS", keyCode:20, x:191, y:604, width:40},
   {id:"comma", label:",", keyCode:188, x:233, y:604, width:28},
   {id:"dot", label:".", keyCode:190, x:261, y:604, width:28},
-  {id:"slash", label:"/", keyCode:191, x:289, y:604, width:28},
-  // Row 6: Enter and special keys (y=635)
-  {id:"caps", label:"CAPS", keyCode:20, x:47, y:635, width:40},
-  {id:"enter", label:"ENTER", keyCode:13, x:89, y:635, width:56}
+  {id:"slash", label:"/", keyCode:191, x:289, y:604, width:28}
 ];
 
 // safe to delete these?
@@ -335,7 +333,6 @@ function button(b) {
  k=""; l=""; switch (b) {
   case 17: k="ctrl"; break;   // CTRL key
   case 18: k="alt"; break;    // ALT key  
-  case 16: k="shift"; break;  // SHIFT key
   case 37: k="left"; break;
   case 38: k="up"; break;
   case 39: k="right"; break;
@@ -425,16 +422,6 @@ function button(b) {
   } else {
    document.getElementById("alt").style.backgroundColor = "#222";
    document.getElementById("alt").style.color = "#fff";
-  }
- } else if (k==="shift") {
-  // Toggle shift key state
-  shift = shift ? 0 : 1;
-  if (shift) {
-   document.getElementById("shift").style.backgroundColor = "#0a0";
-   document.getElementById("shift").style.color = "#000";
-  } else {
-   document.getElementById("shift").style.backgroundColor = "#222";
-   document.getElementById("shift").style.color = "#fff";
   }
  } else {
   if (k==="caps") {
