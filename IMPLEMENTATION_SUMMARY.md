@@ -1,242 +1,183 @@
-# Implementation Summary: Text Overflow Pagination
+# ESC Key Opt-Out Implementation Summary
 
-## Issue Addressed
+## Issue Resolved
+The universal ESC key termination feature (added in a previous update) broke the q.js script, which previously used ESC to toggle between text and graphics display modes. Users needed a way for scripts to bypass the universal ESC termination when they want to handle the ESC key themselves.
 
-The ascii.js script prints more text than can fit on the screen. The qandy2.htm script uses a screen buffer that discards data that scrolls off the top, resulting in data loss. The request was to either:
-1. Keep track of overflow data (with performance analysis)
-2. Implement "Press Any Key" pagination (retro design)
+## Solution Implemented
+Added an `allowScriptESC` flag that defaults to `false` (maintaining universal ESC termination for all scripts) but can be set to `true` by scripts that need to handle ESC themselves.
 
-**Solution Chosen**: Option 2 - Pagination with "Press Any Key" message
+## Technical Implementation
 
-## Changes Made
+### 1. qandy2.htm Changes
 
-### Files Modified/Created
-
-1. **qandy2.htm** (114 lines added)
-   - Added pagination state variables
-   - Modified `print()` function to detect overflow and pause
-   - Added `resumePagination()` function to continue after key press
-   - Updated `button()` to handle pagination resume
-   - Updated `cls()` to reset pagination state
-
-2. **PAGINATION_FEATURE.md** (132 lines)
-   - Technical documentation
-   - Pros and cons analysis
-   - Performance comparison
-   - Implementation details
-   - Recommendations
-
-3. **PAGINATION_USER_GUIDE.md** (141 lines)
-   - End-user instructions
-   - Configuration guide
-   - Troubleshooting tips
-   - Examples and use cases
-
-4. **test-pagination.html** (96 lines)
-   - Visual test harness
-   - Verification instructions
-   - Expected behavior documentation
-
-**Total**: 483 lines added, 1 line removed
-
-## How It Works
-
-### User Experience
-
-1. User runs `ascii.js` in qandy2.htm
-2. After 20 lines, system pauses with message:
-   ```
-   --- Press Any Key to Continue ---
-   ```
-3. User presses any key
-4. Next 20 lines are displayed
-5. Process repeats until all content is shown
-
-### Technical Implementation
-
-```
-┌─────────────────────────────────────────────┐
-│  print() called with text                   │
-└──────────────┬──────────────────────────────┘
-               │
-               ▼
-        ┌──────────────┐
-        │ cursorY >= 20?│
-        └──────┬─────────┘
-               │
-        ┌──────┴──────┐
-        │             │
-     NO │             │ YES
-        │             │
-        ▼             ▼
-┌───────────┐  ┌──────────────┐
-│ Print text│  │ Set paused=true│
-│ normally  │  │ Show message  │
-│ Continue  │  │ Buffer calls  │
-└───────────┘  └──────┬─────────┘
-                      │
-                      ▼
-               ┌──────────────┐
-               │ Wait for key │
-               └──────┬─────────┘
-                      │
-                      ▼
-            ┌───────────────────┐
-            │resumePagination() │
-            │- Clear screen     │
-            │- Reset state      │
-            │- Process buffer   │
-            └───────────────────┘
+**Added global flag (line 14):**
+```javascript
+var allowScriptESC=false; // if true, script handles ESC instead of universal termination
 ```
 
-## Performance Analysis
+**Modified ESC handler (lines 497-514):**
+```javascript
+if (k==="esc") {
+  // Universal ESC handler: terminate any running script and return to OS
+  // UNLESS script has set allowScriptESC=true to handle ESC itself
+  if (run && !allowScriptESC) {
+   // Script is running and hasn't opted out - terminate it
+   run = "";
+   if (typeof document !== 'undefined' && document.getElementById("run")) {
+    document.getElementById("run").innerHTML = run;
+   }
+   // Show termination message
+   print("\x1b[1;33m[Script terminated by ESC key]\x1b[0m\n\n");
+   // Prevent key from being passed to the terminated script
+   k = "";
+  }
+  // If allowScriptESC is true, ESC will be passed to script's keydown() handler
+  // If no script running, ESC does nothing
+}
+```
 
-### Memory Comparison
+### 2. q.js Changes
 
-| Approach          | Memory per Page | Total for ascii.js | Notes                    |
-|-------------------|-----------------|-------------------|--------------------------|
-| **Pagination**    | ~1.6 KB         | ~6.4 KB           | 4 pages @ 20 lines each  |
-| **Scrollback**    | ~200 KB         | ~200 KB+          | Grows with every run     |
-| **Savings**       | **97%**         | **97%**           | Pagination vs Scrollback |
+**Enabled opt-out (line 6):**
+```javascript
+// Enable script to handle ESC key instead of universal termination
+allowScriptESC=true;
+```
 
-### Performance Impact
+**Added ESC handler in keydown() (lines 563-574):**
+```javascript
+function keydown(k) {
+ // Handle ESC key to toggle between text and graphics screen
+ if (k=="esc") {
+  if (mode==="txt") {
+   mode="gfx";
+   document.getElementById("txt").style.left = "350px";
+  } else {
+   mode="txt";
+   document.getElementById("txt").style.left = "54px";
+  }
+  return; // Don't process further
+ }
+ // ... rest of keydown function
+}
+```
 
-**Pagination Approach:**
-- ✅ Constant memory usage
-- ✅ Fast screen updates
-- ✅ No DOM bloat
-- ✅ Scales to any output size
-- ⚠️ Requires user interaction
+## Behavior Matrix
 
-**Scrollback Approach:**
-- ⚠️ Unbounded memory growth
-- ⚠️ Slower with large history
-- ⚠️ Browser limits possible
-- ✅ No user interaction needed
-- ✅ Full history accessible
+| Script State | allowScriptESC | ESC Pressed | Result |
+|--------------|----------------|-------------|---------|
+| No script running | N/A | ESC | Nothing happens |
+| piano.js running | false (default) | ESC | Script terminated, return to OS |
+| demo.js running | false (default) | ESC | Script terminated, return to OS |
+| edit.js running | false (default) | ESC | Script terminated, return to OS |
+| q.js running | true (explicitly set) | ESC | Mode toggles (txt ↔ gfx) |
 
-## Testing Results
+## Testing Performed
 
-### ascii.js Analysis
-
-- **Total output**: ~67 lines
-- **Lines per page**: 20
-- **Expected pauses**: 4
-- **Total pages**: 4
-- **Memory usage**: ~6.4 KB
-
-### Test Coverage
-
-✅ Short output (< 20 lines) - no pagination
-✅ Medium output (20-40 lines) - 1-2 pauses
-✅ Long output (67 lines) - 4 pauses
-✅ Screen clear resets pagination state
-✅ Key press resumes correctly
-✅ Buffered prints are processed
-✅ ANSI colors preserved in pause message
-
-## Code Quality
+### Unit Tests (Node.js)
+```
+Test 1: piano.js (no opt-out) - ESC terminates ✅
+Test 2: q.js (opt-out) - First ESC toggles mode txt→gfx ✅
+Test 3: q.js (opt-out) - Second ESC toggles mode gfx→txt ✅
+Test 4: No script running - ESC ignored ✅
+```
 
 ### Code Review
+- ✅ Addressed style consistency feedback
+- ✅ Code follows existing patterns in qandy codebase
 
-✅ No unused variables
-✅ No variable shadowing
-✅ Consistent with codebase style
-✅ Clear comments and documentation
-✅ Minimal changes (surgical approach)
+### Security Scan
+- ✅ CodeQL analysis: 0 vulnerabilities found
+- ✅ No new security risks introduced
 
-### Security
+## Backward Compatibility
+- **100% backward compatible**
+- All existing scripts continue to work unchanged
+- Default behavior (ESC terminates) preserved
+- Only scripts that explicitly opt-out behave differently
 
-✅ No external dependencies
-✅ No eval() of user input in new code
-✅ State management is local and controlled
-✅ No injection vulnerabilities introduced
+## Files Modified
 
-## Pros and Cons
+| File | Lines Changed | Description |
+|------|--------------|-------------|
+| `qandy2.htm` | +1, ~8 | Added flag, modified ESC handler |
+| `q.js` | +15 | Added opt-out and ESC handling |
+| `ESC_OPT_OUT_FEATURE.md` | +193 | Complete documentation |
+| `.gitignore` | +1 | Ignore test files |
+| **TOTAL** | **+210 lines** | Minimal, focused changes |
 
-### Advantages
+## Future Enhancements Enabled
 
-1. **Data Preservation**: No text is lost
-2. **Memory Efficient**: 97% savings vs scrollback
-3. **Performance**: No DOM bloat, fast updates
-4. **User Control**: Read at own pace
-5. **Configurable**: Adjustable threshold
-6. **Retro Aesthetic**: Fits pocket computer theme
-7. **Non-Intrusive**: Can be disabled
+With this opt-out mechanism, future scripts can now implement:
 
-### Trade-offs
+1. **edit.js**: "Save changes before exiting?" confirmation dialog
+2. **Game scripts**: Pause menus triggered by ESC
+3. **Demo scripts**: Help overlays toggled with ESC
+4. **Any script**: Custom exit confirmation or multi-step exit workflows
 
-1. **Interruption**: Requires user interaction
-2. **No History**: Previous pages cleared
-3. **Forward Only**: Can't scroll backward
-4. **Fixed Threshold**: 20 lines may not suit all cases
-
-## Alternative Considered: Scrollback Buffer
-
-### Why Not Chosen:
-
-1. **Memory Issues**: Unlimited growth potential
-2. **Performance**: DOM slowdown with large history
-3. **Browser Limits**: Could hit memory caps
-4. **Not Minimal**: More invasive changes needed
-
-### Future Enhancement:
-
-Could implement hybrid approach:
-- Pagination for active output
-- Limited scrollback (e.g., last 100 lines)
-- Configurable mode switching
-
-## Recommendations
+## Usage Guide
 
 ### For Users
+- **Most scripts**: Press ESC to quit (default behavior)
+- **q.js (Queville game)**: Press ESC to toggle between text and graphics views
+- **Future scripts**: May implement custom ESC behavior with confirmation prompts
 
-1. **Use qandy2.htm** for programs with extensive output
-2. **Adjust threshold** if needed: `paginationLinesBeforePause = 15`
-3. **Disable if preferred**: `paginationEnabled = false`
-4. **Save important output** using browser console
+### For Script Developers
 
-### For Developers
+**To use default ESC termination (recommended):**
+```javascript
+// Don't set allowScriptESC - it defaults to false
+// ESC will automatically terminate your script
+// No code needed!
+```
 
-1. **Current implementation** is production-ready
-2. **Consider hybrid approach** for future versions
-3. **Add export feature** to save output to file
-4. **Monitor user feedback** for threshold adjustments
+**To handle ESC yourself:**
+```javascript
+// 1. Enable opt-out at script start
+allowScriptESC = true;
 
-## Files to Review
+// 2. Handle ESC in your keydown function
+function keydown(k) {
+  if (k == "esc") {
+    // Your custom ESC handling here
+    // Examples:
+    // - Toggle a mode
+    // - Show exit confirmation
+    // - Display pause menu
+    return;
+  }
+  // ... handle other keys ...
+}
+```
 
-- `qandy2.htm` - Core implementation
-- `PAGINATION_FEATURE.md` - Technical deep-dive
-- `PAGINATION_USER_GUIDE.md` - User instructions
-- `test-pagination.html` - Test harness
+## Key Design Decisions
 
-## Deployment Notes
+1. **Default to false**: Maintains security and prevents scripts from trapping users
+2. **Global flag**: Simple, easy to understand, matches qandy architecture
+3. **Minimal changes**: Only touch code directly related to ESC handling
+4. **Preserve message**: Keep "[Script terminated]" message for default behavior
+5. **No API changes**: Fits into existing keydown() pattern
 
-1. Changes are backward compatible
-2. Feature is enabled by default
-3. Can be disabled without code changes
-4. No migration or setup needed
-5. Works with existing scripts
+## Verification Checklist
 
-## Success Metrics
-
-✅ **Functionality**: Pagination works as designed
-✅ **Performance**: 97% memory reduction
-✅ **User Experience**: Clear, retro-style interaction
-✅ **Documentation**: Comprehensive guides provided
-✅ **Code Quality**: Passes review, no issues
-✅ **Testing**: Verified with ascii.js (67 lines)
+- [x] Solves reported issue (q.js ESC toggles display mode)
+- [x] Backward compatible (existing scripts unchanged)
+- [x] No security vulnerabilities introduced
+- [x] Code review completed and feedback addressed
+- [x] Logic tested and verified
+- [x] Documentation created
+- [x] Follows coding style of existing codebase
+- [x] Minimal changes (surgical fix)
+- [x] Enables future enhancements (edit.js, etc.)
 
 ## Conclusion
 
-Successfully implemented pagination feature for qandy2.htm that addresses the text overflow issue. The solution is:
+This implementation successfully resolves the ESC key issue with minimal, focused changes that:
+- Restore q.js functionality
+- Maintain backward compatibility
+- Preserve security (default behavior unchanged)
+- Enable future script enhancements
+- Follow qandy coding patterns
+- Introduce zero security vulnerabilities
 
-- ✅ **Minimal**: Surgical changes to core files
-- ✅ **Effective**: Prevents data loss
-- ✅ **Efficient**: 97% memory savings
-- ✅ **Documented**: Technical and user guides
-- ✅ **Tested**: Verified with real-world scenario
-- ✅ **Configurable**: Adjustable to user needs
-- ✅ **Aesthetic**: Fits retro computing theme
-
-The implementation is ready for production use.
+The solution is production-ready and can be merged immediately.
