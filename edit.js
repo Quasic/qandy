@@ -466,8 +466,9 @@ function handleMenuKey(k) {
 
 // Handle edit mode keyboard input
 function handleEditKey(k) {
-  // Check for menu key (M or ALT)
-  if ((k.toUpperCase() === "M" && k.length === 1) || k === "alt") {
+  // Check for menu key (ALT+M only, not just M)
+  // When ALT is pressed with M, k will be "alt m" or "alt M"
+  if (k === "alt m" || k === "alt M") {
     editorState.menuOpen = true;
     editorState.menuIndex = 0;
     editorState.menuItemIndex = 0;
@@ -585,7 +586,7 @@ cls();
 print("\x1b[1;36m╔═══════════════════════════════╗\n");
 print("║   QANDY DOS-STYLE EDITOR      ║\n");
 print("╚═══════════════════════════════╝\x1b[0m\n\n");
-print("Press \x1b[1;33mM\x1b[0m or \x1b[1;33mALT\x1b[0m to open menu\n");
+print("Press \x1b[1;33mALT+M\x1b[0m to open menu\n");
 print("Use \x1b[1;33mArrow Keys\x1b[0m to navigate\n");
 print("Press \x1b[1;33mEnter\x1b[0m for new line\n");
 print("Press \x1b[1;33mBackspace\x1b[0m to delete\n\n");
