@@ -209,14 +209,14 @@ initKeyboard(); function initKeyboard() {
    }
   } else if (key.width === 52) {
    btn.className = 'k2';
-  } else if (key.width === 85) {
+  } else if (key.width === 81) {
    btn.className = 'k-space';  // SPACE key
   } else if (key.width === 109) {
    btn.className = 'k4';
   }
   
   // Set explicit width for custom-sized keys
-  if (key.width === 40 || key.width === 85) {
+  if (key.width === 40 || key.width === 81) {
    btn.style.width = key.width + 'px';
   }
   
