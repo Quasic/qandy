@@ -111,19 +111,62 @@ function pianoKeyHandler(key) {
   // Check if this key is mapped to a piano note
   if (pianoKeyMap[keyLower]) {
     var note = pianoKeyMap[keyLower];
-    playNote(note, 300);
     
-    // Show visual feedback using ANSI cursor positioning
-    // Move cursor to the note display line, clear it, and print the note
-    var keyLabel = pianoKeyLabels[note];
-    print("\x1b[" + noteDisplayLine + ";1H"); // Move to line noteDisplayLine, column 1
-    print("\x1b[K"); // Clear from cursor to end of line
-    print("\x1b[1;36m♪ Now playing: " + note + " (" + keyLabel + ")\x1b[0m");
+    // Only play if key wasn't already pressed (prevents key repeat)
+    if (!pressedKeys[keyLower]) {
+      playNote(note, 300);
+      pressedKeys[keyLower] = note;
+      updateNowPlayingDisplay();
+    }
     
     return true;
   }
   
   return false;
+}
+
+// Key release handler for piano keys
+function pianoKeyUpHandler(key) {
+  // Convert to lowercase for comparison
+  var keyLower = key.toLowerCase();
+  
+  // Check if this key was a piano key
+  if (pianoKeyMap[keyLower] && pressedKeys[keyLower]) {
+    delete pressedKeys[keyLower];
+    updateNowPlayingDisplay();
+    return true;
+  }
+  
+  return false;
+}
+
+// Update the "now playing" display based on currently pressed keys
+function updateNowPlayingDisplay() {
+  var keys = Object.keys(pressedKeys);
+  
+  // Move cursor to the note display line, clear it
+  print("\x1b[" + noteDisplayLine + ";1H"); // Move to line noteDisplayLine, column 1
+  print("\x1b[K"); // Clear from cursor to end of line
+  
+  if (keys.length === 0) {
+    // No keys pressed - show placeholder
+    print("Now playing:");
+  } else if (keys.length === 1) {
+    // Single note
+    var note = pressedKeys[keys[0]];
+    var keyLabel = pianoKeyLabels[note];
+    print("\x1b[1;36m♪ " + keyLabel + " → " + note + "\x1b[0m");
+  } else {
+    // Multiple notes (chord)
+    var notesList = [];
+    var keysList = [];
+    for (var i = 0; i < keys.length; i++) {
+      var note = pressedKeys[keys[i]];
+      notesList.push(note);
+      keysList.push(pianoKeyLabels[note]);
+    }
+    print("\x1b[1;35m♫ Chord: " + keysList.join('+') + " → " + notesList.join('+') + "\x1b[0m");
+  }
 }
 
 // Example songs using the music API
@@ -219,6 +262,21 @@ function keydown(key) {
   // Otherwise, call original keydown if it exists
   if (originalKeydown) {
     originalKeydown(key);
+  }
+}
+
+// Override the keyup function to handle piano key releases
+var originalKeyup = typeof keyup !== 'undefined' ? keyup : null;
+
+function keyup(key) {
+  // Try to handle as piano key first
+  if (pianoKeyUpHandler(key)) {
+    return;
+  }
+  
+  // Otherwise, call original keyup if it exists
+  if (originalKeyup) {
+    originalKeyup(key);
   }
 }
 

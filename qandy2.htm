@@ -415,6 +415,12 @@ function pressup() {
   document.getElementById("alt").style.color = "#fff";
   return;
  }
+ 
+ // Route keyup to active script if run is set
+ if (run && typeof keyup !== 'undefined') {
+  var k = String.fromCharCode(event.keyCode);
+  keyup(k);
+ }
 }
 
 function button(b) {
