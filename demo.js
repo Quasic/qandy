@@ -217,6 +217,9 @@ function input(l) {
  keyon=0; print("");
 }
 
+} // End of Begin() function
+
+// Global keydown function - must be accessible from qandy2.htm
 function keydown(key) {
  // Handle ESC key to toggle between text and graphics screen
  if (key=="esc") {
@@ -250,5 +253,4 @@ function keydown(key) {
    mainloop();
   }
  }
-}
 }
