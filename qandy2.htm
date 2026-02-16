@@ -16,6 +16,8 @@ var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
 var ctrl=0;  // ctrl key pressed
 var alt=0;   // alt key pressed
+var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
+var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyon=1; // turn keyboard input on/off
 
 // Normal character mapping for lowercase (caps level 0)
@@ -199,13 +201,14 @@ initKeyboard(); function initKeyboard() {
   if (key.width === 28) {
    btn.className = 'k1';
   } else if (key.width === 40) {
-   btn.className = 'k-ctrl';  // SHIFT, CAPS keys (CTRL and ALT now use 28px)
+   // Check if it's the ENTER key specifically
+   if (key.id === 'enter') {
+    btn.className = 'k-enter';  // ENTER key
+   } else {
+    btn.className = 'k-ctrl';  // CAPS key and other 40px keys
+   }
   } else if (key.width === 52) {
    btn.className = 'k2';
-  } else if (key.width === 56) {
-   btn.className = 'k-enter';  // ENTER key (2 standard keys)
-  } else if (key.width === 81) {
-   btn.className = 'k3';
   } else if (key.width === 84) {
    btn.className = 'k-space';  // SPACE key (3 standard keys)
   } else if (key.width === 109) {
@@ -213,7 +216,7 @@ initKeyboard(); function initKeyboard() {
   }
   
   // Set explicit width for custom-sized keys
-  if (key.width === 40 || key.width === 56 || key.width === 84) {
+  if (key.width === 40 || key.width === 84) {
    btn.style.width = key.width + 'px';
   }
   
@@ -278,6 +281,7 @@ resize(); function resize() {
 }
 
 document.addEventListener('keydown', function () { press(); });
+document.addEventListener('keyup', function () { pressup(); });
 document.addEventListener('paste', function (event) {
  if (keyon) {
   event.preventDefault();
@@ -299,6 +303,24 @@ document.addEventListener('paste', function (event) {
 });
 function press() { 
  key=""; k=event.keyCode; shift=event.shiftKey;
+ 
+ // Handle physical CTRL key press (highlight while pressed)
+ if (event.keyCode === 17 && !ctrl) {
+  ctrl = 1;
+  ctrlPhysical = true;
+  document.getElementById("ctrl").style.backgroundColor = "#0a0";
+  document.getElementById("ctrl").style.color = "#000";
+  return;
+ }
+ 
+ // Handle physical ALT key press (highlight while pressed)
+ if (event.keyCode === 18 && !alt) {
+  alt = 1;
+  altPhysical = true;
+  document.getElementById("alt").style.backgroundColor = "#0a0";
+  document.getElementById("alt").style.color = "#000";
+  return;
+ }
  
  // Handle Ctrl+C for copy
  if (event.ctrlKey && event.key === 'c') {
@@ -326,6 +348,26 @@ function press() {
  // Don't handle keydown if Ctrl is pressed (let paste event handle it)
  if (event.ctrlKey) { return; }
  button(k);
+}
+
+function pressup() {
+ // Handle physical CTRL key release (unhighlight)
+ if (event.keyCode === 17 && ctrlPhysical) {
+  ctrl = 0;
+  ctrlPhysical = false;
+  document.getElementById("ctrl").style.backgroundColor = "#222";
+  document.getElementById("ctrl").style.color = "#fff";
+  return;
+ }
+ 
+ // Handle physical ALT key release (unhighlight)
+ if (event.keyCode === 18 && altPhysical) {
+  alt = 0;
+  altPhysical = false;
+  document.getElementById("alt").style.backgroundColor = "#222";
+  document.getElementById("alt").style.color = "#fff";
+  return;
+ }
 }
 
 function button(b) {

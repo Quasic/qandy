@@ -157,7 +157,7 @@ body { background-color: #333 }
 /* New key classes for full keyboard */
 .k-ctrl { position: absolute; top: 0px; left: 0px; width: 40px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 40px; max-height: 24px; margin: 0; padding: 4px;        
+      max-width: 40px; max-height: 30px; margin: 0; padding: 4px;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
       font-family: Arial; font-size: 11px; font-weight: bold;
@@ -166,12 +166,12 @@ body { background-color: #333 }
       user-select: none; }
 .k-ctrl:hover { background-color: #444; }
 .k-ctrl:active { background-color: #666; }
-.k-enter { position: absolute; top: 0px; left: 0px; width: 56px; height: 30px;
+.k-enter { position: absolute; top: 0px; left: 0px; width: 40px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 56px; max-height: 30px; margin: 0; padding: 4px;        
+      max-width: 40px; max-height: 30px; margin: 0; padding: 4px;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
-      font-family: Arial; font-size: 12px; font-weight: bold;
+      font-family: Arial; font-size: 11px; font-weight: bold;
       cursor: pointer; z-index: 99; 
       border: 1px solid #555; border-radius: 3px;
       user-select: none; }
@@ -181,7 +181,7 @@ body { background-color: #333 }
 /* Custom width for SPACE key (3 standard keys) */
 .k-space { position: absolute; top: 0px; left: 0px; width: 84px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 84px; max-height: 24px; margin: 0; padding: 4px;        
+      max-width: 84px; max-height: 30px; margin: 0; padding: 4px;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
       font-family: Arial; font-size: 12px; font-weight: bold;
