@@ -297,9 +297,6 @@ document.addEventListener('paste', function (event) {
 });
 function press() { 
  key=""; k=event.keyCode; shift=event.shiftKey;
- // Track ctrl and alt from physical keyboard
- if (event.ctrlKey) ctrl = 1;
- if (event.altKey) alt = 1;
  
  // Handle Ctrl+C for copy
  if (event.ctrlKey && event.key === 'c') {
@@ -941,20 +938,27 @@ function button(b) {
     } else if (l) {
      // Insert character at cursor position
      if (keyon) {
-      // Prepend modifier keys if active
+      // Prepend modifier keys if active (from virtual or physical keyboard)
       let finalChar = l;
-      if (ctrl || alt) {
+      let hasCtrl = ctrl || (typeof event !== 'undefined' && event.ctrlKey);
+      let hasAlt = alt || (typeof event !== 'undefined' && event.altKey);
+      
+      if (hasCtrl || hasAlt) {
        let modifiers = [];
-       if (ctrl) modifiers.push("ctrl");
-       if (alt) modifiers.push("alt");
+       if (hasCtrl) modifiers.push("ctrl");
+       if (hasAlt) modifiers.push("alt");
        finalChar = modifiers.join(" ") + " " + l;
-       // Reset modifier keys after use (they're consumed)
-       ctrl = 0;
-       alt = 0;
-       document.getElementById("ctrl").style.backgroundColor = "#222";
-       document.getElementById("ctrl").style.color = "#fff";
-       document.getElementById("alt").style.backgroundColor = "#222";
-       document.getElementById("alt").style.color = "#fff";
+       // Reset virtual keyboard modifier keys after use (they're consumed)
+       if (ctrl) {
+        ctrl = 0;
+        document.getElementById("ctrl").style.backgroundColor = "#222";
+        document.getElementById("ctrl").style.color = "#fff";
+       }
+       if (alt) {
+        alt = 0;
+        document.getElementById("alt").style.backgroundColor = "#222";
+        document.getElementById("alt").style.color = "#fff";
+       }
       }
       line = line.substring(0, cursorPos) + finalChar + line.substring(cursorPos);
       cursorPos += finalChar.length;

@@ -164,7 +164,7 @@ body { background-color: #333 }
       max-width: 40px; max-height: 24px; margin: 0; padding: 4;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
-      font-family: Arial; font-size: 11px; weight: bold;
+      font-family: Arial; font-size: 11px; font-weight: bold;
       cursor: pointer; z-index: 99; 
       border: 1px solid #555; border-radius: 3px;
       user-select: none; }
@@ -175,7 +175,7 @@ body { background-color: #333 }
       max-width: 37px; max-height: 24px; margin: 0; padding: 4;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
-      font-family: Arial; font-size: 11px; weight: bold;
+      font-family: Arial; font-size: 11px; font-weight: bold;
       cursor: pointer; z-index: 99; 
       border: 1px solid #555; border-radius: 3px;
       user-select: none; }
@@ -186,7 +186,7 @@ body { background-color: #333 }
       max-width: 248px; max-height: 24px; margin: 0; padding: 4;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
-      font-family: Arial; font-size: 12px; weight: bold;
+      font-family: Arial; font-size: 12px; font-weight: bold;
       cursor: pointer; z-index: 99; 
       border: 1px solid #555; border-radius: 3px;
       user-select: none; }
