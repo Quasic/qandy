@@ -494,15 +494,20 @@ function button(b) {
   case 220: if (shift||caps===1) { k="backslash"; l="|"; } else if (caps===2) { k="backslash"; l=extendedChars['\\']; } else { k="\\"; l=k; } break;  
  }
  if (k==="esc") {
-  if (mode==="txt") {
-   mode="gfx";
-   document.getElementById("txt").style.top = "50px";
-   document.getElementById("txt").style.left = "350px";
-  } else {
-   mode = "txt";
-   document.getElementById("txt").style.top = "50px";
-   document.getElementById("txt").style.left = "54px";
+  // Universal ESC handler: terminate any running script and return to OS
+  if (run) {
+   // Script is running - terminate it
+   run = "";
+   if (typeof document !== 'undefined' && document.getElementById("run")) {
+    document.getElementById("run").innerHTML = run;
+   }
+   // Clear screen and show termination message
+   cls();
+   print("\x1b[1;33m[Script terminated by ESC key]\x1b[0m\n\n");
+   // Prevent key from being passed to the terminated script
+   k = "";
   }
+  // If no script running, ESC does nothing (old screen toggle removed)
  } else if (k==="ctrl") {
   // Toggle ctrl key state
   ctrl = ctrl ? 0 : 1;
