@@ -1089,8 +1089,21 @@ function parseANSIString(str) {
     if (command === 'm') {
       // SGR (Select Graphic Rendition) - color/style codes
       tokens.push({ type: 'code', codes: params });
+    } else if (command === 'H' || command === 'f') {
+      // CUP (Cursor Position) - move cursor to row;col
+      // Format: \x1b[row;colH or \x1b[row;colf
+      const row = params[0] ? params[0] - 1 : 0; // Convert to 0-based
+      const col = params[1] ? params[1] - 1 : 0; // Convert to 0-based
+      tokens.push({ type: 'cursor', row: row, col: col });
+    } else if (command === 'K') {
+      // EL (Erase in Line) - clear from cursor to end of line
+      // param 0 or missing = clear from cursor to end
+      // param 1 = clear from start to cursor
+      // param 2 = clear entire line
+      const mode = params[0] || 0;
+      tokens.push({ type: 'clearline', mode: mode });
     }
-    // Ignore other ANSI commands for now (cursor movement, etc.)
+    // Other ANSI commands are ignored for now
     
     lastIndex = match.index + match[0].length;
   }
@@ -1365,6 +1378,52 @@ function print(inputString) {
     if (token.type === 'code') {
       // Update current style
       applyANSICode(token.codes);
+    } else if (token.type === 'cursor') {
+      // Cursor positioning (CUP) - move cursor to specified row/col
+      cursorY = Math.min(Math.max(0, token.row), screenHeight - 1);
+      cursorX = Math.min(Math.max(0, token.col), screenWidth - 1);
+    } else if (token.type === 'clearline') {
+      // Clear line from cursor position
+      if (token.mode === 0) {
+        // Clear from cursor to end of line
+        for (let x = cursorX; x < screenWidth; x++) {
+          if (screenBuffer[cursorY]) {
+            screenBuffer[cursorY][x] = ' ';
+            styleBuffer[cursorY][x] = {
+              color: currentStyle.color,
+              bgcolor: currentStyle.bgcolor,
+              bold: currentStyle.bold,
+              inverse: currentStyle.inverse
+            };
+          }
+        }
+      } else if (token.mode === 1) {
+        // Clear from start of line to cursor
+        for (let x = 0; x <= cursorX; x++) {
+          if (screenBuffer[cursorY]) {
+            screenBuffer[cursorY][x] = ' ';
+            styleBuffer[cursorY][x] = {
+              color: currentStyle.color,
+              bgcolor: currentStyle.bgcolor,
+              bold: currentStyle.bold,
+              inverse: currentStyle.inverse
+            };
+          }
+        }
+      } else if (token.mode === 2) {
+        // Clear entire line
+        for (let x = 0; x < screenWidth; x++) {
+          if (screenBuffer[cursorY]) {
+            screenBuffer[cursorY][x] = ' ';
+            styleBuffer[cursorY][x] = {
+              color: currentStyle.color,
+              bgcolor: currentStyle.bgcolor,
+              bold: currentStyle.bold,
+              inverse: currentStyle.inverse
+            };
+          }
+        }
+      }
     } else if (token.type === 'char') {
       const char = token.value;
       
