@@ -1,11 +1,5 @@
 
-run="queville.js";
-if (document.getElementById("run")) {
- document.getElementById("run").innerHTML=run;
-}
-
-// Enable script to handle ESC key instead of universal termination
-allowScriptESC=true;
+run="queville.js"; allowScriptESC=true;
 
 var now=new Date(); function pad(num) { return num.toString().padStart(2, '0'); }
 

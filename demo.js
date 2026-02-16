@@ -1,6 +1,11 @@
 
 run="demo.js";
 
+script=document.createElement('script');
+script.src="qandy-gfx.js";
+script.onload=Begin;
+document.head.appendChild(script);
+
 // Enable script to handle ESC key instead of universal termination
 allowScriptESC=true;
 
@@ -13,6 +18,9 @@ pz=66; py=Math.floor(pz/mapx); px=pz-(py*mapx); po="";
 var k=""; var i=0; var b=""; var c=0; var d=""; var g=""; var r=""; 
 var x=7; var y=4; var h=10; var a=0; var s=0; var t=0; var m=0; var f=0;
 
+var PName="demo";
+
+function Begin() {
 atkr=document.createElement("img");
 atkr.id="atkr";
 atkr.src=item['Za']; 
@@ -242,4 +250,5 @@ function keydown(key) {
    mainloop();
   }
  }
-} 
+}
+}
