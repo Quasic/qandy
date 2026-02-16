@@ -1,19 +1,37 @@
-// QANDY BEEP UTILITY
-// Generates system beep sounds using Web Audio API
+// QANDY SOUND CARD
+// Sound and music API for the Qandy Pocket Computer
+// Generates beeps, tones, and musical notes using Web Audio API
 // Modern browsers don't support ASCII BEL character (\x07) for security reasons
 // This provides an alternative using actual audio generation
 
+//
+// API FUNCTIONS:
 //
 //              beep() plays standard "beep"
 //            beep(Hz) custom frequency
 //       beep(Hz, dur) frequency plus duration
 //      playNote(note) play note from music scale
+//  playNote(note,dur) play note with duration
 //
-//              beep() Standard beep (800Hz, 200ms
+//  playTune(string) play a sequence of notes from a music string
+// playMelody(array) play a sequence of notes from an array
+//         stopTune() stop currently playing tune
+//        loopTune(s) loop a tune continuously
+//
+// EXAMPLES:
+//              beep() Standard beep (800Hz, 200ms)
 //          beep(1000) 1000Hz beep
 //       playNote('C') Play middle C (C4)
 //      playNote('A4') Play A4 (440Hz)
 // playNote('C#5',500) C sharp octave 5, 500ms
+//
+// playTune("C E G C5") Simple scale
+// playTune("C:100 D:100 E:100 F:100 G:400") Scale with timing
+// playTune("C4:200 R:100 E4:200 R:100 G4:400") With rests
+//
+// playMelody([['C4',200], ['E4',200], ['G4',400]]) Array format
+//
+// loopTune("C E G E") Background music loop
 //
 
 beep();
@@ -87,9 +105,8 @@ function playNote(note, duration = 200) {
   const frequency = noteFrequencies[note];
   
   if (!frequency) {
-    print("\x1b[1;31mError: Unknown note '" + note + "'\x1b[0m\n");
-    print("Valid notes: C, C#/Db, D, D#/Eb, E, F, F#/Gb, G, G#/Ab, A, A#/Bb, B\n");
-    print("Octaves: 0-8 (e.g., 'C4' is middle C, 'A4' is 440Hz)\n");
+    // Error: Unknown note - valid notes are C, C#/Db, D, D#/Eb, E, F, F#/Gb, G, G#/Ab, A, A#/Bb, B
+    // Octaves: 0-8 (e.g., 'C4' is middle C, 'A4' is 440Hz)
     return false;
   }
   
@@ -133,8 +150,121 @@ function beep(frequency = 800, duration = 200) {
     
     return true;
   } catch (error) {
-    print("\x1b[1;31mError: " + error.message + "\x1b[0m\n");
-    print("Your browser may not support Web Audio API.\n");
+    // Error: Web Audio API may not be supported in this browser
     return false;
   }
+}
+
+// Music notation parser and playback
+// Inspired by early computer music formats (BASIC PLAY, Commodore 64 SID)
+// Music string format: "C4:200 E4:200 G4:400 R:100 C5:300"
+//   - Note format: NOTE:DURATION (e.g., "C4:200" = C4 for 200ms)
+//   - R or rest indicates a pause/rest
+//   - Separate notes with spaces
+//   - Duration is optional, defaults to 200ms
+// Example: playTune("C E G C5") plays C4, E4, G4, C5
+// Example: playTune("C:100 D:100 E:100 F:100 G:400") plays a scale
+
+var currentTune = null;  // Currently playing tune (can be stopped)
+var tuneTimeout = null;  // Timeout for next note
+
+function playTune(musicString, onComplete) {
+  // Stop any currently playing tune
+  stopTune();
+  
+  // Parse the music string into an array of notes
+  const notes = parseMusicString(musicString);
+  if (!notes || notes.length === 0) {
+    return false;
+  }
+  
+  // Store tune info so it can be stopped if needed
+  currentTune = {
+    notes: notes,
+    index: 0,
+    onComplete: onComplete
+  };
+  
+  // Start playing the tune
+  playNextNote();
+  return true;
+}
+
+function parseMusicString(musicString) {
+  // Split by spaces and parse each note
+  const tokens = musicString.trim().split(/\s+/);
+  const notes = [];
+  
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    const parts = token.split(':');
+    const noteName = parts[0].trim().toUpperCase();
+    const duration = parts[1] ? parseInt(parts[1]) : 200;
+    
+    if (noteName === 'R' || noteName === 'REST') {
+      // Rest/pause
+      notes.push({ type: 'rest', duration: duration });
+    } else {
+      // Musical note
+      notes.push({ type: 'note', note: noteName, duration: duration });
+    }
+  }
+  
+  return notes;
+}
+
+function playNextNote() {
+  if (!currentTune || currentTune.index >= currentTune.notes.length) {
+    // Tune finished
+    const callback = currentTune ? currentTune.onComplete : null;
+    currentTune = null;
+    if (callback) {
+      callback();
+    }
+    return;
+  }
+  
+  const noteInfo = currentTune.notes[currentTune.index];
+  currentTune.index++;
+  
+  if (noteInfo.type === 'rest') {
+    // Just wait for the duration
+    tuneTimeout = setTimeout(playNextNote, noteInfo.duration);
+  } else {
+    // Play the note
+    playNote(noteInfo.note, noteInfo.duration);
+    // Schedule next note
+    tuneTimeout = setTimeout(playNextNote, noteInfo.duration);
+  }
+}
+
+function stopTune() {
+  // Stop currently playing tune
+  if (tuneTimeout) {
+    clearTimeout(tuneTimeout);
+    tuneTimeout = null;
+  }
+  currentTune = null;
+}
+
+// Loop a tune continuously
+function loopTune(musicString) {
+  playTune(musicString, function() {
+    // When tune completes, play it again
+    loopTune(musicString);
+  });
+}
+
+// Alternative notation: playMelody with array format
+// Example: playMelody([['C4', 200], ['E4', 200], ['G4', 400]])
+function playMelody(notesArray, onComplete) {
+  // Convert array format to music string
+  const musicString = notesArray.map(function(note) {
+    if (note[0] === 'R' || note[0] === 'rest') {
+      return 'R:' + (note[1] || 200);
+    }
+    return note[0] + ':' + (note[1] || 200);
+  }).join(' ');
+  
+  return playTune(musicString, onComplete);
 }
