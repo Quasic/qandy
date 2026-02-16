@@ -14,6 +14,11 @@ var txt="";
 var mode="txt"; // gfx or txt display
 var allowScriptESC=false; // if true, script handles ESC instead of universal termination
 
+// RAM - Working memory for file editing
+var RAM="";           // Current file content in memory
+var RAMFILE="";       // Current filename loaded in RAM
+var RAMTYPE="";       // Current file type (js, txt, etc)
+
 var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
 var ctrl=0;  // ctrl key pressed
@@ -1057,6 +1062,30 @@ function button(b) {
         line = "";
         cursorPos = 0;
         inputScrollPos = 0;
+       } else if (line.substr(0, 4) === "type") {
+        // TYPE - Display RAM contents
+        dosCommand_type();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 3) === "run") {
+        // RUN - Execute RAM contents
+        dosCommand_run();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 3) === "new") {
+        // NEW - Clear RAM and start new file
+        dosCommand_new(line);
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 3) === "ram") {
+        // RAM - Show RAM status
+        dosCommand_ram();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
        } else {
         // Execute command/code
         executeCode(line);
@@ -1325,28 +1354,24 @@ codes: {
 
 // DOS Command Handlers
 function dosCommand_save(line) {
-  // Parse: save filename
+  // Parse: save [filename]
   var parts = line.trim().split(/\s+/);
-  if (parts.length < 2) {
+  var filename = parts.length >= 2 ? parts[1] : RAMFILE;
+  
+  if (!filename) {
     print("\x1b[1;31mUsage: save <filename>\x1b[0m\n");
-    print("Example: save myprogram.js\n\n");
+    print("Example: save myprogram.js\n");
+    print("Or load a file first, then use 'save' without filename\n\n");
     return;
   }
   
-  var filename = parts[1];
-  
-  // Get the current text content to save
-  // In a real scenario, you'd want to have an editor or capture content
-  // For now, we'll save the current txt variable or prompt for content
-  print("\x1b[1;36mSAVE: " + filename + "\x1b[0m\n");
-  print("Enter content to save (end with a blank line):\n");
-  
-  // Set up a temporary input mode for multi-line content
-  // For simplicity, we'll save txt content or use a global variable
-  var contentToSave = txt || "// Saved from Qandy\n";
+  // Save RAM content to file
+  var contentToSave = RAM || "// Empty file\n";
   
   var result = DOS.save(filename, contentToSave);
   if (result.success) {
+    RAMFILE = filename;  // Update current filename
+    RAMTYPE = filename.split('.').pop();  // Update type
     print("\x1b[1;32m✓ File saved: " + filename + " (" + result.data.size + " bytes)\x1b[0m\n\n");
   } else {
     print("\x1b[1;31m✗ Error: " + result.error + "\x1b[0m\n\n");
@@ -1354,30 +1379,41 @@ function dosCommand_save(line) {
 }
 
 function dosCommand_load(line) {
-  // Parse: load filename
+  // Parse: load filename [option]
   var parts = line.trim().split(/\s+/);
   if (parts.length < 2) {
-    print("\x1b[1;31mUsage: load <filename>\x1b[0m\n");
-    print("Example: load myprogram.js\n\n");
+    print("\x1b[1;31mUsage: load <filename> [run|edit]\x1b[0m\n");
+    print("  load myfile.js       - Load into RAM for editing\n");
+    print("  load myfile.js run   - Load and execute immediately\n");
+    print("  load myfile.js edit  - Load into RAM (same as default)\n\n");
     return;
   }
   
   var filename = parts[1];
+  var option = parts.length >= 3 ? parts[2] : "edit";  // Default to edit mode
   var result = DOS.load(filename);
   
   if (result.success) {
-    print("\x1b[1;32m✓ File loaded: " + filename + "\x1b[0m\n");
-    
-    // If it's a .js file, execute it
-    if (filename.endsWith('.js')) {
+    if (option === "run" && filename.endsWith('.js')) {
+      // RUN mode - execute immediately without loading into RAM
+      print("\x1b[1;32m✓ Running: " + filename + "\x1b[0m\n\n");
       try {
         eval(result.data.content);
       } catch (e) {
         print("\x1b[1;31m✗ Error executing file: " + e.message + "\x1b[0m\n\n");
       }
     } else {
-      // Display text file content
-      print("\n" + result.data.content + "\n\n");
+      // EDIT mode (default) - load into RAM
+      RAM = result.data.content;
+      RAMFILE = filename;
+      RAMTYPE = result.data.type;
+      print("\x1b[1;32m✓ File loaded into RAM: " + filename + "\x1b[0m\n");
+      print("  Size: " + result.data.size + " bytes\n");
+      print("  Type: " + result.data.type + "\n");
+      print("\n");
+      print("RAM is now ready for editing.\n");
+      print("Use '\x1b[1;36msave\x1b[0m' to save changes, or '\x1b[1;36msave newfile.js\x1b[0m' to save as new file.\n");
+      print("Use '\x1b[1;36mtype\x1b[0m' to view RAM contents, '\x1b[1;36mrun\x1b[0m' to execute (if .js)\n\n");
     }
   } else {
     print("\x1b[1;31m✗ Error: " + result.error + "\x1b[0m\n\n");
