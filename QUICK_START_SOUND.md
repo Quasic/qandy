@@ -131,6 +131,17 @@ playChordProgression();   // C-F-G-C
 - Check octave number (4 is middle, 5 is higher)
 - Remember: C4 is middle C, A4 is 440Hz
 
+**Piano keys not working?**
+- Make sure your script sets `run="yourscript.js"` at the beginning
+- The qandy system only routes keyboard events to scripts with `run` set
+- Example:
+  ```javascript
+  run="piano.js";
+  if (typeof document !== 'undefined' && document.getElementById("run")) {
+    document.getElementById("run").innerHTML = run;
+  }
+  ```
+
 ---
 
 ## What's Next?

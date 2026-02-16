@@ -4,14 +4,6 @@
 
 The Qandy Sound Card (`sound.js`) provides a comprehensive audio API for the Qandy Pocket Computer. It allows developers to add sound effects and music to their games and applications.
 
-## Features
-
-- System beeps and tones at custom frequencies
-- Musical notes across 9 octaves (C0 to B8)
-- Music notation parser for playing melodies from strings
-- Background music support with looping
-- No console output - silent API perfect for embedding in games
-
 ## Installation
 
 Simply load `sound.js` in your HTML file or Qandy script:
@@ -21,6 +13,26 @@ Simply load `sound.js` in your HTML file or Qandy script:
 ```
 
 The script will beep once when loaded to confirm audio is working.
+
+**Important for Interactive Scripts:** If your script needs to respond to keyboard input (like `piano.js`), you must set the `run` variable at the beginning of your script:
+
+```javascript
+run="yourscript.js";
+if (typeof document !== 'undefined' && document.getElementById("run")) {
+  document.getElementById("run").innerHTML = run;
+}
+```
+
+This enables the qandy system to route keyboard events to your script's `keydown()` function.
+
+## Features
+
+- System beeps and tones at custom frequencies
+- Musical notes across 9 octaves (C0 to B8)
+- Music notation parser for playing melodies from strings
+- Background music support with looping
+- No console output - silent API perfect for embedding in games
+- Interactive keyboard support via the qandy `run` variable system
 
 ## API Reference
 
