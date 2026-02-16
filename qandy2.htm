@@ -501,8 +501,7 @@ function button(b) {
    if (typeof document !== 'undefined' && document.getElementById("run")) {
     document.getElementById("run").innerHTML = run;
    }
-   // Clear screen and show termination message
-   cls();
+   // Show termination message (don't clear screen so user can see function names, etc.)
    print("\x1b[1;33m[Script terminated by ESC key]\x1b[0m\n\n");
    // Prevent key from being passed to the terminated script
    k = "";
