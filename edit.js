@@ -598,6 +598,11 @@ run = "edit.js";
 // Disable default keyboard handling
 keyon = 0;
 
+// Define input function (required by qandy2.htm but not used by editor)
+function input(text) {
+  // Editor handles all input through keydown, so this is a no-op
+}
+
 // Initialize and start
 setTimeout(function() {
   initEditor();
