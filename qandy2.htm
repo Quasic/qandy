@@ -247,6 +247,9 @@ keyboardData.forEach(function(key) {
   keyCodeToId[key.keyCode] = key.id;
 });
 
+// Store timeout IDs for each key to handle rapid key presses
+var keyTimeouts = {};
+
 // Function to highlight a virtual key
 function highlightKey(keyCode) {
   var elementId = keyCodeToId[keyCode];
@@ -255,17 +258,25 @@ function highlightKey(keyCode) {
   var element = document.getElementById(elementId);
   if (!element) return; // Element not found
   
+  // Clear any existing timeout for this key to prevent race conditions
+  if (keyTimeouts[elementId]) {
+    clearTimeout(keyTimeouts[elementId]);
+  }
+  
   // Store original background color if not already stored
+  // Use getComputedStyle to capture the actual rendered background color
   if (!element.dataset.originalBg) {
-    element.dataset.originalBg = element.style.backgroundColor || '';
+    var computedStyle = window.getComputedStyle(element);
+    element.dataset.originalBg = computedStyle.backgroundColor;
   }
   
   // Apply hover effect (using the same color as :hover in CSS)
   element.style.backgroundColor = '#444';
   
   // Set a timeout to restore original color
-  setTimeout(function() {
+  keyTimeouts[elementId] = setTimeout(function() {
     unhighlightKey(elementId);
+    delete keyTimeouts[elementId]; // Clean up timeout reference
   }, 200); // 200ms flash effect
 }
 
@@ -275,7 +286,8 @@ function unhighlightKey(elementId) {
   if (!element) return;
   
   // Restore original background color
-  element.style.backgroundColor = element.dataset.originalBg || '';
+  // Use empty string to allow CSS styles to take effect again
+  element.style.backgroundColor = '';
 }
 
 tiles(); function tiles() {
