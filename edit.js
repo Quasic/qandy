@@ -317,7 +317,8 @@ function menuExit() {
   cls();
   print("\x1b[32mEditor closed.\x1b[0m\n");
   print("\nType a .js filename to run a program\n");
-  keyon = 1;
+  run = "";  // Clear run variable to return to OS mode
+  keyon = 1; // Re-enable keyboard input
 }
 
 function deleteLine() {
@@ -353,9 +354,25 @@ function runCode() {
     // Note: eval() is used here for the development environment
     // This allows dynamic code execution in the emulator context
     eval(code);
+    print("\n\n\x1b[33mPress any key to return to editor...\x1b[0m\n");
+    keyon = 1;
+    // Wait for keypress to return to editor
+    var originalInput = input;
+    input = function() {
+      input = originalInput;
+      keyon = 0;
+      renderEditor();
+    };
   } catch (err) {
     print("\x1b[1;31mError: " + err.message + "\x1b[0m\n");
+    print("\n\x1b[33mPress any key to return to editor...\x1b[0m\n");
     keyon = 1;
+    var originalInput = input;
+    input = function() {
+      input = originalInput;
+      keyon = 0;
+      renderEditor();
+    };
   }
 }
 
@@ -384,11 +401,11 @@ function keydown(k) {
 
 // Handle dialog keyboard input
 function handleDialogKey(k) {
-  if (k === "\x1b") { // Escape
+  if (k === "\x1b" || k === "esc") { // Escape
     editorState.mode = "edit";
     editorState.dialogInput = "";
     renderEditor();
-  } else if (k === "\r" || k === "\n") { // Enter
+  } else if (k === "\r" || k === "\n" || k === "enter") { // Enter
     // Process dialog action
     if (editorState.dialogType === "save") {
       if (editorState.dialogInput) {
@@ -422,26 +439,26 @@ function handleDialogKey(k) {
 // Handle menu keyboard input
 function handleMenuKey(k) {
   // Check for special keys first (don't uppercase these)
-  if (k === "\x1b") { // Escape
+  if (k === "\x1b" || k === "esc") { // Escape
     closeMenu();
     renderEditor();
-  } else if (k === "\r" || k === "\n") { // Enter
+  } else if (k === "\r" || k === "\n" || k === "enter") { // Enter
     var menu = menus[editorState.menuIndex];
     var action = menu.items[editorState.menuItemIndex].action;
     action();
-  } else if (k === "←" || k === "\x08") { // Left arrow or backspace
+  } else if (k === "←" || k === "\x08" || k === "left") { // Left arrow or backspace
     editorState.menuIndex = (editorState.menuIndex - 1 + menus.length) % menus.length;
     editorState.menuItemIndex = 0;
     renderEditor();
-  } else if (k === "→" || k === " ") { // Right arrow or space
+  } else if (k === "→" || k === " " || k === "right") { // Right arrow or space
     editorState.menuIndex = (editorState.menuIndex + 1) % menus.length;
     editorState.menuItemIndex = 0;
     renderEditor();
-  } else if (k === "↑") { // Up arrow
+  } else if (k === "↑" || k === "up") { // Up arrow
     var menu = menus[editorState.menuIndex];
     editorState.menuItemIndex = (editorState.menuItemIndex - 1 + menu.items.length) % menu.items.length;
     renderEditor();
-  } else if (k === "↓") { // Down arrow
+  } else if (k === "↓" || k === "down") { // Down arrow
     var menu = menus[editorState.menuIndex];
     editorState.menuItemIndex = (editorState.menuItemIndex + 1) % menu.items.length;
     renderEditor();
@@ -450,17 +467,8 @@ function handleMenuKey(k) {
 
 // Handle edit mode keyboard input
 function handleEditKey(k) {
-  // Check for menu key first (uppercase M)
-  if (k.toUpperCase() === "M" && k.length === 1) {
-    editorState.menuOpen = true;
-    editorState.menuIndex = 0;
-    editorState.menuItemIndex = 0;
-    renderEditor();
-    return;
-  }
-  
-  // F10 or Alt to open menu
-  if (k === "F10" || k === "\x1bOP") {
+  // Check for menu key (M or ALT)
+  if ((k.toUpperCase() === "M" && k.length === 1) || k === "alt") {
     editorState.menuOpen = true;
     editorState.menuIndex = 0;
     editorState.menuItemIndex = 0;
@@ -469,7 +477,7 @@ function handleEditKey(k) {
   }
   
   // Arrow keys - check before converting to uppercase
-  if (k === "↑") {
+  if (k === "↑" || k === "up") {
     if (editorState.cursorLine > 0) {
       editorState.cursorLine--;
       editorState.cursorCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine].length);
@@ -477,7 +485,7 @@ function handleEditKey(k) {
       renderEditor();
     }
     return;
-  } else if (k === "↓") {
+  } else if (k === "↓" || k === "down") {
     if (editorState.cursorLine < editorState.lines.length - 1) {
       editorState.cursorLine++;
       editorState.cursorCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine].length);
@@ -485,7 +493,7 @@ function handleEditKey(k) {
       renderEditor();
     }
     return;
-  } else if (k === "←" || k === "\x08") {
+  } else if (k === "←" || k === "\x08" || k === "left") {
     if (editorState.cursorCol > 0) {
       editorState.cursorCol--;
       renderEditor();
@@ -497,7 +505,7 @@ function handleEditKey(k) {
       renderEditor();
     }
     return;
-  } else if (k === "→") {
+  } else if (k === "→" || k === "right") {
     if (editorState.cursorCol < editorState.lines[editorState.cursorLine].length) {
       editorState.cursorCol++;
       renderEditor();
@@ -512,7 +520,7 @@ function handleEditKey(k) {
   }
   
   // Backspace
-  if (k === "\x7F" || k === "\b") {
+  if (k === "\x7F" || k === "\b" || k === "back") {
     if (editorState.cursorCol > 0) {
       var line = editorState.lines[editorState.cursorLine];
       editorState.lines[editorState.cursorLine] = 
@@ -537,7 +545,7 @@ function handleEditKey(k) {
   }
   
   // Enter - new line
-  if (k === "\r" || k === "\n") {
+  if (k === "\r" || k === "\n" || k === "enter") {
     var line = editorState.lines[editorState.cursorLine];
     var before = line.substring(0, editorState.cursorCol);
     var after = line.substring(editorState.cursorCol);
@@ -578,11 +586,14 @@ cls();
 print("\x1b[1;36m╔═══════════════════════════════╗\n");
 print("║   QANDY DOS-STYLE EDITOR      ║\n");
 print("╚═══════════════════════════════╝\x1b[0m\n\n");
-print("Press \x1b[1;33mM\x1b[0m to open menu\n");
+print("Press \x1b[1;33mM\x1b[0m or \x1b[1;33mALT\x1b[0m to open menu\n");
 print("Use \x1b[1;33mArrow Keys\x1b[0m to navigate\n");
 print("Press \x1b[1;33mEnter\x1b[0m for new line\n");
 print("Press \x1b[1;33mBackspace\x1b[0m to delete\n\n");
 print("Starting editor...\n");
+
+// Set run variable to indicate this program is running
+run = "edit.js";
 
 // Disable default keyboard handling
 keyon = 0;
