@@ -241,6 +241,43 @@ initKeyboard(); function initKeyboard() {
  document.getElementById("qpc").style.left = "32px";
 }
 
+// Create a mapping from keyCode to element ID for quick lookup
+var keyCodeToId = {};
+keyboardData.forEach(function(key) {
+  keyCodeToId[key.keyCode] = key.id;
+});
+
+// Function to highlight a virtual key
+function highlightKey(keyCode) {
+  var elementId = keyCodeToId[keyCode];
+  if (!elementId) return; // Key not in virtual keyboard
+  
+  var element = document.getElementById(elementId);
+  if (!element) return; // Element not found
+  
+  // Store original background color if not already stored
+  if (!element.dataset.originalBg) {
+    element.dataset.originalBg = element.style.backgroundColor || '';
+  }
+  
+  // Apply hover effect (using the same color as :hover in CSS)
+  element.style.backgroundColor = '#444';
+  
+  // Set a timeout to restore original color
+  setTimeout(function() {
+    unhighlightKey(elementId);
+  }, 200); // 200ms flash effect
+}
+
+// Function to unhighlight a virtual key
+function unhighlightKey(elementId) {
+  var element = document.getElementById(elementId);
+  if (!element) return;
+  
+  // Restore original background color
+  element.style.backgroundColor = element.dataset.originalBg || '';
+}
+
 tiles(); function tiles() {
  Z=0;
  for (Y=0; Y<=mapy; Y++) {
@@ -347,6 +384,10 @@ function press() {
  
  // Don't handle keydown if Ctrl is pressed (let paste event handle it)
  if (event.ctrlKey) { return; }
+ 
+ // Highlight the virtual key for visual feedback
+ highlightKey(k);
+ 
  button(k);
 }
 
