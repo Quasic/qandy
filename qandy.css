@@ -131,17 +131,6 @@ body { background-color: #333 }
       user-select: none; }
 .k2:hover { background-color: #444; }
 .k2:active { background-color: #666; }
-.k3 { position: absolute; top: 0px; left: 0px; width: 81px; height: 30px;
-      padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 81px; max-height: 24px; margin: 0; padding: 4;        
-      display: flex; justify-content: center;  align-items: center;      
-      color: white; background-color: #222; text-align: center;
-      font-family: Arial; font-size: 12px; weight: bold;
-      cursor: pointer; z-index: 99; 
-      border: 1px solid #555; border-radius: 3px;
-      user-select: none; }
-.k3:hover { background-color: #444; }
-.k3:active { background-color: #666; }
 .k4 { position: absolute; top: 0px; left: 0px; width: 109px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
       max-width: 109px; max-height: 24px; margin: 0; padding: 4;        
@@ -179,9 +168,9 @@ body { background-color: #333 }
 .k-enter:active { background-color: #666; }
 
 /* Custom width for SPACE key (85px - spans C+V+B keys with gaps) */
-.k-space { position: absolute; top: 0px; left: 0px; width: 85px; height: 30px;
+.k-space { position: absolute; top: 0px; left: 0px; width: 81px; height: 30px;
       padding-left: 0px; padding-right: 0px; align-items: center;
-      max-width: 85px; max-height: 24px; margin: 0; padding: 4;        
+      max-width: 81px; max-height: 24px; margin: 0; padding: 4;        
       display: flex; justify-content: center;  align-items: center;      
       color: white; background-color: #222; text-align: center;
       font-family: Arial; font-size: 12px; font-weight: bold;
