@@ -113,12 +113,14 @@ var map="";
 
 // Keyboard data structure - array of key objects
 var keyboardData = [
-  // Row 0: ESC, BACKTICK, BACKSLASH, DASH, EQUAL, BACK (y=446)
+  // Row 0: ESC, BACKTICK, BACKSLASH, OPEN, CLOSE, DASH, EQUAL, BACK (y=446)
   {id:"esc", label:"ESC", keyCode:27, x:47, y:446, width:52},
   {id:"backtick", label:"`", keyCode:192, x:103, y:446, width:28},
   {id:"backslash", label:"\\", keyCode:220, x:132, y:446, width:28},
-  {id:"dash", label:"-", keyCode:173, x:189, y:446, width:28},
-  {id:"equal", label:"=", keyCode:61, x:218, y:446, width:28},
+  {id:"open", label:"[", keyCode:219, x:160, y:446, width:28},
+  {id:"close", label:"]", keyCode:221, x:189, y:446, width:28},
+  {id:"dash", label:"-", keyCode:173, x:218, y:446, width:28},
+  {id:"equal", label:"=", keyCode:61, x:247, y:446, width:28},
   {id:"back", label:"BACK", keyCode:8, x:275, y:446, width:52},
   // Row 1: Number keys 1-0 (y=480)
   {id:"n1", label:"1", keyCode:49, x:47, y:480, width:28},
@@ -153,7 +155,7 @@ var keyboardData = [
   {id:"k", label:"k", keyCode:75, x:247, y:542, width:28},
   {id:"l", label:"l", keyCode:76, x:275, y:542, width:28},
   {id:"quote", label:"'", keyCode:222, x:303, y:542, width:28},
-  // Row 4: CAPS, ZXCV (y=573)
+  // Row 4: ZXCV (y=573)
   {id:"z", label:"z", keyCode:90, x:47, y:573, width:28},
   {id:"x", label:"x", keyCode:88, x:75, y:573, width:28},
   {id:"c", label:"c", keyCode:67, x:103, y:573, width:28},
@@ -162,20 +164,18 @@ var keyboardData = [
   {id:"n", label:"n", keyCode:78, x:189, y:573, width:28},
   {id:"m", label:"m", keyCode:77, x:218, y:573, width:28},
   {id:"colon", label:";", keyCode:59, x:247, y:573, width:28},
-  {id:"open", label:"[", keyCode:219, x:275, y:573, width:28},
-  {id:"close", label:"]", keyCode:221, x:303, y:573, width:28},
 
   // Row 5: Bottom row with modifiers (y=604)
   {id:"ctrl", label:"CTRL", keyCode:17, x:47, y:604, width:28},
   {id:"alt", label:"ALT", keyCode:18, x:76, y:604, width:28},
-  {id:"space", label:"SPACE", keyCode:32, x:105, y:604, width:104},
-  {id:"shift", label:"SHIFT", keyCode:16, x:211, y:604, width:40},
-  {id:"comma", label:",", keyCode:188, x:253, y:604, width:28},
-  {id:"dot", label:".", keyCode:190, x:281, y:604, width:28},
-  {id:"slash", label:"/", keyCode:191, x:309, y:604, width:28},
+  {id:"space", label:"SPACE", keyCode:32, x:105, y:604, width:84},
+  {id:"shift", label:"SHIFT", keyCode:16, x:191, y:604, width:40},
+  {id:"comma", label:",", keyCode:188, x:233, y:604, width:28},
+  {id:"dot", label:".", keyCode:190, x:261, y:604, width:28},
+  {id:"slash", label:"/", keyCode:191, x:289, y:604, width:28},
   // Row 6: Enter and special keys (y=635)
   {id:"caps", label:"CAPS", keyCode:20, x:47, y:635, width:40},
-  {id:"enter", label:"ENTER", keyCode:13, x:89, y:635, width:248}
+  {id:"enter", label:"ENTER", keyCode:13, x:89, y:635, width:56}
 ];
 
 // safe to delete these?
@@ -204,18 +204,18 @@ initKeyboard(); function initKeyboard() {
    btn.className = 'k-ctrl';  // SHIFT, CAPS keys (CTRL and ALT now use 28px)
   } else if (key.width === 52) {
    btn.className = 'k2';
+  } else if (key.width === 56) {
+   btn.className = 'k-enter';  // ENTER key (2 standard keys)
   } else if (key.width === 81) {
    btn.className = 'k3';
-  } else if (key.width === 104) {
-   btn.className = 'k-space';  // SPACE key
+  } else if (key.width === 84) {
+   btn.className = 'k-space';  // SPACE key (3 standard keys)
   } else if (key.width === 109) {
    btn.className = 'k4';
-  } else if (key.width === 248) {
-   btn.className = 'k-enter';  // Wide ENTER key
   }
   
   // Set explicit width for custom-sized keys
-  if (key.width === 40 || key.width === 104 || key.width === 248) {
+  if (key.width === 40 || key.width === 56 || key.width === 84) {
    btn.style.width = key.width + 'px';
   }
   
