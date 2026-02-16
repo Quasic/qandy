@@ -324,8 +324,8 @@ resize(); function resize() {
  }
 }
 
-document.addEventListener('keydown', function () { press(); });
-document.addEventListener('keyup', function () { pressup(); });
+document.addEventListener('keydown', function (event) { press(event); });
+document.addEventListener('keyup', function (event) { pressup(event); });
 document.addEventListener('paste', function (event) {
  if (keyon) {
   event.preventDefault();
@@ -345,8 +345,18 @@ document.addEventListener('paste', function (event) {
   }
  }
 });
-function press() { 
+function press(event) { 
  key=""; k=event.keyCode; shift=event.shiftKey;
+ 
+ // Prevent browser from handling ALT key - must be done before any conditionals
+ if (event.keyCode === 18 || event.altKey) {
+  event.preventDefault(); // Prevent browser menu from opening
+ }
+ 
+ // Prevent browser from handling ESC key - must be done before any conditionals
+ if (event.keyCode === 27) {
+  event.preventDefault(); // Prevent browser from handling ESC
+ }
  
  // Handle physical CTRL key press (highlight while pressed)
  if (event.keyCode === 17 && !ctrl) {
@@ -359,12 +369,11 @@ function press() {
  
  // Handle physical ALT key press (highlight while pressed)
  if (event.keyCode === 18 && !alt) {
-  event.preventDefault(); // Prevent browser menu from opening
   alt = 1;
   altPhysical = true;
   document.getElementById("alt").style.backgroundColor = "#0a0";
   document.getElementById("alt").style.color = "#000";
-  return;
+  // Don't return - let the key be passed to button() so apps can handle "alt"
  }
  
  // Handle Ctrl+C for copy
@@ -399,7 +408,12 @@ function press() {
  button(k);
 }
 
-function pressup() {
+function pressup(event) {
+ // Prevent browser from handling ALT key - must be done before any conditionals
+ if (event.keyCode === 18 || event.altKey) {
+  event.preventDefault(); // Prevent browser menu from opening
+ }
+ 
  // Handle physical CTRL key release (unhighlight)
  if (event.keyCode === 17 && ctrlPhysical) {
   ctrl = 0;
