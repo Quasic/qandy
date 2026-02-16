@@ -189,4 +189,17 @@ body { background-color: #333 }
 .k-enter:hover { background-color: #444; }
 .k-enter:active { background-color: #666; }
 
+/* Custom width for larger SPACE key */
+.k-space { position: absolute; top: 0px; left: 0px; width: 104px; height: 30px;
+      padding-left: 0px; padding-right: 0px; align-items: center;
+      max-width: 104px; max-height: 24px; margin: 0; padding: 4px;        
+      display: flex; justify-content: center;  align-items: center;      
+      color: white; background-color: #222; text-align: center;
+      font-family: Arial; font-size: 12px; font-weight: bold;
+      cursor: pointer; z-index: 99; 
+      border: 1px solid #555; border-radius: 3px;
+      user-select: none; }
+.k-space:hover { background-color: #444; }
+.k-space:active { background-color: #666; }
+
 

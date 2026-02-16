@@ -166,9 +166,9 @@ var keyboardData = [
   {id:"close", label:"]", keyCode:221, x:303, y:573, width:28},
 
   // Row 5: Bottom row with modifiers (y=604)
-  {id:"ctrl", label:"CTRL", keyCode:17, x:47, y:604, width:40},
-  {id:"alt", label:"ALT", keyCode:18, x:89, y:604, width:37},
-  {id:"space", label:"SPACE", keyCode:32, x:128, y:604, width:81},
+  {id:"ctrl", label:"CTRL", keyCode:17, x:47, y:604, width:28},
+  {id:"alt", label:"ALT", keyCode:18, x:76, y:604, width:28},
+  {id:"space", label:"SPACE", keyCode:32, x:105, y:604, width:104},
   {id:"shift", label:"SHIFT", keyCode:16, x:211, y:604, width:40},
   {id:"comma", label:",", keyCode:188, x:253, y:604, width:28},
   {id:"dot", label:".", keyCode:190, x:281, y:604, width:28},
@@ -208,6 +208,8 @@ initKeyboard(); function initKeyboard() {
    btn.className = 'k2';
   } else if (key.width === 81) {
    btn.className = 'k3';
+  } else if (key.width === 104) {
+   btn.className = 'k-space';  // SPACE key
   } else if (key.width === 109) {
    btn.className = 'k4';
   } else if (key.width === 248) {
@@ -215,7 +217,7 @@ initKeyboard(); function initKeyboard() {
   }
   
   // Set explicit width for custom-sized keys
-  if (key.width === 37 || key.width === 40 || key.width === 248) {
+  if (key.width === 37 || key.width === 40 || key.width === 104 || key.width === 248) {
    btn.style.width = key.width + 'px';
   }
   
