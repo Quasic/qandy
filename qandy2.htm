@@ -1063,9 +1063,10 @@ function button(b) {
      }
     }
    }
-   if (run) { keydown(k); }
   }
  }
+ // Pass key to script's keydown() handler if script is running and key wasn't consumed
+ if (run && k) { keydown(k); }
  updateDisplay();
 }
 

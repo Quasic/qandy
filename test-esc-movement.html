@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html><head><title>Test ESC Key Movement</title></head><body>
+<h2>Test ESC Key Movement in q.js</h2>
+<div id="txt" style="position: absolute; left: 54px; top: 100px; background: #000; color: #0f0; padding: 10px; font-family: monospace; width: 300px;">
+  Text Screen<br>
+  Initial position: left=54px (txt mode)
+</div>
+<div id="output" style="margin-top: 250px;"></div>
+<button onclick="testEscPress()">Simulate ESC Press</button>
+<button onclick="checkState()">Check State</button>
+
+<script>
+// Initialize qandy2.htm variables
+var run = "";
+var allowScriptESC = false;
+var mode = "txt";
+var keyon = 1;
+
+function log(msg) {
+  const output = document.getElementById('output');
+  output.innerHTML += msg + '<br>';
+  output.scrollTop = output.scrollHeight;
+}
+
+function testEscPress() {
+  log('');
+  log('=== Testing ESC Key Press ===');
+  log('Before: run="' + run + '", allowScriptESC=' + allowScriptESC + ', mode="' + mode + '"');
+  log('txt.style.left = "' + document.getElementById('txt').style.left + '"');
+  
+  // Simulate what qandy2.htm does
+  let k = "esc";
+  
+  // ESC handler from qandy2.htm
+  if (k==="esc") {
+    if (run && !allowScriptESC) {
+      log('❌ Would terminate script (allowScriptESC is false)');
+      run = "";
+      k = "";
+    } else {
+      log('✅ ESC passed to script (allowScriptESC=' + allowScriptESC + ')');
+    }
+  }
+  
+  // Call keydown if script running
+  if (run && typeof keydown === 'function') {
+    log('Calling keydown("' + k + '")...');
+    keydown(k);
+  } else {
+    log('❌ NOT calling keydown: run=' + run + ', keydown exists=' + (typeof keydown === 'function'));
+  }
+  
+  log('After: mode="' + mode + '", txt.style.left="' + document.getElementById('txt').style.left + '"');
+}
+
+function checkState() {
+  log('');
+  log('=== Current State ===');
+  log('run = "' + run + '"');
+  log('allowScriptESC = ' + allowScriptESC);
+  log('mode = "' + mode + '"');
+  log('keydown function exists: ' + (typeof keydown === 'function'));
+  log('txt.style.left = "' + document.getElementById('txt').style.left + '"');
+}
+
+// Load q.js
+log('Loading q.js...');
+var script = document.createElement('script');
+script.src = 'q.js';
+script.onload = function() {
+  log('✅ q.js loaded successfully!');
+  checkState();
+  log('');
+  log('Now click "Simulate ESC Press" to test ESC handling');
+};
+script.onerror = function() {
+  log('❌ ERROR: Failed to load q.js');
+};
+document.head.appendChild(script);
+</script>
+</body></html>
