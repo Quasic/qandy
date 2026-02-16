@@ -46,6 +46,9 @@ var pianoKeyLabels = {
 // Track which keys are currently pressed (for visual feedback)
 var pressedKeys = {};
 
+// Track the line number where we display the currently playing note
+var noteDisplayLine = 27; // Line after all the piano display content
+
 function drawPiano() {
   cls();
   print("\x1b[1;36m╔═════════════════════════════════════════════════════════════╗\x1b[0m\n");
@@ -78,6 +81,8 @@ function drawPiano() {
   print("  • \x1b[1;32mplayScale()\x1b[0m - C Major Scale\n");
   print("\n");
   print("\x1b[37mPress ESC to return to normal mode.\x1b[0m\n");
+  print("\n"); // Extra line for note display
+  print("Now playing: (press a key)\n"); // Placeholder for note display
 }
 
 // Key press handler for piano keys
@@ -90,9 +95,12 @@ function pianoKeyHandler(key) {
     var note = pianoKeyMap[keyLower];
     playNote(note, 300);
     
-    // Show visual feedback
+    // Show visual feedback using ANSI cursor positioning
+    // Move cursor to the note display line, clear it, and print the note
     var keyLabel = pianoKeyLabels[note];
-    print("\x1b[1;36m♪ " + note + " (" + keyLabel + ")\x1b[0m\n");
+    print("\x1b[" + noteDisplayLine + ";1H"); // Move to line noteDisplayLine, column 1
+    print("\x1b[K"); // Clear from cursor to end of line
+    print("\x1b[1;36m♪ Now playing: " + note + " (" + keyLabel + ")\x1b[0m");
     
     return true;
   }
@@ -103,12 +111,15 @@ function pianoKeyHandler(key) {
 // Example songs using the music API
 
 function playScale() {
-  print("\x1b[1;32mPlaying C Major Scale...\x1b[0m\n");
+  // Use cursor positioning to display message without scrolling
+  print("\x1b[" + noteDisplayLine + ";1H\x1b[K");
+  print("\x1b[1;32mPlaying C Major Scale...\x1b[0m");
   playTune("C4:300 D4:300 E4:300 F4:300 G4:300 A4:300 B4:300 C5:500");
 }
 
 function playTwinkleTwinkle() {
-  print("\x1b[1;32mPlaying Twinkle Twinkle Little Star...\x1b[0m\n");
+  print("\x1b[" + noteDisplayLine + ";1H\x1b[K");
+  print("\x1b[1;32mPlaying Twinkle Twinkle Little Star...\x1b[0m");
   // Twinkle twinkle little star, how I wonder what you are
   playTune("C4:300 C4:300 G4:300 G4:300 A4:300 A4:300 G4:600 " +
            "F4:300 F4:300 E4:300 E4:300 D4:300 D4:300 C4:600 " +
@@ -119,7 +130,8 @@ function playTwinkleTwinkle() {
 }
 
 function playMaryHadALamb() {
-  print("\x1b[1;32mPlaying Mary Had a Little Lamb...\x1b[0m\n");
+  print("\x1b[" + noteDisplayLine + ";1H\x1b[K");
+  print("\x1b[1;32mPlaying Mary Had a Little Lamb...\x1b[0m");
   // Mary had a little lamb, little lamb, little lamb
   playTune("E4:300 D4:300 C4:300 D4:300 E4:300 E4:300 E4:600 " +
            "D4:300 D4:300 D4:600 E4:300 G4:300 G4:600 " +
@@ -128,7 +140,8 @@ function playMaryHadALamb() {
 }
 
 function playHappyBirthday() {
-  print("\x1b[1;32mPlaying Happy Birthday...\x1b[0m\n");
+  print("\x1b[" + noteDisplayLine + ";1H\x1b[K");
+  print("\x1b[1;32mPlaying Happy Birthday...\x1b[0m");
   // Happy birthday to you
   playTune("C4:200 C4:200 D4:400 C4:400 F4:400 E4:800 " +
            "C4:200 C4:200 D4:400 C4:400 G4:400 F4:800 " +
@@ -149,7 +162,9 @@ function playChord(notes, duration) {
     })(notes[i], i * 10); // IIFE to capture note and delay correctly
   }
   
-  print("\x1b[1;35m♫ Chord: " + notes.join(' ') + "\x1b[0m\n");
+  // Use cursor positioning to display message without scrolling
+  print("\x1b[" + noteDisplayLine + ";1H\x1b[K");
+  print("\x1b[1;35m♫ Chord: " + notes.join(' ') + "\x1b[0m");
 }
 
 function playCMajorChord() {
@@ -165,7 +180,8 @@ function playGMajorChord() {
 }
 
 function playChordProgression() {
-  print("\x1b[1;32mPlaying Chord Progression (C-F-G-C)...\x1b[0m\n");
+  print("\x1b[" + noteDisplayLine + ";1H\x1b[K");
+  print("\x1b[1;32mPlaying Chord Progression (C-F-G-C)...\x1b[0m");
   
   setTimeout(function() { playCMajorChord(); }, 0);
   setTimeout(function() { playFMajorChord(); }, 800);
@@ -191,5 +207,5 @@ function keydown(key) {
 // Initialize piano when script loads
 drawPiano();
 
-print("\x1b[1;32m♪ Piano loaded successfully!\x1b[0m\n");
-print("\x1b[37mStart playing by pressing keys on your keyboard.\x1b[0m\n\n");
+// Don't print extra messages that would cause scrolling
+// The piano keyboard display already shows all needed information
