@@ -756,11 +756,12 @@ function handleEditKey(k) {
       if (hasShift) {
         if (editorState.selectionStartLine === -1) {
           updateSelection(editorState.cursorLine, editorState.cursorCol,
-                         editorState.cursorLine - 1, editorState.cursorCol);
+                         editorState.cursorLine - 1, 
+                         Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine - 1].length));
         } else {
+          var newCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine - 1].length);
           editorState.selectionEndLine = editorState.cursorLine - 1;
-          editorState.selectionEndCol = Math.min(editorState.cursorCol, 
-            editorState.lines[editorState.cursorLine - 1].length);
+          editorState.selectionEndCol = newCol;
         }
       } else {
         clearSelection();
@@ -778,11 +779,12 @@ function handleEditKey(k) {
       if (hasShift) {
         if (editorState.selectionStartLine === -1) {
           updateSelection(editorState.cursorLine, editorState.cursorCol,
-                         editorState.cursorLine + 1, editorState.cursorCol);
+                         editorState.cursorLine + 1,
+                         Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine + 1].length));
         } else {
+          var newCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine + 1].length);
           editorState.selectionEndLine = editorState.cursorLine + 1;
-          editorState.selectionEndCol = Math.min(editorState.cursorCol,
-            editorState.lines[editorState.cursorLine + 1].length);
+          editorState.selectionEndCol = newCol;
         }
       } else {
         clearSelection();
