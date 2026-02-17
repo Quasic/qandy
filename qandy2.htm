@@ -1629,8 +1629,10 @@ function print(inputString) {
   }
   txt = txt + plainText;
   
-  // Process each token
-  for (const token of tokens) {
+  // Process each token with look-ahead for word wrap
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    
     if (token.type === 'code') {
       // Update current style
       applyANSICode(token.codes);
@@ -1733,55 +1735,31 @@ function print(inputString) {
         cursorY = screenHeight - 1;
       }
       
-      // Word-wrap at screen width
-      if (cursorX >= screenWidth) {
-        // If current character is not a space, try to wrap at word boundary
-        if (char !== ' ') {
-          // Look back on current line to find last space
-          let lastSpaceX = -1;
-          for (let x = cursorX - 1; x >= 0; x--) {
-            if (screenBuffer[cursorY][x] === ' ') {
-              lastSpaceX = x;
-              break;
+      // Look-ahead word wrap: check if we need to wrap before writing
+      // Skip wrapping for spaces, newlines, and carriage returns
+      if (char !== ' ' && char !== '\n' && char !== '\r' && char !== '\f') {
+        // Only do look-ahead if we're at the start of a word (after a space or at line start)
+        // Check if previous position was a space or we're at the start of a line
+        const atWordStart = cursorX === 0 || 
+          (cursorX > 0 && screenBuffer[cursorY] && screenBuffer[cursorY][cursorX - 1] === ' ');
+        
+        if (atWordStart) {
+          // Look ahead to find the end of the current word (next space or non-char token)
+          let wordLength = 1; // Current character
+          for (let j = i + 1; j < tokens.length; j++) {
+            const nextToken = tokens[j];
+            if (nextToken.type !== 'char') {
+              break; // Stop at ANSI codes or cursor commands
             }
+            if (nextToken.value === ' ' || nextToken.value === '\n' || nextToken.value === '\r' || nextToken.value === '\f') {
+              break; // Stop at word boundary
+            }
+            wordLength++;
           }
           
-          // If we found a space and it's not at the beginning of the line, wrap from there
-          if (lastSpaceX > 0) {
-            // Store the current line before potentially scrolling
-            const sourceLine = cursorY;
-            
-            // Move characters after the space to the next line
-            cursorY++;
-            
-            // Check if we need to scroll
-            if (cursorY >= screenHeight) {
-              scrollScreenDown();
-              cursorY = screenHeight - 1;
-            }
-            
-            // Move word fragment to next line
-            // After scrolling, sourceLine content is now at cursorY - 1
-            const fromLine = cursorY - 1;
-            let newLineX = 0;
-            for (let x = lastSpaceX + 1; x < screenWidth; x++) {
-              if (screenBuffer[fromLine] && screenBuffer[cursorY] && screenBuffer[fromLine][x] !== ' ') {
-                screenBuffer[cursorY][newLineX] = screenBuffer[fromLine][x];
-                styleBuffer[cursorY][newLineX] = styleBuffer[fromLine][x];
-                // Clear the old position
-                screenBuffer[fromLine][x] = ' ';
-                styleBuffer[fromLine][x] = {
-                  color: currentStyle.color,
-                  bgcolor: currentStyle.bgcolor,
-                  bold: currentStyle.bold,
-                  inverse: currentStyle.inverse
-                };
-                newLineX++;
-              }
-            }
-            cursorX = newLineX;
-          } else {
-            // No space found or at beginning, just hard wrap
+          // If word won't fit on current line, wrap to next line
+          if (cursorX + wordLength > screenWidth && cursorX > 0) {
+            // Insert a line break before the word
             cursorX = 0;
             cursorY++;
             
@@ -1790,16 +1768,6 @@ function print(inputString) {
               scrollScreenDown();
               cursorY = screenHeight - 1;
             }
-          }
-        } else {
-          // Current char is a space, just wrap normally
-          cursorX = 0;
-          cursorY++;
-          
-          // Check if we need to scroll
-          if (cursorY >= screenHeight) {
-            scrollScreenDown();
-            cursorY = screenHeight - 1;
           }
         }
       }
@@ -1814,6 +1782,18 @@ function print(inputString) {
           inverse: currentStyle.inverse
         };
         cursorX++;
+        
+        // Hard wrap if we reach screen width (for very long words)
+        if (cursorX >= screenWidth) {
+          cursorX = 0;
+          cursorY++;
+          
+          // Check if we need to scroll
+          if (cursorY >= screenHeight) {
+            scrollScreenDown();
+            cursorY = screenHeight - 1;
+          }
+        }
       }
     }
   }
