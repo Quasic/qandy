@@ -1219,18 +1219,52 @@ function button(b) {
  updateDisplay();
 }
 
+// Replacement executeCode() for qandy2.htm
+// Behavior:
+// - If the user enters a simple name or dotted path (e.g. `dos` or `obj.method`) that resolves to a function,
+//   the REPL will NOT print the function source. Instead it prints an error telling the user to call it with ().
+// - All other inputs are evaluated as before: expressions are eval()'d and their result is printed (if not undefined).
+// - Returns true on success, false on thrown errors (matches original executeCode() behavior).
+
 function executeCode(code) {
- try {
-  const result=eval(code);
-  if (result !== undefined) {
-   print(String(result)+"<br>");
+  try {
+    var trimmed = String(code).trim();
+    var simpleNameRE = /^[$A-Za-z_][$A-Za-z0-9_]*(?:\s*\.\s*[$A-Za-z_][$A-Za-z0-9_]*)*$/;
+    if (simpleNameRE.test(trimmed)) {
+      try {
+        var value = eval(trimmed);
+      } catch (e) {
+        print("Error: " + e.message + "\n\n");
+        return false;
+      }
+      if (typeof value === "function") {
+        print("ERROR: use: "+trimmed+"()\n\n");
+        return true;
+      }
+      if (value !== undefined) { print(String(value) + "\n\n"); }
+      return true;
+    }
+    var result = eval(code);
+    if (result !== undefined) { print(String(result) + "\n\n"); }
+    return true;
+  } catch (error) {
+    print("Error: " + error.message + "\n\n");
+    return false;
   }
-  return true;
- } catch (error) {
-  print(`Error: ${error.message}`+"<br>");
-  return false;
- }
 }
+
+//function executeCode(code) {
+// try {
+//  const result=eval(code);
+//  if (result !== undefined) {
+//   print(String(result)+"<br>");
+//  }
+//  return true;
+// } catch (error) {
+//  print(`Error: ${error.message}`+"<br>");
+//  return false;
+// }
+//}
 
 function parseANSIString(str) {
   const tokens = [];
