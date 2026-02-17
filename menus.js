@@ -181,6 +181,14 @@ function renderMenuBar(maxCols) {
   print("\x1b[44;37m"); // Blue background, white text
   var menuBar = "";
   
+  // Build visible menu bar content without ANSI codes first
+  var visibleContent = "";
+  for (var i = 0; i < menuState.menus.length; i++) {
+    visibleContent += " " + menuState.menus[i].title + "  ";
+  }
+  
+  // Build menu bar with ANSI codes
+  var menuBar = "";
   for (var i = 0; i < menuState.menus.length; i++) {
     if (menuState.menuOpen && menuState.menuIndex === i) {
       menuBar += "\x1b[47;30m " + menuState.menus[i].title + " \x1b[44;37m "; // Highlight selected
@@ -189,10 +197,12 @@ function renderMenuBar(maxCols) {
     }
   }
   
-  // Pad to reasonable width for menu bar
-  while (menuBar.length < 50) {
+  // Pad to reasonable width
+  while (visibleContent.length < maxCols) {
     menuBar += " ";
+    visibleContent += " ";
   }
+  
   print(menuBar + "\x1b[0m\n");
   
   // If menu is open, render dropdown
