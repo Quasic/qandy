@@ -5,7 +5,7 @@ if (typeof beep === 'undefined' || typeof playNote === 'undefined') {
   var soundScript=document.createElement('script');
   soundScript.src='sound.js';
   soundScript.onload=function() { run="piano.js"; initializePiano(); };
-  soundScript.onerror=function() { print("ERROR: sound.js not loaded\n"; };
+  soundScript.onerror=function() { print("ERROR: sound.js not loaded\n"); };
   document.head.appendChild(soundScript);
   // Define initializePiano as a placeholder that will be called after sound.js loads
   var initializePiano;
