@@ -189,11 +189,11 @@ function renderMenuBar(maxCols) {
     }
   }
   
-  // Pad to full width
-  while (menuBar.length < maxCols + 20) {
+  // Pad to reasonable width for menu bar
+  while (menuBar.length < 50) {
     menuBar += " ";
   }
-  print(menuBar.substring(0, maxCols) + "\x1b[0m\n");
+  print(menuBar + "\x1b[0m\n");
   
   // If menu is open, render dropdown
   if (menuState.menuOpen) {
