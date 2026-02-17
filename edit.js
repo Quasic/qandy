@@ -102,6 +102,9 @@ function listFiles() {
 function renderEditor() {
   cls();
   
+  // Ensure keyon stays 0 during edit operations
+  keyon = 0;
+  
   // Render menu bar
   renderMenuBar();
   
@@ -310,7 +313,7 @@ function menuList() {
   print("world.js\n");
   print("\n");
   print("\x1b[33mPress any key to return...\x1b[0m\n");
-  keyon = 1;
+  // Don't set keyon=1, editor needs to handle its own input
 }
 
 function menuExit() {
@@ -318,7 +321,7 @@ function menuExit() {
   print("\x1b[32mEditor closed.\x1b[0m\n");
   print("\nType a .js filename to run a program\n");
   run = "";  // Clear run variable to return to OS mode
-  keyon = 1; // Re-enable keyboard input
+  keyon = 1; // Re-enable keyboard input for OS mode
 }
 
 function deleteLine() {
@@ -350,11 +353,13 @@ function runCode() {
   
   // Helper function to wait for keypress and return to editor
   var waitForKeyAndReturnToEditor = function() {
+    // Temporarily enable keyon for the "press any key" prompt
+    var originalKeyon = keyon;
     keyon = 1;
     var originalInput = input;
     input = function() {
       input = originalInput;
-      keyon = 0;
+      keyon = 0;  // Return to editor mode
       renderEditor();
     };
   };
