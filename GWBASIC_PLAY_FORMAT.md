@@ -269,11 +269,12 @@ While we've implemented the core GWBASIC PLAY functionality, there are some diff
 - Tempo (T command)
 - Pause (P command)
 
-**Not Implemented:**
-- Music style (MS/ML/MN for staccato/legato/normal)
+**Not Implemented (ignored if present):**
+- Music style (MS/ML/MN for staccato/legato/normal) - silently ignored
 - Dots (for dotted notes)
 - N command (play by note number)
 - > and < (octave up/down)
+- C- and F- (would require octave change, currently ignored)
 
 These features may be added in future updates if there's demand.
 

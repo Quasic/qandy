@@ -35,7 +35,7 @@
 //
 // playNotes("C D E F G A B") GWBASIC PLAY format
 // playNotes("O3 L8 CDEFGAB") GWBASIC with octave and length
-// playNotes("T100 MS C#4 D8 F+16") GWBASIC with tempo and note lengths
+// playNotes("T100 C#4 D8 F+16") GWBASIC with tempo and note lengths
 //
 // loopTune("C E G E") Background music loop
 //
@@ -423,14 +423,15 @@ function parseGWBasicString(str) {
         noteName += '#';
         i++;
       } else if (i < str.length && str[i] === '-') {
-        // Flat: convert to sharp of previous note
-        // (This is a simplified approach; proper enharmonic conversion is complex)
+        // Flat: convert to enharmonic sharp equivalent
+        // Note: C- and F- are special cases (would require octave change)
         const flats = {
           'D': 'C#', 'E': 'D#', 'G': 'F#', 'A': 'G#', 'B': 'A#'
         };
         if (flats[noteName]) {
           noteName = flats[noteName];
         }
+        // C- and F- are ignored (C-flat = B, F-flat = E in different octaves)
         i++;
       }
       
