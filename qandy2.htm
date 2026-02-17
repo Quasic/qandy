@@ -1774,135 +1774,109 @@ function resumePagination() {
   }
 }
 
-
 function updateDisplay() {
   if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
+  if (!styleBuffer) { styleBuffer = []; }
   const txtElement = document.getElementById("txt");
   let htmlContent = '';
-  const rowsToRender = screenHeight;
-  
+  // Render the full visible screen (clamped to available buffer).
+  const rowsToRender = Math.min(screenHeight, screenBuffer.length);
+  // small helper to escape characters for HTML
+  function escapeChar(c) {
+    if (c === ' ') return '&nbsp;';
+    if (c === '&') return '&amp;';
+    if (c === '<') return '&lt;';
+    if (c === '>') return '&gt;';
+    // keep control chars out of output
+    if (c === '\t') return '&nbsp;&nbsp;&nbsp;&nbsp;';
+    if (c === '\r' || c === '\n') return '';
+    // default: return the character as-is (assumes ASCII printable)
+    return c;
+  }
+
   for (let y = 0; y < rowsToRender; y++) {
-    let lineContent = '';
+    // Ensure row arrays exist
+    if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
+    if (!styleBuffer[y]) {
+      styleBuffer[y] = new Array(screenWidth);
+      for (let x = 0; x < screenWidth; x++) {
+        styleBuffer[y][x] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+      }
+    }
+
+    let lineHtml = '';
     let currentSpanStyle = null;
-    let spanContent = '';
-    
+
     for (let x = 0; x < screenWidth; x++) {
-      const char = screenBuffer[y][x];
-      const style = styleBuffer[y][x];
-      
-      // Build style identifier for this character
+      const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
+      const style = styleBuffer[y][x] || {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: currentStyle.bold,
+        inverse: currentStyle.inverse
+      };
+
+      // Build a simple style key for grouping spans
       const styleKey = `${style.color}-${style.bgcolor}-${style.bold}-${style.inverse}`;
-      
-      // If style changed, close previous span and open new one
+
+      // When style changes, close previous span and open a new one
       if (currentSpanStyle !== styleKey) {
-        if (spanContent.length > 0) {
-          // Close previous span
-          lineContent += spanContent + '</span>';
-          spanContent = '';
+        if (currentSpanStyle !== null) {
+          lineHtml += '</span>';
         }
-        
-        // Open new span with current style
+
+        // Build classes similar to the earlier approach so existing CSS stays usable
         let classes = [];
-        
         if (style.inverse) {
-          // Swap foreground and background when inverse
-          classes.push(`ansi-${ANSI.bgColors[style.bgcolor]}`);
-          classes.push(`ansi-bg-${ANSI.colors[style.color]}`);
+          classes.push(`ansi-${ANSI.bgColors[style.bgcolor] || style.bgcolor}`);
+          classes.push(`ansi-bg-${ANSI.colors[style.color] || style.color}`);
         } else {
-          classes.push(`ansi-${ANSI.colors[style.color]}`);
-          classes.push(`ansi-bg-${ANSI.bgColors[style.bgcolor]}`);
+          classes.push(`ansi-${ANSI.colors[style.color] || style.color}`);
+          classes.push(`ansi-bg-${ANSI.bgColors[style.bgcolor] || style.bgcolor}`);
         }
-        
-        if (style.bold) {
-          classes.push('ansi-bold');
-        }
-        
-        lineContent += `<span class="${classes.join(' ')}">`;
+        if (style.bold) classes.push('ansi-bold');
+
+        lineHtml += `<span class="${classes.join(' ')}">`;
         currentSpanStyle = styleKey;
       }
-      
-      // Escape HTML and add to span content
-      const escapedChar = char
-        // .replace(/&/g, '&amp;')
-        // .replace(/</g, '&lt;')
-        // .replace(/>/g, '&gt;');
-        .replace(/\u0026/g, '\u0026amp;')
-        .replace(/\u003c/g, '\u0026lt;')
-        .replace(/\u003e/g, '\u003eg;')
-        .replace(/ /g, '\u0026nbsp;');
-      spanContent += escapedChar;
-    }
-    
-    // Close final span
-    if (spanContent.length > 0) {
-      lineContent += spanContent + '</span>';
-    }
-    
-    // Trim trailing spaces before the final </span>
-    lineContent = lineContent.replace(/\s+<\/span>$/, '</span>');
-    htmlContent += lineContent + '<br>';
-  }
-  
-  if (keyon) {
-    let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
-    
-    // Calculate how many display lines we need
-    const charsPerLine = screenWidth;
-    const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine));
-    
-    // Helper function to escape HTML characters
-    const escapeHtml = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
-    
-    // Render input across multiple wrapped lines
-    for (let lineIndex = 0; lineIndex < numLines; lineIndex++) {
-      let lineStart = lineIndex * charsPerLine;
-      let lineEnd = Math.min(lineStart + charsPerLine, cleanInput.length);
-      let displayLine = cleanInput.substring(lineStart, lineEnd);
-      
-      let lineHtml = '';
-      
-      // Build this line character by character
-      for (let charIndex = 0; charIndex < charsPerLine; charIndex++) {
-        let charPos = lineStart + charIndex;
-        
-        if (charIndex < displayLine.length) {
-          // We have a character to display
-          let char = displayLine[charIndex];
-          
-          // Check if this character is selected
-          const isSelected = selectionStart !== -1 && 
-                             charPos >= Math.min(selectionStart, selectionEnd) && 
-                             charPos < Math.max(selectionStart, selectionEnd);
-          
-          if (charPos === cursorPos) {
-            // This is the cursor position - invert colors
-            lineHtml += '<span style="background-color: white; color: black;">' + 
-                        escapeHtml(char) + 
-                        '</span>';
-          } else if (isSelected) {
-            // Selected text - use selection colors
-            lineHtml += `<span style="background-color: ${selectionBgColor}; color: ${selectionFgColor};">` + 
-                        escapeHtml(char) + 
-                        '</span>';
-          } else {
-            // Normal character
-            lineHtml += escapeHtml(char);
-          }
-        } else if (charPos === cursorPos && charPos === cleanInput.length) {
-          // Cursor is at the end of input (after last character)
-          lineHtml += '<span style="background-color: white; color: black;">&nbsp;</span>';
-        } else {
-          // Empty space (input doesn't extend this far on this line)
-          lineHtml += '&nbsp;';
-        }
+
+      // Render the character. If this is the logical cursor position and input is enabled,
+      // draw a cursor indicator by wrapping the char in a .cursor span (read-only).
+      const chEscaped = escapeChar(ch);
+      if (keyon && y === cursorY && x === cursorX) {
+        lineHtml += `<span class="cursor">${chEscaped}</span>`;
+      } else {
+        lineHtml += chEscaped;
       }
-      
-      htmlContent += lineHtml + '<br>';
     }
+
+    // Close any open span for the line
+    if (currentSpanStyle !== null) {
+      lineHtml += '</span>';
+    }
+
+    // Append the rendered line. Use a block element per line for easier CSS control.
+    htmlContent += `<div class="row">${lineHtml}</div>`;
   }
-  
+
+  // Fill remaining visible rows with blank lines if buffer is shorter than screenHeight
+  for (let y = rowsToRender; y < screenHeight; y++) {
+    htmlContent += `<div class="row">&nbsp;</div>`;
+  }
+
+  // Write to DOM in one shot
   txtElement.innerHTML = htmlContent;
-  txtElement.scrollTop = txtElement.scrollHeight;
+
+  // NOTE:
+  // - This function intentionally does NOT modify cursorX or cursorY.
+  // - It only reads them to position the visible cursor indicator.
+  // - Any code that currently mutates cursorY to force a redraw should be changed
+  //   to simply call updateDisplay() and NOT touch cursor variables.
 }
 
 function cls() { 

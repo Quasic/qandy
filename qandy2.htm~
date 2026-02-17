@@ -1434,7 +1434,7 @@ function triggerPaginationPause() {
   const row = Math.max(1, (typeof screenHeight === 'number' ? screenHeight : 25)); // ANSI rows are 1-based
   const pauseMsgPlain = "Press Any Key to Continue:";
   const ansiPause =
-    "\x1b[" + (row-1) + ";1H" +    // CUP to bottom line, col 1
+    "\x1b[" + row + ";1H" +    // CUP to bottom line, col 1
     "\x1b[2K" +               // Erase entire line
     "\x1b[1;37m" +            // Bold + white foreground
     pauseMsgPlain +
@@ -1779,82 +1779,130 @@ function updateDisplay() {
   if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
   const txtElement = document.getElementById("txt");
   let htmlContent = '';
-
-  // Render the full visible screen. Use screenHeight (not cursorY) to avoid off-by-one.
-  const rowsToRender = Math.min(screenHeight, screenBuffer.length);
-
+  const rowsToRender = screenHeight;
+  
   for (let y = 0; y < rowsToRender; y++) {
     let lineContent = '';
     let currentSpanStyle = null;
     let spanContent = '';
-
-    // Ensure the row exists and has styles
-    if (!screenBuffer[y]) {
-      screenBuffer[y] = new Array(screenWidth).fill(' ');
-    }
-    if (!styleBuffer[y]) {
-      styleBuffer[y] = new Array(screenWidth);
-      for (let x = 0; x < screenWidth; x++) {
-        styleBuffer[y][x] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-      }
-    }
-
+    
     for (let x = 0; x < screenWidth; x++) {
-      const char = screenBuffer[y][x] || ' ';
-      const style = styleBuffer[y][x] || {
-        color: currentStyle.color,
-        bgcolor: currentStyle.bgcolor,
-        bold: currentStyle.bold,
-        inverse: currentStyle.inverse
-      };
-
+      const char = screenBuffer[y][x];
+      const style = styleBuffer[y][x];
+      
       // Build style identifier for this character
       const styleKey = `${style.color}-${style.bgcolor}-${style.bold}-${style.inverse}`;
-
+      
       // If style changed, close previous span and open new one
       if (currentSpanStyle !== styleKey) {
         if (spanContent.length > 0) {
+          // Close previous span
           lineContent += spanContent + '</span>';
           spanContent = '';
         }
-
+        
         // Open new span with current style
         let classes = [];
-        if (style.inverse) classes.push('inverse');
-        if (style.bold) classes.push('bold');
-
-        // Build style inline or using classes — preserve existing approach
-        let styleAttr = `color:${ansiColorToCss(style.color)};background:${ansiBgToCss(style.bgcolor)};`;
-        spanContent = `<span style="${styleAttr}">`;
+        
+        if (style.inverse) {
+          // Swap foreground and background when inverse
+          classes.push(`ansi-${ANSI.bgColors[style.bgcolor]}`);
+          classes.push(`ansi-bg-${ANSI.colors[style.color]}`);
+        } else {
+          classes.push(`ansi-${ANSI.colors[style.color]}`);
+          classes.push(`ansi-bg-${ANSI.bgColors[style.bgcolor]}`);
+        }
+        
+        if (style.bold) {
+          classes.push('ansi-bold');
+        }
+        
+        lineContent += `<span class="${classes.join(' ')}">`;
         currentSpanStyle = styleKey;
       }
-
-      // Escape HTML special chars
-      let chEscaped = char === ' ' ? '&nbsp;' : (char === '<' ? '&lt;' : (char === '>' ? '&gt;' : char));
-      spanContent += chEscaped;
+      
+      // Escape HTML and add to span content
+      const escapedChar = char
+        // .replace(/&/g, '&amp;')
+        // .replace(/</g, '&lt;')
+        // .replace(/>/g, '&gt;');
+        .replace(/\u0026/g, '\u0026amp;')
+        .replace(/\u003c/g, '\u0026lt;')
+        .replace(/\u003e/g, '\u003eg;')
+        .replace(/ /g, '\u0026nbsp;');
+      spanContent += escapedChar;
     }
-
+    
+    // Close final span
     if (spanContent.length > 0) {
       lineContent += spanContent + '</span>';
     }
-
+    
+    // Trim trailing spaces before the final </span>
+    lineContent = lineContent.replace(/\s+<\/span>$/, '</span>');
     htmlContent += lineContent + '<br>';
   }
-
-  // Fill any remaining visible rows with blank lines (if screenBuffer is shorter)
-  for (let y = screenBuffer.length; y < screenHeight; y++) {
-    htmlContent += '&nbsp;<br>';
+  
+  if (keyon) {
+    let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
+    
+    // Calculate how many display lines we need
+    const charsPerLine = screenWidth;
+    const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine));
+    
+    // Helper function to escape HTML characters
+    const escapeHtml = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
+    
+    // Render input across multiple wrapped lines
+    for (let lineIndex = 0; lineIndex < numLines; lineIndex++) {
+      let lineStart = lineIndex * charsPerLine;
+      let lineEnd = Math.min(lineStart + charsPerLine, cleanInput.length);
+      let displayLine = cleanInput.substring(lineStart, lineEnd);
+      
+      let lineHtml = '';
+      
+      // Build this line character by character
+      for (let charIndex = 0; charIndex < charsPerLine; charIndex++) {
+        let charPos = lineStart + charIndex;
+        
+        if (charIndex < displayLine.length) {
+          // We have a character to display
+          let char = displayLine[charIndex];
+          
+          // Check if this character is selected
+          const isSelected = selectionStart !== -1 && 
+                             charPos >= Math.min(selectionStart, selectionEnd) && 
+                             charPos < Math.max(selectionStart, selectionEnd);
+          
+          if (charPos === cursorPos) {
+            // This is the cursor position - invert colors
+            lineHtml += '<span style="background-color: white; color: black;">' + 
+                        escapeHtml(char) + 
+                        '</span>';
+          } else if (isSelected) {
+            // Selected text - use selection colors
+            lineHtml += `<span style="background-color: ${selectionBgColor}; color: ${selectionFgColor};">` + 
+                        escapeHtml(char) + 
+                        '</span>';
+          } else {
+            // Normal character
+            lineHtml += escapeHtml(char);
+          }
+        } else if (charPos === cursorPos && charPos === cleanInput.length) {
+          // Cursor is at the end of input (after last character)
+          lineHtml += '<span style="background-color: white; color: black;">&nbsp;</span>';
+        } else {
+          // Empty space (input doesn't extend this far on this line)
+          lineHtml += '&nbsp;';
+        }
+      }
+      
+      htmlContent += lineHtml + '<br>';
+    }
   }
-
-  txtElement.innerHTML = "<p>" + htmlContent + "</p>";
-
-  // Optionally position a visible cursor if keyon is true (preserve existing cursor rendering behavior)
-  // (Keep your existing cursor rendering logic here — don't overwrite it unless required.)
+  
+  txtElement.innerHTML = htmlContent;
+  txtElement.scrollTop = txtElement.scrollHeight;
 }
 
 function cls() { 
