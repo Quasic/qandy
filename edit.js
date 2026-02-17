@@ -48,8 +48,18 @@ var editorMenus = [
 
 // Initialize editor
 function initEditor(filename) {
-  // Initialize menu system with callback
-  initMenus(editorMenus, "alt m", handleMenuAction);
+  // Define hotkeys for ALT+letter combinations
+  var editorHotkeys = {
+    "s": "save",      // ALT+S = Save
+    "l": "open",      // ALT+L = Load (open)
+    "n": "new",       // ALT+N = New
+    "d": "list",      // ALT+D = Directory (list files)
+    "x": "exit",      // ALT+X = Exit
+    "r": "execute"    // ALT+R = Run/Execute
+  };
+  
+  // Initialize menu system with callback and hotkeys
+  initMenus(editorMenus, "alt", handleMenuAction, editorHotkeys);
   
   if (filename) {
     editorState.filename = filename;
@@ -543,7 +553,8 @@ cls();
 print("\x1b[1;36m╔═══════════════════════════════╗\n");
 print("║   QANDY DOS-STYLE EDITOR      ║\n");
 print("╚═══════════════════════════════╝\x1b[0m\n\n");
-print("Press \x1b[1;33mALT+M\x1b[0m to open menu\n");
+print("Press \x1b[1;33mALT\x1b[0m to open menu\n");
+print("Or use hotkeys: \x1b[1;33mALT+S\x1b[0m=Save, \x1b[1;33mALT+L\x1b[0m=Load, \x1b[1;33mALT+X\x1b[0m=Exit\n");
 print("Use \x1b[1;33mArrow Keys\x1b[0m to navigate\n");
 print("Press \x1b[1;33mEnter\x1b[0m for new line\n");
 print("Press \x1b[1;33mBackspace\x1b[0m to delete\n\n");

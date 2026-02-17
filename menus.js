@@ -8,15 +8,17 @@ var menuState = {
   menuIndex: 0,
   menuItemIndex: 0,
   menuOpen: false,
-  activationKey: "alt m", // Default activation key
-  onAction: null // Callback when menu item is selected
+  activationKey: "alt", // Default activation key (just ALT)
+  onAction: null, // Callback when menu item is selected
+  hotkeys: {} // Map of ALT+letter to action (e.g. "alt s" -> "save")
 };
 
 /**
  * Initialize the menu system with a menu structure
  * @param {Array} menuStructure - Array of menu objects with title and items
- * @param {String} activationKey - Key combination to open menu (default: "alt m")
+ * @param {String} activationKey - Key combination to open menu (default: "alt")
  * @param {Function} onAction - Callback function when menu item selected
+ * @param {Object} hotkeys - Optional map of ALT+key to action (e.g. {"s": "save", "l": "open"})
  * 
  * Example menuStructure:
  * [
@@ -37,10 +39,11 @@ var menuState = {
  *   }
  * ]
  */
-function initMenus(menuStructure, activationKey, onAction) {
+function initMenus(menuStructure, activationKey, onAction, hotkeys) {
   menuState.menus = menuStructure || [];
-  menuState.activationKey = activationKey || "alt m";
+  menuState.activationKey = activationKey || "alt";
   menuState.onAction = onAction || null;
+  menuState.hotkeys = hotkeys || {};
   menuState.menuOpen = false;
   menuState.menuIndex = 0;
   menuState.menuItemIndex = 0;
@@ -83,6 +86,22 @@ function processMenuKey(k) {
     menuState.menuIndex = 0;
     menuState.menuItemIndex = 0;
     return true;
+  }
+  
+  // Check for hotkeys (ALT+letter combinations) - works even when menu is closed
+  // Format: "alt s", "alt l", etc.
+  var lowerK = k.toLowerCase();
+  for (var hotkey in menuState.hotkeys) {
+    if (lowerK === "alt " + hotkey) {
+      var action = menuState.hotkeys[hotkey];
+      menuState.menuOpen = false;
+      
+      // Call the action callback if provided
+      if (menuState.onAction && action) {
+        menuState.onAction(action, { action: action });
+      }
+      return true;
+    }
   }
   
   // If menu is not open, we don't handle this key

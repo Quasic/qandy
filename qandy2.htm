@@ -1140,6 +1140,31 @@ function button(b) {
    }
   }
  }
+ // Prepend modifier keys to k BEFORE passing to script (for keyon=0 mode)
+ // This ensures scripts get "alt m" instead of just "m" when ALT+M is pressed
+ if (run && k && !keyon && l) {
+   let hasCtrl = ctrl || (typeof event !== 'undefined' && event.ctrlKey);
+   let hasAlt = alt || (typeof event !== 'undefined' && event.altKey);
+   
+   if (hasCtrl || hasAlt) {
+     let modifiers = [];
+     if (hasCtrl) modifiers.push("ctrl");
+     if (hasAlt) modifiers.push("alt");
+     k = modifiers.join(" ") + " " + l;
+     // Reset virtual keyboard modifier keys after use
+     if (ctrl) {
+       ctrl = 0;
+       document.getElementById("ctrl").style.backgroundColor = "#222";
+       document.getElementById("ctrl").style.color = "#fff";
+     }
+     if (alt) {
+       alt = 0;
+       document.getElementById("alt").style.backgroundColor = "#222";
+       document.getElementById("alt").style.color = "#fff";
+     }
+   }
+ }
+ 
  // Pass key to script's keydown() handler if script is running and key wasn't consumed
  if (run && k) { keydown(k); }
  updateDisplay();
