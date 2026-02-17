@@ -29,24 +29,9 @@ var editorMenus = [
   {
     title: "File",
     items: [
-      { label: "New", action: "new" },
-      { label: "Open", action: "open" },
+      { label: "Load", action: "open" },
       { label: "Save", action: "save" },
-      { label: "List Files", action: "list" },
-      { label: "Exit", action: "exit" }
-    ]
-  },
-  {
-    title: "Edit",
-    items: [
-      { label: "Delete Line", action: "deleteLine" },
-      { label: "Clear All", action: "clearAll" }
-    ]
-  },
-  {
-    title: "Run",
-    items: [
-      { label: "Execute", action: "execute" }
+      { label: "Quit", action: "exit" }
     ]
   }
 ];
@@ -614,23 +599,10 @@ function handleEditKey(k) {
   if (hasCtrl && (baseKey === "c" || baseKey === "C")) {
     var selectedText = getSelectedText();
     if (selectedText) {
-      // Try to use clipboard API if available
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(selectedText).then(function() {
-          editorState.message = "Copied to clipboard!";
-          renderEditor();
-        }).catch(function() {
-          // Fallback to internal clipboard
-          editorState.clipboard = selectedText;
-          editorState.message = "Copied!";
-          renderEditor();
-        });
-      } else {
-        // Fallback to internal clipboard
-        editorState.clipboard = selectedText;
-        editorState.message = "Copied!";
-        renderEditor();
-      }
+      // Use internal clipboard
+      editorState.clipboard = selectedText;
+      editorState.message = "Copied to clipboard!";
+      renderEditor();
     }
     return;
   }
@@ -642,21 +614,12 @@ function handleEditKey(k) {
       deleteSelectedText();
     }
     
-    // Try to paste from clipboard API
-    if (navigator.clipboard && navigator.clipboard.readText) {
-      navigator.clipboard.readText().then(function(text) {
-        pasteText(text);
-      }).catch(function() {
-        // Fallback to internal clipboard
-        if (editorState.clipboard) {
-          pasteText(editorState.clipboard);
-        }
-      });
+    // Use internal clipboard
+    if (editorState.clipboard) {
+      pasteText(editorState.clipboard);
     } else {
-      // Fallback to internal clipboard
-      if (editorState.clipboard) {
-        pasteText(editorState.clipboard);
-      }
+      editorState.message = "Clipboard is empty!";
+      renderEditor();
     }
     return;
   }
@@ -706,23 +669,11 @@ function handleEditKey(k) {
     if (hasShift && editorState.selectionStartLine !== -1) {
       var selectedText = getSelectedText();
       if (selectedText) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(selectedText).then(function() {
-            deleteSelectedText();
-            editorState.message = "Cut to clipboard!";
-            renderEditor();
-          }).catch(function() {
-            editorState.clipboard = selectedText;
-            deleteSelectedText();
-            editorState.message = "Cut!";
-            renderEditor();
-          });
-        } else {
-          editorState.clipboard = selectedText;
-          deleteSelectedText();
-          editorState.message = "Cut!";
-          renderEditor();
-        }
+        // Use internal clipboard
+        editorState.clipboard = selectedText;
+        deleteSelectedText();
+        editorState.message = "Cut to clipboard!";
+        renderEditor();
       }
       return;
     }
