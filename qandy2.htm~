@@ -187,11 +187,9 @@ var keyboardData = [
   {id:"slash", label:"/", keyCode:191, x:303, y:604, width:28}
 ];
 
-// safe to delete these?
-//var pop4="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9cKHRUjLyS5OncAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAC5JREFUeNrtzkEBAAAEBDD0z6nGieGzJVgn2Xo09UxAQEBAQEBAQEBAQEBAQOAAuq4EI/9axwQAAAAASUVORK5CYII=";
-//var k64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABsAAAAaCAYAAABGiCfwAAAACXBIWXMAAAsSAAALEgHS3X78AAAAKElEQVRIie3NMQEAAAgDILV/51nBywsK0Enqy7xNMplMJpPJZDLZ0QI7tAMxEF7bywAAAABJRU5ErkJggg==";
-//var l64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAAYCAYAAAC1Ft6mAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAOklEQVRYhe3PgQkAIRDAsPf33/lcQrBIMkG7ZuZ7yX874DRDdYbqDNUZqjNUZ6jOUJ2hOkN1huoM1W10mgMt7zY1rwAAAABJRU5ErkJggg==";
-//var m64="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAG0AAAAYCAYAAADwF3MkAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAVUlEQVRoge3RwQkAIBDAMHX/nc8ZfEkhmaDQPTOLlvM7gHemBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWZFqQaUGmBZkWdAFuuAMtk7qVEgAAAABJRU5ErkJggg==";
+var ANSI = { colors: { 30: 'black', 31: 'red', 32: 'green', 33: 'yellow', 34: 'blue', 35: 'magenta', 36: 'cyan', 37: 'white', 90: 'black', 91: 'red', 92: 'green', 93: 'yellow', 94: 'blue', 95: 'magenta', 96: 'cyan', 97: 'white' },
+           bgColors: { 40: 'black', 41: 'red', 42: 'green', 43: 'yellow', 44: 'blue', 45: 'magenta', 46: 'cyan', 47: 'white', 100: 'black', 101: 'red', 102: 'green', 103: 'yellow', 104: 'blue', 105: 'magenta', 106: 'cyan', 107: 'white' }
+};
 
 img=document.createElement('img');
 img.id="qpc"; img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAMklEQVRYhe3OMQEAMAjEwKei2wHxRQbLxUCu3u2fxc7mHAAAAAAAAAAAAAAAAAAAIEkGzIgCpxq6s7YAAAAASUVORK5CYII="; 
@@ -1921,7 +1919,21 @@ function draw(inputString) {
   }
 
   // Refresh the display so ANSI styles become visible
+  // updateDisplay();
+  
+const _savedCursorY = cursorY;
+try {
+  // Ensure updateDisplay renders the current row we just drew.
+  // Only increase for rendering; don't let this trigger scrolling logic elsewhere.
+  if (_savedCursorY === 0) {
+    cursorY = 1;
+  }
   updateDisplay();
+} finally {
+  // Restore exact cursor position so visible cursor doesn't move
+  cursorY = _savedCursorY;
+}
+
 }
 
 function resumePagination() {
