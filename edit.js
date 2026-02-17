@@ -101,8 +101,6 @@ function listFiles() {
 // Render the editor screen
 function renderEditor() {
   cls();
-  // cls() sets keyon=1, but editor needs keyon=0 to handle its own input
-  keyon = 0;
   
   // Render menu bar
   renderMenuBar();
