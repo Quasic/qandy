@@ -11,7 +11,7 @@ function keydown(k) {
 
 menuColor="^[[37;40m";
 
-let menu="\x1b[37;40 File Edit"; 
-cls(); print(menu); menu== ' '.repeat(cursorX); print(menu);
+let menu="\x1b[37;40m File Edit"; 
+cls(); draw(menu); menu=' '.repeat(32-cursorX); draw(menu);
 
 

@@ -9,9 +9,10 @@ function keydown(k) {
   // required to process k (onkeydown)
 }
 
-menuColor="^[[37;40m";
+let menuColor="^[[37;40m";
+let menu="\x1b[37;40m File Edit"; 
 
-let menu="^[[37;40m File Edit"; 
-cls(); print(menu); menu== ' '.repeat(cursorX); print(menu);
-
-
+cls();
+draw(menu);
+menu=' '.repeat(32-cursorX);
+draw(menu);
