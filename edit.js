@@ -12,7 +12,7 @@ var editorState = {
   modified: false,
   mode: "edit", // "edit", "dialog"
   viewOffsetLine: 0,
-  maxLines: 20, // Maximum visible lines in editor
+  maxLines: 22, // Maximum visible lines in editor (screen is 25 lines: 1 menu + 22 edit + 1 status + 1 blank)
   maxCols: 29, // Maximum visible columns
   message: "",
   dialogType: "", // "save", "open", "new"
@@ -123,6 +123,10 @@ function listFiles() {
 
 // Render the editor screen
 function renderEditor() {
+  // Temporarily disable pagination during editor rendering
+  var savedPaginationEnabled = paginationEnabled;
+  paginationEnabled = false;
+  
   cls();
   
   // Ensure keyon stays 0 during edit operations
@@ -140,6 +144,9 @@ function renderEditor() {
   
   // Render status bar
   renderStatusBar();
+  
+  // Restore pagination setting
+  paginationEnabled = savedPaginationEnabled;
 }
 
 
@@ -513,10 +520,21 @@ function handleEditKey(k) {
 
 // Adjust view offset for scrolling
 function adjustViewOffset() {
+  // Ensure cursor line is never negative
+  if (editorState.cursorLine < 0) {
+    editorState.cursorLine = 0;
+  }
+  
+  // Adjust view offset to keep cursor visible
   if (editorState.cursorLine < editorState.viewOffsetLine) {
     editorState.viewOffsetLine = editorState.cursorLine;
   } else if (editorState.cursorLine >= editorState.viewOffsetLine + editorState.maxLines) {
     editorState.viewOffsetLine = editorState.cursorLine - editorState.maxLines + 1;
+  }
+  
+  // Ensure view offset is never negative
+  if (editorState.viewOffsetLine < 0) {
+    editorState.viewOffsetLine = 0;
   }
 }
 
