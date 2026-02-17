@@ -1748,6 +1748,9 @@ function print(inputString) {
           
           // If we found a space and it's not at the beginning of the line, wrap from there
           if (lastSpaceX > 0) {
+            // Store the current line before potentially scrolling
+            const sourceLine = cursorY;
+            
             // Move characters after the space to the next line
             cursorY++;
             
@@ -1758,14 +1761,16 @@ function print(inputString) {
             }
             
             // Move word fragment to next line
+            // After scrolling, sourceLine content is now at cursorY - 1
+            const fromLine = cursorY - 1;
             let newLineX = 0;
             for (let x = lastSpaceX + 1; x < screenWidth; x++) {
-              if (screenBuffer[cursorY - 1] && screenBuffer[cursorY]) {
-                screenBuffer[cursorY][newLineX] = screenBuffer[cursorY - 1][x];
-                styleBuffer[cursorY][newLineX] = styleBuffer[cursorY - 1][x];
+              if (screenBuffer[fromLine] && screenBuffer[cursorY] && screenBuffer[fromLine][x] !== ' ') {
+                screenBuffer[cursorY][newLineX] = screenBuffer[fromLine][x];
+                styleBuffer[cursorY][newLineX] = styleBuffer[fromLine][x];
                 // Clear the old position
-                screenBuffer[cursorY - 1][x] = ' ';
-                styleBuffer[cursorY - 1][x] = {
+                screenBuffer[fromLine][x] = ' ';
+                styleBuffer[fromLine][x] = {
                   color: currentStyle.color,
                   bgcolor: currentStyle.bgcolor,
                   bold: currentStyle.bold,
@@ -1900,17 +1905,11 @@ function draw(inputString) {
         continue;
       }
       
-      // Stop if we've reached the bottom of the screen
-      if (cursorY >= screenHeight) {
-        break;  // Stop drawing
-      }
-      
-      // Stop if we've reached the end of the line (no auto-wrap)
+      // Auto-wrap if we've reached the end of the line
       if (cursorX >= screenWidth) {
-        // Move to next line
         cursorX = 0;
         cursorY++;
-        // Stop if we reach the bottom of the screen
+        // Stop if we reach the bottom of the screen after wrapping
         if (cursorY >= screenHeight) {
           break;  // Stop drawing
         }
