@@ -15,8 +15,10 @@
 //
 //  playTune(string) play a sequence of notes from a music string
 // playMelody(array) play a sequence of notes from an array
+//  playNotes(string) play notes in GWBASIC PLAY command format
 //         stopTune() stop currently playing tune
 //        loopTune(s) loop a tune continuously
+//       loopNotes(s) loop GWBASIC format notes continuously
 //
 // EXAMPLES:
 //              beep() Standard beep (800Hz, 200ms)
@@ -30,6 +32,10 @@
 // playTune("C4:200 R:100 E4:200 R:100 G4:400") With rests
 //
 // playMelody([['C4',200], ['E4',200], ['G4',400]]) Array format
+//
+// playNotes("C D E F G A B") GWBASIC PLAY format
+// playNotes("O3 L8 CDEFGAB") GWBASIC with octave and length
+// playNotes("T100 C#4 D8 F+16") GWBASIC with tempo and note lengths
 //
 // loopTune("C E G E") Background music loop
 //
@@ -264,6 +270,14 @@ function loopTune(musicString) {
   });
 }
 
+// Loop GWBASIC format notes continuously
+function loopNotes(gwbasicString) {
+  playNotes(gwbasicString, function() {
+    // When tune completes, play it again
+    loopNotes(gwbasicString);
+  });
+}
+
 // Alternative notation: playMelody with array format
 // Example: playMelody([['C4', 200], ['E4', 200], ['G4', 400]])
 function playMelody(notesArray, onComplete) {
@@ -276,4 +290,174 @@ function playMelody(notesArray, onComplete) {
   }).join(' ');
   
   return playTune(musicString, onComplete);
+}
+
+// GWBASIC PLAY command format parser
+// Supports the same format as GWBASIC.COM "PLAY [string]" command
+// 
+// Format:
+//   Notes: A, B, C, D, E, F, G
+//   Modifiers: # or + (sharp), - (flat)
+//   Length: L followed by a number (e.g., L4 for quarter notes, L1 for whole notes)
+//   Octave: O followed by a number (0-6) sets the current octave
+//   Tempo: T followed by a number (e.g., T120) sets the speed in quarter notes per minute
+//   Pause/Rest: P followed by a number (e.g., P4 for quarter rest)
+//
+// Examples:
+//   playNotes("C D E F G A B") - Basic melody
+//   playNotes("O3 L8 CDEFGAB") - 3rd octave C-B scale using eighth notes
+//   playNotes("T100 C#4 D8 F+16") - Tempo 100, C# quarter, D eighth, F# sixteenth
+//
+function playNotes(gwbasicString, onComplete) {
+  // Parse GWBASIC format into internal format
+  const notes = parseGWBasicString(gwbasicString);
+  if (!notes || notes.length === 0) {
+    return false;
+  }
+  
+  // Convert to music string format and play
+  const musicString = notes.map(function(note) {
+    if (note.type === 'rest') {
+      return 'R:' + note.duration;
+    }
+    return note.note + ':' + note.duration;
+  }).join(' ');
+  
+  return playTune(musicString, onComplete);
+}
+
+// Parse GWBASIC PLAY string format
+function parseGWBasicString(str) {
+  const notes = [];
+  let currentOctave = 4;  // Default octave
+  let currentLength = 4;  // Default quarter note (L4)
+  let currentTempo = 120; // Default tempo (120 BPM = quarter notes per minute)
+  
+  // Calculate duration in ms from note length and tempo
+  // Formula: duration = (60000 / tempo) * (4 / length)
+  // For L4 at T120: (60000/120) * (4/4) = 500ms
+  function getDuration(length) {
+    return Math.round((60000 / currentTempo) * (4 / length));
+  }
+  
+  // Remove extra whitespace and convert to uppercase
+  str = str.trim().toUpperCase();
+  
+  let i = 0;
+  while (i < str.length) {
+    const char = str[i];
+    
+    // Skip whitespace
+    if (char === ' ' || char === '\t') {
+      i++;
+      continue;
+    }
+    
+    // Parse tempo (T followed by number)
+    if (char === 'T') {
+      i++;
+      let numStr = '';
+      while (i < str.length && str[i] >= '0' && str[i] <= '9') {
+        numStr += str[i];
+        i++;
+      }
+      if (numStr) {
+        const tempo = parseInt(numStr);
+        if (tempo > 0 && tempo <= 255) {
+          currentTempo = tempo;
+        }
+      }
+      continue;
+    }
+    
+    // Parse default length (L followed by number)
+    if (char === 'L') {
+      i++;
+      let numStr = '';
+      while (i < str.length && str[i] >= '0' && str[i] <= '9') {
+        numStr += str[i];
+        i++;
+      }
+      if (numStr) {
+        const length = parseInt(numStr);
+        if (length > 0 && length <= 64) {
+          currentLength = length;
+        }
+      }
+      continue;
+    }
+    
+    // Parse octave (O followed by number)
+    if (char === 'O') {
+      i++;
+      if (i < str.length && str[i] >= '0' && str[i] <= '6') {
+        currentOctave = parseInt(str[i]);
+        i++;
+      }
+      continue;
+    }
+    
+    // Parse pause/rest (P followed by number)
+    if (char === 'P') {
+      i++;
+      let numStr = '';
+      while (i < str.length && str[i] >= '0' && str[i] <= '9') {
+        numStr += str[i];
+        i++;
+      }
+      const length = numStr ? parseInt(numStr) : currentLength;
+      notes.push({
+        type: 'rest',
+        duration: getDuration(length)
+      });
+      continue;
+    }
+    
+    // Parse note (A-G with optional modifiers and length)
+    if (char >= 'A' && char <= 'G') {
+      let noteName = char;
+      i++;
+      
+      // Check for sharp/flat modifier
+      if (i < str.length && (str[i] === '#' || str[i] === '+')) {
+        noteName += '#';
+        i++;
+      } else if (i < str.length && str[i] === '-') {
+        // Flat: convert to enharmonic sharp equivalent
+        // Note: C- and F- are special cases (would require octave change)
+        const flats = {
+          'D': 'C#', 'E': 'D#', 'G': 'F#', 'A': 'G#', 'B': 'A#'
+        };
+        if (flats[noteName]) {
+          noteName = flats[noteName];
+        }
+        // C- and F- are ignored (C-flat = B, F-flat = E in different octaves)
+        i++;
+      }
+      
+      // Check for note-specific length (number immediately after note)
+      let noteLength = currentLength;
+      let numStr = '';
+      while (i < str.length && str[i] >= '0' && str[i] <= '9') {
+        numStr += str[i];
+        i++;
+      }
+      if (numStr) {
+        noteLength = parseInt(numStr);
+      }
+      
+      // Add note with octave
+      notes.push({
+        type: 'note',
+        note: noteName + currentOctave,
+        duration: getDuration(noteLength)
+      });
+      continue;
+    }
+    
+    // Skip unrecognized characters (like M for music style)
+    i++;
+  }
+  
+  return notes;
 }
