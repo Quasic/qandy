@@ -1434,7 +1434,7 @@ function triggerPaginationPause() {
   const row = Math.max(1, (typeof screenHeight === 'number' ? screenHeight : 25)); // ANSI rows are 1-based
   const pauseMsgPlain = "Press Any Key to Continue:";
   const ansiPause =
-    "\x1b[" + (row-1) + ";1H" +    // CUP to bottom line, col 1
+    "\x1b[" + row + ";1H" +    // CUP to bottom line, col 1
     "\x1b[2K" +               // Erase entire line
     "\x1b[1;37m" +            // Bold + white foreground
     pauseMsgPlain +
@@ -1779,7 +1779,7 @@ function updateDisplay() {
   if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
   const txtElement = document.getElementById("txt");
   let htmlContent = '';
-  const rowsToRender = cursorY;
+  const rowsToRender = screenHeight;
   
   for (let y = 0; y < rowsToRender; y++) {
     let lineContent = '';
