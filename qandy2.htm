@@ -1396,72 +1396,88 @@ function showFiles() {
 }
 
 function triggerPaginationPause() {
-  paginationPaused=true;
-  keyon=0;
-  const savedStyle = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
-  
-  currentStyle.color=31; //white
-  currentStyle.bold=true;
-  const pauseMsg = "Press Any Key to Continue:";
-  for (let i = 0; i < pauseMsg.length; i++) {
-    if (pauseMsg[i] === '\n') {
-      cursorX = 0;
-      cursorY++;
-    } else {
-      if (cursorX >= screenWidth) {
-        cursorX = 0;
-        cursorY++;
-      }
-      if (cursorY >= screenHeight) {
-        scrollScreenDown();
-        cursorY = screenHeight - 1;
-      }
-      if (screenBuffer[cursorY] && styleBuffer[cursorY]) {
-        screenBuffer[cursorY][cursorX] = pauseMsg[i];
-        styleBuffer[cursorY][cursorX] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-        cursorX++;
-      }
+  // Prevent re-entering pause state
+  if (paginationPaused) return;
+
+  // Ensure draw() exists
+  if (typeof draw !== 'function') {
+    // fallback to previous approach if draw() not available
+    console.warn("draw() not found — falling back to buffer-write pause.");
+    // (Optionally call the robust buffer-writing variant here)
+  }
+
+  // Ensure buffers initialized
+  if (!screenBuffer || screenBuffer.length === 0) initScreen();
+  if (!styleBuffer || styleBuffer.length === 0) initScreen();
+
+  // Save visible state we will restore
+  const savedCursorX = typeof cursorX !== 'undefined' ? cursorX : 0;
+  const savedCursorY = typeof cursorY !== 'undefined' ? cursorY : 0;
+  const savedStyle = {
+    color: currentStyle.color,
+    bgcolor: currentStyle.bgcolor,
+    bold: currentStyle.bold,
+    inverse: currentStyle.inverse
+  };
+
+  // Mark pagination state and disable normal input
+  paginationPaused = true;
+  keyon = 0;
+
+  // Reset any printed-line counters so next page starts fresh
+  if (typeof printedLinesSinceLastPause !== 'undefined') printedLinesSinceLastPause = 0;
+
+  // Build ANSI-coded pause message:
+  // - Move cursor to bottom row (screenHeight), column 1
+  // - Erase the entire line (\x1b[2K) or use \x1b[K to clear from cursor to end
+  // - Set bright white and bold for visibility, print message, then reset attributes
+  const row = Math.max(1, (typeof screenHeight === 'number' ? screenHeight : 25)); // ANSI rows are 1-based
+  const pauseMsgPlain = "Press Any Key to Continue:";
+  const ansiPause =
+    "\x1b[" + (row-1) + ";1H" +    // CUP to bottom line, col 1
+    "\x1b[2K" +               // Erase entire line
+    "\x1b[1;37m" +            // Bold + white foreground
+    pauseMsgPlain +
+    "\x1b[0m";                // Reset attributes
+
+  // Use draw() to render the ANSI-coded pause message WITHOUT scrolling
+  try {
+    draw(ansiPause);
+  } catch (e) {
+    // If draw() fails, fallback to writing into buffers directly (best-effort)
+    console.warn("draw() failed in triggerPaginationPause():", e);
+    // fallback: write into screenBuffer directly on last line
+    const r = Math.min(screenHeight - 1, savedCursorY + 1);
+    // clear line
+    for (let c = 0; c < screenWidth; c++) {
+      screenBuffer[row - 1][c] = ' ';
+      styleBuffer[row - 1][c] = {
+        color: 37, bgcolor: currentStyle.bgcolor, bold: true, inverse: false
+      };
+    }
+    // write message, clipped to screenWidth
+    for (let i = 0; i < pauseMsgPlain.length && i < screenWidth; i++) {
+      screenBuffer[row - 1][i] = pauseMsgPlain.charAt(i);
+      styleBuffer[row - 1][i] = { color: 37, bgcolor: currentStyle.bgcolor, bold: true, inverse: false };
     }
   }
-  
-  // Restore style
+
+  // Force a display update so the message is visible now
+  try {
+    updateDisplay();
+  } catch (e) {
+    // best-effort DOM refresh fallback
+    try { document.getElementById("txt").innerHTML = document.getElementById("txt").innerHTML; } catch (_) {}
+  }
+
+  // Restore cursor position and style variables so printing resumes cleanly later.
+  cursorX = savedCursorX;
+  cursorY = savedCursorY;
   currentStyle.color = savedStyle.color;
   currentStyle.bgcolor = savedStyle.bgcolor;
   currentStyle.bold = savedStyle.bold;
   currentStyle.inverse = savedStyle.inverse;
-  
-  updateDisplay();
 }
-
-// Replacement print() for qandy2.htm - fixes premature pagination
-//
-// Behavior fix:
-// - Pagination is now counted relative to the string being printed in the current print() call.
-//   That is, if you call print(longString), the pager will not trigger until the printed-lines
-//   from that string reach paginationLinesBeforePause (unless a form-feed \f appears).
-// - Existing behavior preserved: Form Feed (\f) still triggers an immediate pause,
-//   paginationPaused queues incoming print() calls, and updateDisplay() is called at end.
-//
-// How to use:
-// - Replace the existing print() function in qandy2.htm with this function.
-// - Keep the existing helper functions (initScreen(), scrollScreenDown(), updateDisplay(),
-//   triggerPaginationPause()) and variables (screenBuffer, styleBuffer, cursorX, cursorY, screenWidth,
-//   screenHeight, paginationPaused, paginationBuffer, paginationEnabled, paginationLinesBeforePause,
-//   inInputMode, currentStyle).
-//
-// Notes:
-// - This implementation assumes print() previously directly wrote characters into screenBuffer
-//   and used cursorX/cursorY to track position. It mirrors the common behavior: '\n' advances
-//   to the start of next line, characters wrap when cursorX >= screenWidth, and scrolling
-//   occurs when cursorY >= screenHeight.
-// - If your qandy2.htm has additional ANSI parsing (escape sequences), keep that logic and
-//   integrate line-count increments where cursorY is advanced. This replacement focuses on
-//   the pagination counting bug and implements the minimal set of text behaviors needed.
 
 function print(inputString) {
   // If pagination is paused, queue the text for later

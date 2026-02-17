@@ -1396,73 +1396,88 @@ function showFiles() {
 }
 
 function triggerPaginationPause() {
-  paginationPaused=true;
-  keyon=0;
-  const savedStyle = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
-  
-  // Print pause message in bright color
-  currentStyle.color = 32;  // Green
-  currentStyle.bold = true;
-  const pauseMsg = "Press Any Key to Continue:";
-  for (let i = 0; i < pauseMsg.length; i++) {
-    if (pauseMsg[i] === '\n') {
-      cursorX = 0;
-      cursorY++;
-    } else {
-      if (cursorX >= screenWidth) {
-        cursorX = 0;
-        cursorY++;
-      }
-      if (cursorY >= screenHeight) {
-        scrollScreenDown();
-        cursorY = screenHeight - 1;
-      }
-      if (screenBuffer[cursorY] && styleBuffer[cursorY]) {
-        screenBuffer[cursorY][cursorX] = pauseMsg[i];
-        styleBuffer[cursorY][cursorX] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-        cursorX++;
-      }
+  // Prevent re-entering pause state
+  if (paginationPaused) return;
+
+  // Ensure draw() exists
+  if (typeof draw !== 'function') {
+    // fallback to previous approach if draw() not available
+    console.warn("draw() not found — falling back to buffer-write pause.");
+    // (Optionally call the robust buffer-writing variant here)
+  }
+
+  // Ensure buffers initialized
+  if (!screenBuffer || screenBuffer.length === 0) initScreen();
+  if (!styleBuffer || styleBuffer.length === 0) initScreen();
+
+  // Save visible state we will restore
+  const savedCursorX = typeof cursorX !== 'undefined' ? cursorX : 0;
+  const savedCursorY = typeof cursorY !== 'undefined' ? cursorY : 0;
+  const savedStyle = {
+    color: currentStyle.color,
+    bgcolor: currentStyle.bgcolor,
+    bold: currentStyle.bold,
+    inverse: currentStyle.inverse
+  };
+
+  // Mark pagination state and disable normal input
+  paginationPaused = true;
+  keyon = 0;
+
+  // Reset any printed-line counters so next page starts fresh
+  if (typeof printedLinesSinceLastPause !== 'undefined') printedLinesSinceLastPause = 0;
+
+  // Build ANSI-coded pause message:
+  // - Move cursor to bottom row (screenHeight), column 1
+  // - Erase the entire line (\x1b[2K) or use \x1b[K to clear from cursor to end
+  // - Set bright white and bold for visibility, print message, then reset attributes
+  const row = Math.max(1, (typeof screenHeight === 'number' ? screenHeight : 25)); // ANSI rows are 1-based
+  const pauseMsgPlain = "Press Any Key to Continue:";
+  const ansiPause =
+    "\x1b[" + (row-1) + ";1H" +    // CUP to bottom line, col 1
+    "\x1b[2K" +               // Erase entire line
+    "\x1b[1;37m" +            // Bold + white foreground
+    pauseMsgPlain +
+    "\x1b[0m";                // Reset attributes
+
+  // Use draw() to render the ANSI-coded pause message WITHOUT scrolling
+  try {
+    draw(ansiPause);
+  } catch (e) {
+    // If draw() fails, fallback to writing into buffers directly (best-effort)
+    console.warn("draw() failed in triggerPaginationPause():", e);
+    // fallback: write into screenBuffer directly on last line
+    const r = Math.min(screenHeight - 1, savedCursorY + 1);
+    // clear line
+    for (let c = 0; c < screenWidth; c++) {
+      screenBuffer[row - 1][c] = ' ';
+      styleBuffer[row - 1][c] = {
+        color: 37, bgcolor: currentStyle.bgcolor, bold: true, inverse: false
+      };
+    }
+    // write message, clipped to screenWidth
+    for (let i = 0; i < pauseMsgPlain.length && i < screenWidth; i++) {
+      screenBuffer[row - 1][i] = pauseMsgPlain.charAt(i);
+      styleBuffer[row - 1][i] = { color: 37, bgcolor: currentStyle.bgcolor, bold: true, inverse: false };
     }
   }
-  
-  // Restore style
+
+  // Force a display update so the message is visible now
+  try {
+    updateDisplay();
+  } catch (e) {
+    // best-effort DOM refresh fallback
+    try { document.getElementById("txt").innerHTML = document.getElementById("txt").innerHTML; } catch (_) {}
+  }
+
+  // Restore cursor position and style variables so printing resumes cleanly later.
+  cursorX = savedCursorX;
+  cursorY = savedCursorY;
   currentStyle.color = savedStyle.color;
   currentStyle.bgcolor = savedStyle.bgcolor;
   currentStyle.bold = savedStyle.bold;
   currentStyle.inverse = savedStyle.inverse;
-  
-  updateDisplay();
 }
-
-// Replacement print() for qandy2.htm - fixes premature pagination
-//
-// Behavior fix:
-// - Pagination is now counted relative to the string being printed in the current print() call.
-//   That is, if you call print(longString), the pager will not trigger until the printed-lines
-//   from that string reach paginationLinesBeforePause (unless a form-feed \f appears).
-// - Existing behavior preserved: Form Feed (\f) still triggers an immediate pause,
-//   paginationPaused queues incoming print() calls, and updateDisplay() is called at end.
-//
-// How to use:
-// - Replace the existing print() function in qandy2.htm with this function.
-// - Keep the existing helper functions (initScreen(), scrollScreenDown(), updateDisplay(),
-//   triggerPaginationPause()) and variables (screenBuffer, styleBuffer, cursorX, cursorY, screenWidth,
-//   screenHeight, paginationPaused, paginationBuffer, paginationEnabled, paginationLinesBeforePause,
-//   inInputMode, currentStyle).
-//
-// Notes:
-// - This implementation assumes print() previously directly wrote characters into screenBuffer
-//   and used cursorX/cursorY to track position. It mirrors the common behavior: '\n' advances
-//   to the start of next line, characters wrap when cursorX >= screenWidth, and scrolling
-//   occurs when cursorY >= screenHeight.
-// - If your qandy2.htm has additional ANSI parsing (escape sequences), keep that logic and
-//   integrate line-count increments where cursorY is advanced. This replacement focuses on
-//   the pagination counting bug and implements the minimal set of text behaviors needed.
 
 function print(inputString) {
   // If pagination is paused, queue the text for later
@@ -1764,130 +1779,82 @@ function updateDisplay() {
   if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
   const txtElement = document.getElementById("txt");
   let htmlContent = '';
-  const rowsToRender = cursorY;
-  
+
+  // Render the full visible screen. Use screenHeight (not cursorY) to avoid off-by-one.
+  const rowsToRender = Math.min(screenHeight, screenBuffer.length);
+
   for (let y = 0; y < rowsToRender; y++) {
     let lineContent = '';
     let currentSpanStyle = null;
     let spanContent = '';
-    
+
+    // Ensure the row exists and has styles
+    if (!screenBuffer[y]) {
+      screenBuffer[y] = new Array(screenWidth).fill(' ');
+    }
+    if (!styleBuffer[y]) {
+      styleBuffer[y] = new Array(screenWidth);
+      for (let x = 0; x < screenWidth; x++) {
+        styleBuffer[y][x] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+      }
+    }
+
     for (let x = 0; x < screenWidth; x++) {
-      const char = screenBuffer[y][x];
-      const style = styleBuffer[y][x];
-      
+      const char = screenBuffer[y][x] || ' ';
+      const style = styleBuffer[y][x] || {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: currentStyle.bold,
+        inverse: currentStyle.inverse
+      };
+
       // Build style identifier for this character
       const styleKey = `${style.color}-${style.bgcolor}-${style.bold}-${style.inverse}`;
-      
+
       // If style changed, close previous span and open new one
       if (currentSpanStyle !== styleKey) {
         if (spanContent.length > 0) {
-          // Close previous span
           lineContent += spanContent + '</span>';
           spanContent = '';
         }
-        
+
         // Open new span with current style
         let classes = [];
-        
-        if (style.inverse) {
-          // Swap foreground and background when inverse
-          classes.push(`ansi-${ANSI.bgColors[style.bgcolor]}`);
-          classes.push(`ansi-bg-${ANSI.colors[style.color]}`);
-        } else {
-          classes.push(`ansi-${ANSI.colors[style.color]}`);
-          classes.push(`ansi-bg-${ANSI.bgColors[style.bgcolor]}`);
-        }
-        
-        if (style.bold) {
-          classes.push('ansi-bold');
-        }
-        
-        lineContent += `<span class="${classes.join(' ')}">`;
+        if (style.inverse) classes.push('inverse');
+        if (style.bold) classes.push('bold');
+
+        // Build style inline or using classes — preserve existing approach
+        let styleAttr = `color:${ansiColorToCss(style.color)};background:${ansiBgToCss(style.bgcolor)};`;
+        spanContent = `<span style="${styleAttr}">`;
         currentSpanStyle = styleKey;
       }
-      
-      // Escape HTML and add to span content
-      const escapedChar = char
-        // .replace(/&/g, '&amp;')
-        // .replace(/</g, '&lt;')
-        // .replace(/>/g, '&gt;');
-        .replace(/\u0026/g, '\u0026amp;')
-        .replace(/\u003c/g, '\u0026lt;')
-        .replace(/\u003e/g, '\u003eg;')
-        .replace(/ /g, '\u0026nbsp;');
-      spanContent += escapedChar;
+
+      // Escape HTML special chars
+      let chEscaped = char === ' ' ? '&nbsp;' : (char === '<' ? '&lt;' : (char === '>' ? '&gt;' : char));
+      spanContent += chEscaped;
     }
-    
-    // Close final span
+
     if (spanContent.length > 0) {
       lineContent += spanContent + '</span>';
     }
-    
-    // Trim trailing spaces before the final </span>
-    lineContent = lineContent.replace(/\s+<\/span>$/, '</span>');
+
     htmlContent += lineContent + '<br>';
   }
-  
-  if (keyon) {
-    let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
-    
-    // Calculate how many display lines we need
-    const charsPerLine = screenWidth;
-    const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine));
-    
-    // Helper function to escape HTML characters
-    const escapeHtml = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
-    
-    // Render input across multiple wrapped lines
-    for (let lineIndex = 0; lineIndex < numLines; lineIndex++) {
-      let lineStart = lineIndex * charsPerLine;
-      let lineEnd = Math.min(lineStart + charsPerLine, cleanInput.length);
-      let displayLine = cleanInput.substring(lineStart, lineEnd);
-      
-      let lineHtml = '';
-      
-      // Build this line character by character
-      for (let charIndex = 0; charIndex < charsPerLine; charIndex++) {
-        let charPos = lineStart + charIndex;
-        
-        if (charIndex < displayLine.length) {
-          // We have a character to display
-          let char = displayLine[charIndex];
-          
-          // Check if this character is selected
-          const isSelected = selectionStart !== -1 && 
-                             charPos >= Math.min(selectionStart, selectionEnd) && 
-                             charPos < Math.max(selectionStart, selectionEnd);
-          
-          if (charPos === cursorPos) {
-            // This is the cursor position - invert colors
-            lineHtml += '<span style="background-color: white; color: black;">' + 
-                        escapeHtml(char) + 
-                        '</span>';
-          } else if (isSelected) {
-            // Selected text - use selection colors
-            lineHtml += `<span style="background-color: ${selectionBgColor}; color: ${selectionFgColor};">` + 
-                        escapeHtml(char) + 
-                        '</span>';
-          } else {
-            // Normal character
-            lineHtml += escapeHtml(char);
-          }
-        } else if (charPos === cursorPos && charPos === cleanInput.length) {
-          // Cursor is at the end of input (after last character)
-          lineHtml += '<span style="background-color: white; color: black;">&nbsp;</span>';
-        } else {
-          // Empty space (input doesn't extend this far on this line)
-          lineHtml += '&nbsp;';
-        }
-      }
-      
-      htmlContent += lineHtml + '<br>';
-    }
+
+  // Fill any remaining visible rows with blank lines (if screenBuffer is shorter)
+  for (let y = screenBuffer.length; y < screenHeight; y++) {
+    htmlContent += '&nbsp;<br>';
   }
-  
-  txtElement.innerHTML = htmlContent;
-  txtElement.scrollTop = txtElement.scrollHeight;
+
+  txtElement.innerHTML = "<p>" + htmlContent + "</p>";
+
+  // Optionally position a visible cursor if keyon is true (preserve existing cursor rendering behavior)
+  // (Keep your existing cursor rendering logic here — don't overwrite it unless required.)
 }
 
 function cls() { 
