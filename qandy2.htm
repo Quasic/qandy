@@ -1142,15 +1142,22 @@ function button(b) {
  }
  // Prepend modifier keys to k BEFORE passing to script (for keyon=0 mode)
  // This ensures scripts get "alt m" instead of just "m" when ALT+M is pressed
- if (run && k && !keyon && l) {
+ // Also prepend shift for navigation keys and other keys when needed
+ if (run && k && !keyon) {
    let hasCtrl = ctrl || (typeof event !== 'undefined' && event.ctrlKey);
    let hasAlt = alt || (typeof event !== 'undefined' && event.altKey);
+   let hasShift = shift || (typeof event !== 'undefined' && event.shiftKey);
    
-   if (hasCtrl || hasAlt) {
+   // List of keys that should get shift prefix (navigation keys)
+   let shiftableKeys = ["left", "right", "up", "down", "home", "end", "delete"];
+   let shouldAddShift = shiftableKeys.indexOf(k) !== -1 && hasShift;
+   
+   if (hasCtrl || hasAlt || shouldAddShift) {
      let modifiers = [];
+     if (hasShift && shouldAddShift) modifiers.push("shift");
      if (hasCtrl) modifiers.push("ctrl");
      if (hasAlt) modifiers.push("alt");
-     k = modifiers.join(" ") + " " + l;
+     k = modifiers.join(" ") + " " + (l || k);
      // Reset virtual keyboard modifier keys after use
      if (ctrl) {
        ctrl = 0;

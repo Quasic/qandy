@@ -16,7 +16,12 @@ var editorState = {
   maxCols: 29, // Maximum visible columns
   message: "",
   dialogType: "", // "save", "open", "new"
-  dialogInput: ""
+  dialogInput: "",
+  selectionStartLine: -1,
+  selectionStartCol: -1,
+  selectionEndLine: -1,
+  selectionEndCol: -1,
+  clipboard: ""
 };
 
 // Menu structure for menus.js API
@@ -171,14 +176,42 @@ function renderEditArea() {
     var line = editorState.lines[i];
     var displayLine = line.substring(0, editorState.maxCols);
     
-    // Show cursor on current line
+    // Show cursor and/or selection on current line
     if (i === editorState.cursorLine && editorState.mode === "edit") {
-      var before = displayLine.substring(0, editorState.cursorCol);
-      var at = displayLine[editorState.cursorCol] || " ";
-      var after = displayLine.substring(editorState.cursorCol + 1);
-      print(before + "\x1b[7m" + at + "\x1b[0m" + after + "\n");
+      // Build line with selection highlighting
+      var result = "";
+      for (var col = 0; col < displayLine.length; col++) {
+        var ch = displayLine[col];
+        var isSelected = isPositionSelected(i, col);
+        var isCursor = (col === editorState.cursorCol);
+        
+        if (isCursor && !isSelected) {
+          result += "\x1b[7m" + ch + "\x1b[0m";
+        } else if (isSelected) {
+          result += "\x1b[44m" + ch + "\x1b[0m"; // Blue background for selection
+        } else {
+          result += ch;
+        }
+      }
+      
+      // Handle cursor at end of line
+      if (editorState.cursorCol === displayLine.length) {
+        result += "\x1b[7m \x1b[0m";
+      }
+      
+      print(result + "\n");
     } else {
-      print(displayLine + "\n");
+      // Render other lines with selection highlighting
+      var result = "";
+      for (var col = 0; col < displayLine.length; col++) {
+        var ch = displayLine[col];
+        if (isPositionSelected(i, col)) {
+          result += "\x1b[44m" + ch + "\x1b[0m";
+        } else {
+          result += ch;
+        }
+      }
+      print(result + "\n");
     }
   }
   
@@ -186,6 +219,140 @@ function renderEditArea() {
   for (var i = endLine - startLine; i < editorState.maxLines; i++) {
     print("~\n");
   }
+}
+
+// Check if a position is within the current selection
+function isPositionSelected(line, col) {
+  if (editorState.selectionStartLine === -1 || editorState.selectionEndLine === -1) {
+    return false;
+  }
+  
+  var startLine = editorState.selectionStartLine;
+  var startCol = editorState.selectionStartCol;
+  var endLine = editorState.selectionEndLine;
+  var endCol = editorState.selectionEndCol;
+  
+  // Normalize selection (ensure start is before end)
+  if (startLine > endLine || (startLine === endLine && startCol > endCol)) {
+    var temp = startLine;
+    startLine = endLine;
+    endLine = temp;
+    temp = startCol;
+    startCol = endCol;
+    endCol = temp;
+  }
+  
+  // Check if position is in selection
+  if (line < startLine || line > endLine) {
+    return false;
+  }
+  if (line === startLine && line === endLine) {
+    return col >= startCol && col < endCol;
+  }
+  if (line === startLine) {
+    return col >= startCol;
+  }
+  if (line === endLine) {
+    return col < endCol;
+  }
+  return true;
+}
+
+// Clear selection
+function clearSelection() {
+  editorState.selectionStartLine = -1;
+  editorState.selectionStartCol = -1;
+  editorState.selectionEndLine = -1;
+  editorState.selectionEndCol = -1;
+}
+
+// Start or update selection
+function updateSelection(startLine, startCol, endLine, endCol) {
+  editorState.selectionStartLine = startLine;
+  editorState.selectionStartCol = startCol;
+  editorState.selectionEndLine = endLine;
+  editorState.selectionEndCol = endCol;
+}
+
+// Get selected text
+function getSelectedText() {
+  if (editorState.selectionStartLine === -1 || editorState.selectionEndLine === -1) {
+    return "";
+  }
+  
+  var startLine = editorState.selectionStartLine;
+  var startCol = editorState.selectionStartCol;
+  var endLine = editorState.selectionEndLine;
+  var endCol = editorState.selectionEndCol;
+  
+  // Normalize selection
+  if (startLine > endLine || (startLine === endLine && startCol > endCol)) {
+    var temp = startLine;
+    startLine = endLine;
+    endLine = temp;
+    temp = startCol;
+    startCol = endCol;
+    endCol = temp;
+  }
+  
+  if (startLine === endLine) {
+    return editorState.lines[startLine].substring(startCol, endCol);
+  }
+  
+  var result = [];
+  for (var i = startLine; i <= endLine; i++) {
+    var line = editorState.lines[i];
+    if (i === startLine) {
+      result.push(line.substring(startCol));
+    } else if (i === endLine) {
+      result.push(line.substring(0, endCol));
+    } else {
+      result.push(line);
+    }
+  }
+  return result.join("\n");
+}
+
+// Delete selected text
+function deleteSelectedText() {
+  if (editorState.selectionStartLine === -1 || editorState.selectionEndLine === -1) {
+    return false;
+  }
+  
+  var startLine = editorState.selectionStartLine;
+  var startCol = editorState.selectionStartCol;
+  var endLine = editorState.selectionEndLine;
+  var endCol = editorState.selectionEndCol;
+  
+  // Normalize selection
+  if (startLine > endLine || (startLine === endLine && startCol > endCol)) {
+    var temp = startLine;
+    startLine = endLine;
+    endLine = temp;
+    temp = startCol;
+    startCol = endCol;
+    endCol = temp;
+  }
+  
+  if (startLine === endLine) {
+    // Single line selection
+    var line = editorState.lines[startLine];
+    editorState.lines[startLine] = line.substring(0, startCol) + line.substring(endCol);
+    editorState.cursorLine = startLine;
+    editorState.cursorCol = startCol;
+  } else {
+    // Multi-line selection
+    var firstPart = editorState.lines[startLine].substring(0, startCol);
+    var lastPart = editorState.lines[endLine].substring(endCol);
+    editorState.lines[startLine] = firstPart + lastPart;
+    editorState.lines.splice(startLine + 1, endLine - startLine);
+    editorState.cursorLine = startLine;
+    editorState.cursorCol = startCol;
+  }
+  
+  clearSelection();
+  editorState.modified = true;
+  return true;
 }
 
 // Render dialog box
@@ -432,51 +599,290 @@ function handleDialogKey(k) {
 function handleEditKey(k) {
   // Menu activation is now handled by menus.js via isMenuKey/processMenuKey
   
-  // Arrow keys - check before converting to uppercase
-  if (k === "↑" || k === "up") {
-    if (editorState.cursorLine > 0) {
-      editorState.cursorLine--;
-      editorState.cursorCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine].length);
-      adjustViewOffset();
-      renderEditor();
+  // Parse modifier keys
+  var hasShift = k.indexOf("shift ") === 0;
+  var hasCtrl = k.indexOf("ctrl ") !== -1;
+  var baseKey = k;
+  
+  // Strip modifiers to get base key
+  if (hasShift || hasCtrl) {
+    var parts = k.split(" ");
+    baseKey = parts[parts.length - 1];
+  }
+  
+  // Handle CTRL+C (copy)
+  if (hasCtrl && (baseKey === "c" || baseKey === "C")) {
+    var selectedText = getSelectedText();
+    if (selectedText) {
+      // Try to use clipboard API if available
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(selectedText).then(function() {
+          editorState.message = "Copied to clipboard!";
+          renderEditor();
+        }).catch(function() {
+          // Fallback to internal clipboard
+          editorState.clipboard = selectedText;
+          editorState.message = "Copied!";
+          renderEditor();
+        });
+      } else {
+        // Fallback to internal clipboard
+        editorState.clipboard = selectedText;
+        editorState.message = "Copied!";
+        renderEditor();
+      }
     }
     return;
-  } else if (k === "↓" || k === "down") {
-    if (editorState.cursorLine < editorState.lines.length - 1) {
-      editorState.cursorLine++;
-      editorState.cursorCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine].length);
-      adjustViewOffset();
-      renderEditor();
+  }
+  
+  // Handle CTRL+V (paste)
+  if (hasCtrl && (baseKey === "v" || baseKey === "V")) {
+    // Delete selection if any
+    if (editorState.selectionStartLine !== -1) {
+      deleteSelectedText();
+    }
+    
+    // Try to paste from clipboard API
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(function(text) {
+        pasteText(text);
+      }).catch(function() {
+        // Fallback to internal clipboard
+        if (editorState.clipboard) {
+          pasteText(editorState.clipboard);
+        }
+      });
+    } else {
+      // Fallback to internal clipboard
+      if (editorState.clipboard) {
+        pasteText(editorState.clipboard);
+      }
     }
     return;
-  } else if (k === "←" || k === "\x08" || k === "left") {
-    if (editorState.cursorCol > 0) {
-      editorState.cursorCol--;
-      renderEditor();
-    } else if (editorState.cursorLine > 0) {
-      // Move to end of previous line
-      editorState.cursorLine--;
-      editorState.cursorCol = editorState.lines[editorState.cursorLine].length;
-      adjustViewOffset();
-      renderEditor();
+  }
+  
+  // Handle HOME key
+  if (baseKey === "home") {
+    if (hasShift) {
+      // Start or extend selection
+      if (editorState.selectionStartLine === -1) {
+        updateSelection(editorState.cursorLine, editorState.cursorCol,
+                       editorState.cursorLine, 0);
+      } else {
+        editorState.selectionEndLine = editorState.cursorLine;
+        editorState.selectionEndCol = 0;
+      }
+    } else {
+      clearSelection();
     }
+    editorState.cursorCol = 0;
+    renderEditor();
     return;
-  } else if (k === "→" || k === "right") {
-    if (editorState.cursorCol < editorState.lines[editorState.cursorLine].length) {
-      editorState.cursorCol++;
+  }
+  
+  // Handle END key
+  if (baseKey === "end") {
+    var lineLength = editorState.lines[editorState.cursorLine].length;
+    if (hasShift) {
+      // Start or extend selection
+      if (editorState.selectionStartLine === -1) {
+        updateSelection(editorState.cursorLine, editorState.cursorCol,
+                       editorState.cursorLine, lineLength);
+      } else {
+        editorState.selectionEndLine = editorState.cursorLine;
+        editorState.selectionEndCol = lineLength;
+      }
+    } else {
+      clearSelection();
+    }
+    editorState.cursorCol = lineLength;
+    renderEditor();
+    return;
+  }
+  
+  // Handle DELETE key
+  if (baseKey === "delete") {
+    // SHIFT+DELETE = cut to clipboard
+    if (hasShift && editorState.selectionStartLine !== -1) {
+      var selectedText = getSelectedText();
+      if (selectedText) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(selectedText).then(function() {
+            deleteSelectedText();
+            editorState.message = "Cut to clipboard!";
+            renderEditor();
+          }).catch(function() {
+            editorState.clipboard = selectedText;
+            deleteSelectedText();
+            editorState.message = "Cut!";
+            renderEditor();
+          });
+        } else {
+          editorState.clipboard = selectedText;
+          deleteSelectedText();
+          editorState.message = "Cut!";
+          renderEditor();
+        }
+      }
+      return;
+    }
+    
+    // Regular DELETE - delete selection or character at cursor
+    if (editorState.selectionStartLine !== -1) {
+      deleteSelectedText();
+      renderEditor();
+    } else if (editorState.cursorCol < editorState.lines[editorState.cursorLine].length) {
+      var line = editorState.lines[editorState.cursorLine];
+      editorState.lines[editorState.cursorLine] = 
+        line.substring(0, editorState.cursorCol) + 
+        line.substring(editorState.cursorCol + 1);
+      editorState.modified = true;
       renderEditor();
     } else if (editorState.cursorLine < editorState.lines.length - 1) {
-      // Move to start of next line
-      editorState.cursorLine++;
-      editorState.cursorCol = 0;
+      // Join with next line
+      var currLine = editorState.lines[editorState.cursorLine];
+      var nextLine = editorState.lines[editorState.cursorLine + 1];
+      editorState.lines[editorState.cursorLine] = currLine + nextLine;
+      editorState.lines.splice(editorState.cursorLine + 1, 1);
+      editorState.modified = true;
+      renderEditor();
+    }
+    return;
+  }
+  
+  // Arrow keys with SHIFT selection
+  if (baseKey === "up" || k === "↑") {
+    if (editorState.cursorLine > 0) {
+      if (hasShift) {
+        if (editorState.selectionStartLine === -1) {
+          updateSelection(editorState.cursorLine, editorState.cursorCol,
+                         editorState.cursorLine - 1, 
+                         Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine - 1].length));
+        } else {
+          var newCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine - 1].length);
+          editorState.selectionEndLine = editorState.cursorLine - 1;
+          editorState.selectionEndCol = newCol;
+        }
+      } else {
+        clearSelection();
+      }
+      editorState.cursorLine--;
+      editorState.cursorCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine].length);
       adjustViewOffset();
       renderEditor();
     }
     return;
   }
   
+  if (baseKey === "down" || k === "↓") {
+    if (editorState.cursorLine < editorState.lines.length - 1) {
+      if (hasShift) {
+        if (editorState.selectionStartLine === -1) {
+          updateSelection(editorState.cursorLine, editorState.cursorCol,
+                         editorState.cursorLine + 1,
+                         Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine + 1].length));
+        } else {
+          var newCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine + 1].length);
+          editorState.selectionEndLine = editorState.cursorLine + 1;
+          editorState.selectionEndCol = newCol;
+        }
+      } else {
+        clearSelection();
+      }
+      editorState.cursorLine++;
+      editorState.cursorCol = Math.min(editorState.cursorCol, editorState.lines[editorState.cursorLine].length);
+      adjustViewOffset();
+      renderEditor();
+    }
+    return;
+  }
+  
+  if (baseKey === "left" || k === "←" || k === "\x08") {
+    if (hasShift) {
+      // Selection mode
+      if (editorState.selectionStartLine === -1) {
+        // Start new selection
+        if (editorState.cursorCol > 0) {
+          updateSelection(editorState.cursorLine, editorState.cursorCol,
+                         editorState.cursorLine, editorState.cursorCol - 1);
+        } else if (editorState.cursorLine > 0) {
+          updateSelection(editorState.cursorLine, 0,
+                         editorState.cursorLine - 1, 
+                         editorState.lines[editorState.cursorLine - 1].length);
+        }
+      } else {
+        // Extend selection
+        if (editorState.cursorCol > 0) {
+          editorState.selectionEndLine = editorState.cursorLine;
+          editorState.selectionEndCol = editorState.cursorCol - 1;
+        } else if (editorState.cursorLine > 0) {
+          editorState.selectionEndLine = editorState.cursorLine - 1;
+          editorState.selectionEndCol = editorState.lines[editorState.cursorLine - 1].length;
+        }
+      }
+    } else {
+      clearSelection();
+    }
+    
+    // Move cursor
+    if (editorState.cursorCol > 0) {
+      editorState.cursorCol--;
+    } else if (editorState.cursorLine > 0) {
+      editorState.cursorLine--;
+      editorState.cursorCol = editorState.lines[editorState.cursorLine].length;
+      adjustViewOffset();
+    }
+    renderEditor();
+    return;
+  }
+  
+  if (baseKey === "right" || k === "→") {
+    if (hasShift) {
+      // Selection mode
+      if (editorState.selectionStartLine === -1) {
+        // Start new selection
+        if (editorState.cursorCol < editorState.lines[editorState.cursorLine].length) {
+          updateSelection(editorState.cursorLine, editorState.cursorCol,
+                         editorState.cursorLine, editorState.cursorCol + 1);
+        } else if (editorState.cursorLine < editorState.lines.length - 1) {
+          updateSelection(editorState.cursorLine, editorState.cursorCol,
+                         editorState.cursorLine + 1, 0);
+        }
+      } else {
+        // Extend selection
+        if (editorState.cursorCol < editorState.lines[editorState.cursorLine].length) {
+          editorState.selectionEndLine = editorState.cursorLine;
+          editorState.selectionEndCol = editorState.cursorCol + 1;
+        } else if (editorState.cursorLine < editorState.lines.length - 1) {
+          editorState.selectionEndLine = editorState.cursorLine + 1;
+          editorState.selectionEndCol = 0;
+        }
+      }
+    } else {
+      clearSelection();
+    }
+    
+    // Move cursor
+    if (editorState.cursorCol < editorState.lines[editorState.cursorLine].length) {
+      editorState.cursorCol++;
+    } else if (editorState.cursorLine < editorState.lines.length - 1) {
+      editorState.cursorLine++;
+      editorState.cursorCol = 0;
+      adjustViewOffset();
+    }
+    renderEditor();
+    return;
+  }
+  
   // Backspace
   if (k === "\x7F" || k === "\b" || k === "back") {
+    // Delete selection if any
+    if (editorState.selectionStartLine !== -1) {
+      deleteSelectedText();
+      renderEditor();
+      return;
+    }
+    
     if (editorState.cursorCol > 0) {
       var line = editorState.lines[editorState.cursorLine];
       editorState.lines[editorState.cursorLine] = 
@@ -502,6 +908,11 @@ function handleEditKey(k) {
   
   // Enter - new line
   if (k === "\r" || k === "\n" || k === "enter") {
+    // Delete selection if any
+    if (editorState.selectionStartLine !== -1) {
+      deleteSelectedText();
+    }
+    
     var line = editorState.lines[editorState.cursorLine];
     var before = line.substring(0, editorState.cursorCol);
     var after = line.substring(editorState.cursorCol);
@@ -517,6 +928,11 @@ function handleEditKey(k) {
   
   // Regular character input
   if (k.length === 1 && k >= " ") {
+    // Delete selection if any
+    if (editorState.selectionStartLine !== -1) {
+      deleteSelectedText();
+    }
+    
     var line = editorState.lines[editorState.cursorLine];
     editorState.lines[editorState.cursorLine] = 
       line.substring(0, editorState.cursorCol) + 
@@ -526,6 +942,47 @@ function handleEditKey(k) {
     editorState.modified = true;
     renderEditor();
   }
+}
+
+// Helper function to paste text
+function pasteText(text) {
+  if (!text) return;
+  
+  var lines = text.split("\n");
+  if (lines.length === 1) {
+    // Single line paste
+    var line = editorState.lines[editorState.cursorLine];
+    editorState.lines[editorState.cursorLine] = 
+      line.substring(0, editorState.cursorCol) + 
+      text + 
+      line.substring(editorState.cursorCol);
+    editorState.cursorCol += text.length;
+  } else {
+    // Multi-line paste
+    var line = editorState.lines[editorState.cursorLine];
+    var before = line.substring(0, editorState.cursorCol);
+    var after = line.substring(editorState.cursorCol);
+    
+    // First line
+    editorState.lines[editorState.cursorLine] = before + lines[0];
+    
+    // Middle lines
+    for (var i = 1; i < lines.length - 1; i++) {
+      editorState.lines.splice(editorState.cursorLine + i, 0, lines[i]);
+    }
+    
+    // Last line
+    editorState.lines.splice(editorState.cursorLine + lines.length - 1, 0, 
+                            lines[lines.length - 1] + after);
+    
+    editorState.cursorLine += lines.length - 1;
+    editorState.cursorCol = lines[lines.length - 1].length;
+  }
+  
+  editorState.modified = true;
+  editorState.message = "Pasted!";
+  adjustViewOffset();
+  renderEditor();
 }
 
 // Adjust view offset for scrolling
