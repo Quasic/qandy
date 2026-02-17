@@ -1921,7 +1921,21 @@ function draw(inputString) {
   }
 
   // Refresh the display so ANSI styles become visible
+  // updateDisplay();
+  
+const _savedCursorY = cursorY;
+try {
+  // Ensure updateDisplay renders the current row we just drew.
+  // Only increase for rendering; don't let this trigger scrolling logic elsewhere.
+  if (_savedCursorY === 0) {
+    cursorY = 1;
+  }
   updateDisplay();
+} finally {
+  // Restore exact cursor position so visible cursor doesn't move
+  cursorY = _savedCursorY;
+}
+
 }
 
 function resumePagination() {
