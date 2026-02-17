@@ -199,10 +199,30 @@ Object.assign(ANSI.colors, {
   94: 'blue', 95: 'magenta', 96: 'cyan', 97: 'white'
 });
 
-Object.assign(ANSI.bgColors, {
-  40: 'black', 41: 'red', 42: 'green', 43: 'yellow', 44: 'blue', 45: 'magenta',
-  46: 'cyan', 47: 'white', 100: 'black', 101: 'red', 102: 'green', 103: 'yellow',
-  104: 'blue', 105: 'magenta', 106: 'cyan', 107: 'white'
+// Place anywhere (e.g. at end of your custom script or in console)
+window.addEventListener('load', function () {
+  // Ensure ANSI object exists and has the color maps
+  if (typeof ANSI === 'undefined' || ANSI === null) {
+    // Create a plain object if nothing exists yet
+    window.ANSI = { colors: {}, bgColors: {} };
+  } else {
+    ANSI.colors = ANSI.colors || {};
+    ANSI.bgColors = ANSI.bgColors || {};
+  }
+
+  Object.assign(ANSI.colors, {
+    30: 'black', 31: 'red',    32: 'green',  33: 'yellow',
+    34: 'blue',  35: 'magenta',36: 'cyan',   37: 'white',
+    90: 'black', 91: 'red',    92: 'green',  93: 'yellow',
+    94: 'blue',  95: 'magenta',96: 'cyan',   97: 'white'
+  });
+
+  Object.assign(ANSI.bgColors, {
+    40: 'black', 41: 'red',    42: 'green',  43: 'yellow',
+    44: 'blue',  45: 'magenta',46: 'cyan',   47: 'white',
+    100:'black', 101:'red',   102:'green', 103:'yellow',
+    104:'blue', 105:'magenta',106:'cyan',  107:'white'
+  });
 });
 
 img=document.createElement('img');
