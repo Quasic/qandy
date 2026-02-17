@@ -1388,6 +1388,7 @@ function scrollScreenDown() {
 // system functions
 
 // DOS Command Handlers
+
 function dosCommand_save(line) {
   // Parse: save [filename]
   var parts = line.trim().split(/\s+/);
@@ -1917,21 +1918,16 @@ function draw(inputString) {
   }
 
   // Refresh the display so ANSI styles become visible
-  // updateDisplay();
-  
-const _savedCursorY = cursorY;
-try {
-  // Ensure updateDisplay renders the current row we just drew.
-  // Only increase for rendering; don't let this trigger scrolling logic elsewhere.
-  if (_savedCursorY === 0) {
-    cursorY = 1;
+  const _savedCursorY = cursorY;
+  try {
+    // Ensure updateDisplay renders all lines that may have been drawn to.
+    // Set cursorY to screenHeight to render the entire buffer.
+    cursorY = screenHeight;
+    updateDisplay();
+  } finally {
+    // Restore exact cursor position so visible cursor doesn't move
+    cursorY = _savedCursorY;
   }
-  updateDisplay();
-} finally {
-  // Restore exact cursor position so visible cursor doesn't move
-  cursorY = _savedCursorY;
-}
-
 }
 
 function resumePagination() {
@@ -2016,9 +2012,13 @@ function updateDisplay() {
       
       // Escape HTML and add to span content
       const escapedChar = char
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+        // .replace(/&/g, '&amp;')
+        // .replace(/</g, '&lt;')
+        // .replace(/>/g, '&gt;');
+        .replace(/\u0026/g, '\u0026amp;')
+        .replace(/\u003c/g, '\u0026lt;')
+        .replace(/\u003e/g, '\u003eg;')
+        .replace(/ /g, '\u0026nbsp;');
       spanContent += escapedChar;
     }
     
