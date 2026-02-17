@@ -1,6 +1,7 @@
 // QANDY DOS-STYLE TEXT EDITOR
 // A retro text editor inspired by MS-DOS EDIT
 // Saves files to localStorage
+// Uses menus.js for dropdown menu system
 
 // Editor state
 var editorState = {
@@ -9,10 +10,7 @@ var editorState = {
   cursorCol: 0,
   filename: "untitled.js",
   modified: false,
-  mode: "edit", // "edit", "menu", "dialog"
-  menuIndex: 0, // 0=File, 1=Edit, 2=Run
-  menuOpen: false,
-  menuItemIndex: 0,
+  mode: "edit", // "edit", "dialog"
   viewOffsetLine: 0,
   maxLines: 20, // Maximum visible lines in editor
   maxCols: 29, // Maximum visible columns
@@ -21,41 +19,66 @@ var editorState = {
   dialogInput: ""
 };
 
-// Menu structure
-var menus = [
+// Menu structure for menus.js API
+var editorMenus = [
   {
     title: "File",
     items: [
-      { label: "New", action: menuNew },
-      { label: "Open", action: menuOpen },
-      { label: "Save", action: menuSave },
-      { label: "List Files", action: menuList },
-      { label: "Exit", action: menuExit }
+      { label: "New", action: "new" },
+      { label: "Open", action: "open" },
+      { label: "Save", action: "save" },
+      { label: "List Files", action: "list" },
+      { label: "Exit", action: "exit" }
     ]
   },
   {
     title: "Edit",
     items: [
-      { label: "Delete Line", action: deleteLine },
-      { label: "Clear All", action: clearAll }
+      { label: "Delete Line", action: "deleteLine" },
+      { label: "Clear All", action: "clearAll" }
     ]
   },
   {
     title: "Run",
     items: [
-      { label: "Execute", action: runCode }
+      { label: "Execute", action: "execute" }
     ]
   }
 ];
 
 // Initialize editor
 function initEditor(filename) {
+  // Initialize menu system with callback
+  initMenus(editorMenus, "alt m", handleMenuAction);
+  
   if (filename) {
     editorState.filename = filename;
     loadFile(filename);
   }
   editorState.mode = "edit";
   editorState.modified = false;
+  renderEditor();
+}
+
+// Handle menu action callback from menus.js
+function handleMenuAction(action, item) {
+  if (action === "new") {
+    menuNew();
+  } else if (action === "open") {
+    menuOpen();
+  } else if (action === "save") {
+    menuSave();
+  } else if (action === "list") {
+    menuList();
+  } else if (action === "exit") {
+    menuExit();
+  } else if (action === "deleteLine") {
+    deleteLine();
+  } else if (action === "clearAll") {
+    clearAll();
+  } else if (action === "execute") {
+    runCode();
+  }
   renderEditor();
 }
 
@@ -105,8 +128,8 @@ function renderEditor() {
   // Ensure keyon stays 0 during edit operations
   keyon = 0;
   
-  // Render menu bar
-  renderMenuBar();
+  // Render menu bar using menus.js API
+  renderMenuBar(editorState.maxCols);
   
   // Render editor area or dialog
   if (editorState.mode === "dialog") {
@@ -119,55 +142,6 @@ function renderEditor() {
   renderStatusBar();
 }
 
-// Render menu bar at top
-function renderMenuBar() {
-  print("\x1b[44;37m"); // Blue background, white text
-  var menuBar = "";
-  for (var i = 0; i < menus.length; i++) {
-    if (editorState.menuOpen && editorState.menuIndex === i) {
-      menuBar += "\x1b[47;30m " + menus[i].title + " \x1b[44;37m "; // Highlight selected
-    } else {
-      menuBar += " " + menus[i].title + "  ";
-    }
-  }
-  // Pad to full width
-  while (menuBar.length < editorState.maxCols + 20) {
-    menuBar += " ";
-  }
-  print(menuBar.substring(0, editorState.maxCols) + "\x1b[0m\n");
-  
-  // If menu is open, render dropdown
-  if (editorState.menuOpen) {
-    renderMenuDropdown();
-  }
-}
-
-// Render menu dropdown
-function renderMenuDropdown() {
-  var menu = menus[editorState.menuIndex];
-  var maxWidth = 0;
-  for (var i = 0; i < menu.items.length; i++) {
-    if (menu.items[i].label.length > maxWidth) {
-      maxWidth = menu.items[i].label.length;
-    }
-  }
-  maxWidth += 4; // Padding
-  
-  for (var i = 0; i < menu.items.length; i++) {
-    var item = menu.items[i].label;
-    var pad = maxWidth - item.length;
-    if (i === editorState.menuItemIndex) {
-      print("\x1b[47;30m " + item);
-      for (var j = 0; j < pad - 1; j++) print(" ");
-      print("\x1b[0m\n");
-    } else {
-      print("\x1b[40;37m " + item);
-      for (var j = 0; j < pad - 1; j++) print(" ");
-      print("\x1b[0m\n");
-    }
-  }
-  print("\n");
-}
 
 // Render edit area
 function renderEditArea() {
@@ -333,7 +307,7 @@ function deleteLine() {
     editorState.modified = true;
     editorState.message = "Line deleted";
   }
-  closeMenu();
+  // closeMenu() now handled by menus.js
   renderEditor();
 }
 
@@ -344,12 +318,12 @@ function clearAll() {
   editorState.viewOffsetLine = 0;
   editorState.modified = true;
   editorState.message = "All cleared";
-  closeMenu();
+  // closeMenu() now handled by menus.js
   renderEditor();
 }
 
 function runCode() {
-  closeMenu();
+  // closeMenu() now handled by menus.js
   
   // Helper function to wait for keypress and return to editor
   var waitForKeyAndReturnToEditor = function() {
@@ -380,11 +354,6 @@ function runCode() {
   }
 }
 
-function closeMenu() {
-  editorState.menuOpen = false;
-  editorState.mode = "edit";
-}
-
 // Handle keyboard input
 function keydown(k) {
   // Handle dialog mode
@@ -393,9 +362,10 @@ function keydown(k) {
     return;
   }
   
-  // Handle menu mode
-  if (editorState.menuOpen) {
-    handleMenuKey(k);
+  // Check if this key is for the menu system (menus.js API)
+  if (isMenuKey(k)) {
+    processMenuKey(k);
+    renderEditor();
     return;
   }
   
@@ -440,46 +410,10 @@ function handleDialogKey(k) {
   }
 }
 
-// Handle menu keyboard input
-function handleMenuKey(k) {
-  // Check for special keys first (don't uppercase these)
-  if (k === "\x1b" || k === "esc") { // Escape
-    closeMenu();
-    renderEditor();
-  } else if (k === "\r" || k === "\n" || k === "enter") { // Enter
-    var menu = menus[editorState.menuIndex];
-    var action = menu.items[editorState.menuItemIndex].action;
-    action();
-  } else if (k === "←" || k === "\x08" || k === "left") { // Left arrow or backspace
-    editorState.menuIndex = (editorState.menuIndex - 1 + menus.length) % menus.length;
-    editorState.menuItemIndex = 0;
-    renderEditor();
-  } else if (k === "→" || k === " " || k === "right") { // Right arrow or space
-    editorState.menuIndex = (editorState.menuIndex + 1) % menus.length;
-    editorState.menuItemIndex = 0;
-    renderEditor();
-  } else if (k === "↑" || k === "up") { // Up arrow
-    var menu = menus[editorState.menuIndex];
-    editorState.menuItemIndex = (editorState.menuItemIndex - 1 + menu.items.length) % menu.items.length;
-    renderEditor();
-  } else if (k === "↓" || k === "down") { // Down arrow
-    var menu = menus[editorState.menuIndex];
-    editorState.menuItemIndex = (editorState.menuItemIndex + 1) % menu.items.length;
-    renderEditor();
-  }
-}
 
 // Handle edit mode keyboard input
 function handleEditKey(k) {
-  // Check for menu key (ALT+M only, not just M)
-  // When ALT is pressed with M, k will be "alt m" or "alt M"
-  if (k === "alt m" || k === "alt M") {
-    editorState.menuOpen = true;
-    editorState.menuIndex = 0;
-    editorState.menuItemIndex = 0;
-    renderEditor();
-    return;
-  }
+  // Menu activation is now handled by menus.js via isMenuKey/processMenuKey
   
   // Arrow keys - check before converting to uppercase
   if (k === "↑" || k === "up") {
