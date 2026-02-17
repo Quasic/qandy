@@ -187,43 +187,64 @@ var keyboardData = [
   {id:"slash", label:"/", keyCode:191, x:303, y:604, width:28}
 ];
 
-if (typeof ANSI === 'undefined' || ANSI === null) {
-  ANSI = { colors: {}, bgColors: {} };
-} else {
-  ANSI.colors = ANSI.colors || {}; ANSI.bgColors = ANSI.bgColors || {};
+const ANSI={
+ colors: { 30: 'black', 31: 'red', 32: 'green', 33: 'yellow', 34: 'blue', 35: 'magenta', 36: 'cyan', 37: 'white' },
+ bgColors: { 40: 'black', 41: 'red', 42: 'green', 43: 'yellow', 44: 'blue', 45: 'magenta', 46: 'cyan', 47: 'white' },
+  
+ render: function(text) {
+  let html=''; let currentColor='white'; let currentBgColor='black'; let bold=false; let inverse=false; let cursorX=0; let cursorY=0;
+  const ansiRegex = /\x1b\[([\d;]*)([A-Za-z])/g; let lastIndex = 0; let match;
+  while ((match = ansiRegex.exec(text)) !== null) {
+   html += this.escapeHtml(text.substring(lastIndex, match.index));
+   const params = match[1] ? match[1].split(';').map(Number) : [0];
+   const command = match[2];
+   if (command === 'm') {
+    params.forEach(param => {
+    if (param === 0) {
+     currentColor = 'white';
+     currentBgColor = 'black';
+     bold = false;
+     inverse = false;
+    } else if (param === 1) {
+     bold = true;
+    } else if (param === 7) {
+     inverse = true;
+    } else if (param === 27) {
+     inverse = false;
+    } else if (param >= 30 && param <= 37) {
+     currentColor = this.colors[param];
+    } else if (param >= 40 && param <= 47) {
+     currentBgColor = this.bgColors[param];
+    }
+   });
+  } else if (command === 'H' || command === 'f') {
+   cursorY = params[0] || 0;
+   cursorX = params[1] || 0;
+  } else if (command === 'A') {
+   cursorY = Math.max(0, cursorY - (params[0] || 1));
+  } else if (command === 'B') {
+   cursorY += (params[0] || 1);
+  } else if (command === 'C') {
+   cursorX += (params[0] || 1);
+  } else if (command === 'D') {
+   cursorX = Math.max(0, cursorX - (params[0] || 1));
+  } else if (command === 'J') {
+   if (params[0] === 2) {
+    html=''; // Clear screen @@
+   }
+  } else if (command === 'K') {
+ }
+ lastIndex = match.index + match[0].length;
+ }
+ html += this.escapeHtml(text.substring(lastIndex));
+ let classes = [];
+ if (bold) classes.push('ansi-bold');
+ if (inverse) classes.push('ansi-inverse');
+ classes.push(`ansi-${currentColor}`);
+ classes.push(`ansi-bg-${currentBgColor}`);
+ if (classes.length > 0) { html=`<span class="${classes.join(' ')}">${html}</span>`; }
+ return html;
 }
-
-Object.assign(ANSI.colors, {
-  30: 'black', 31: 'red', 32: 'green', 33: 'yellow', 34: 'blue', 35: 'magenta',
-  36: 'cyan', 37: 'white', 90: 'black', 91: 'red', 92: 'green', 93: 'yellow',
-  94: 'blue', 95: 'magenta', 96: 'cyan', 97: 'white'
-});
-
-// Place anywhere (e.g. at end of your custom script or in console)
-window.addEventListener('load', function () {
-  // Ensure ANSI object exists and has the color maps
-  if (typeof ANSI === 'undefined' || ANSI === null) {
-    // Create a plain object if nothing exists yet
-    window.ANSI = { colors: {}, bgColors: {} };
-  } else {
-    ANSI.colors = ANSI.colors || {};
-    ANSI.bgColors = ANSI.bgColors || {};
-  }
-
-  Object.assign(ANSI.colors, {
-    30: 'black', 31: 'red',    32: 'green',  33: 'yellow',
-    34: 'blue',  35: 'magenta',36: 'cyan',   37: 'white',
-    90: 'black', 91: 'red',    92: 'green',  93: 'yellow',
-    94: 'blue',  95: 'magenta',96: 'cyan',   97: 'white'
-  });
-
-  Object.assign(ANSI.bgColors, {
-    40: 'black', 41: 'red',    42: 'green',  43: 'yellow',
-    44: 'blue',  45: 'magenta',46: 'cyan',   47: 'white',
-    100:'black', 101:'red',   102:'green', 103:'yellow',
-    104:'blue', 105:'magenta',106:'cyan',  107:'white'
-  });
-});
 
 img=document.createElement('img');
 img.id="qpc"; img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAMklEQVRYhe3OMQEAMAjEwKei2wHxRQbLxUCu3u2fxc7mHAAAAAAAAAAAAAAAAAAAIEkGzIgCpxq6s7YAAAAASUVORK5CYII="; 
@@ -1320,65 +1341,6 @@ function scrollScreenDown() {
   screenBuffer.push(newLine);
   styleBuffer.push(newStyleLine);
 }
-
-const ANSI={
- colors: { 30: 'black', 31: 'red', 32: 'green', 33: 'yellow', 34: 'blue', 35: 'magenta', 36: 'cyan', 37: 'white' },
- bgColors: { 40: 'black', 41: 'red', 42: 'green', 43: 'yellow', 44: 'blue', 45: 'magenta', 46: 'cyan', 47: 'white' },
-  
- render: function(text) {
-  let html=''; let currentColor='white'; let currentBgColor='black'; let bold=false; let inverse=false; let cursorX=0; let cursorY=0;
-  const ansiRegex = /\x1b\[([\d;]*)([A-Za-z])/g; let lastIndex = 0; let match;
-  while ((match = ansiRegex.exec(text)) !== null) {
-   html += this.escapeHtml(text.substring(lastIndex, match.index));
-   const params = match[1] ? match[1].split(';').map(Number) : [0];
-   const command = match[2];
-   if (command === 'm') {
-    params.forEach(param => {
-    if (param === 0) {
-     currentColor = 'white';
-     currentBgColor = 'black';
-     bold = false;
-     inverse = false;
-    } else if (param === 1) {
-     bold = true;
-    } else if (param === 7) {
-     inverse = true;
-    } else if (param === 27) {
-     inverse = false;
-    } else if (param >= 30 && param <= 37) {
-     currentColor = this.colors[param];
-    } else if (param >= 40 && param <= 47) {
-     currentBgColor = this.bgColors[param];
-    }
-   });
-  } else if (command === 'H' || command === 'f') {
-   cursorY = params[0] || 0;
-   cursorX = params[1] || 0;
-  } else if (command === 'A') {
-   cursorY = Math.max(0, cursorY - (params[0] || 1));
-  } else if (command === 'B') {
-   cursorY += (params[0] || 1);
-  } else if (command === 'C') {
-   cursorX += (params[0] || 1);
-  } else if (command === 'D') {
-   cursorX = Math.max(0, cursorX - (params[0] || 1));
-  } else if (command === 'J') {
-   if (params[0] === 2) {
-    html=''; // Clear screen @@
-   }
-  } else if (command === 'K') {
- }
- lastIndex = match.index + match[0].length;
- }
- html += this.escapeHtml(text.substring(lastIndex));
- let classes = [];
- if (bold) classes.push('ansi-bold');
- if (inverse) classes.push('ansi-inverse');
- classes.push(`ansi-${currentColor}`);
- classes.push(`ansi-bg-${currentBgColor}`);
- if (classes.length > 0) { html=`<span class="${classes.join(' ')}">${html}</span>`; }
- return html;
-},
 
 escapeHtml: function(text) {
  const map = {
