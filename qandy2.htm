@@ -6,12 +6,19 @@
 <div id="pop" class="pop" onMouseOver='PopUpVis="visible";' onMouseOut='PopUpVis=PForce; PUV=setTimeout("document.getElementById(\"pop\").style.visibility=PopUpVis;",100);'></div>
 <div id="keyboard-container"></div>
 
+<script src="dos.js"></script>
+<script src="menus.js"></script>
 <script>
 var devteam=1;  // developer mode
 var run="";
 var txt="";
 var mode="txt"; // gfx or txt display
 var allowScriptESC=false; // if true, script handles ESC instead of universal termination
+
+// RAM - Working memory for file editing
+var RAM="";           // Current file content in memory
+var RAMFILE="";       // Current filename loaded in RAM
+var RAMTYPE="";       // Current file type (js, txt, etc)
 
 var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
@@ -1032,6 +1039,60 @@ function button(b) {
        } else if (line.substr(0, 4) === "help") {
         // display list of install .js files
         showFiles(); line="";        
+       } else if (line.substr(0, 4) === "save") {
+        // DOS SAVE command
+        dosCommand_save(line);
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 4) === "load") {
+        // DOS LOAD command
+        dosCommand_load(line);
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 3) === "dir") {
+        // DOS DIR command - use new API
+        dir();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 2) === "ls") {
+        // Linux LS command - alias for dir
+        ls();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 3) === "del") {
+        // DOS DELETE command
+        dosCommand_delete(line);
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 4) === "type") {
+        // TYPE - Display RAM contents
+        dosCommand_type();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 3) === "run") {
+        // RUN - Execute RAM contents
+        dosCommand_run();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 3) === "new") {
+        // NEW - Clear RAM and start new file
+        dosCommand_new(line);
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 3) === "ram") {
+        // RAM - Show RAM status
+        dosCommand_ram();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
        } else {
         // Execute command/code
         executeCode(line);
@@ -1079,6 +1140,31 @@ function button(b) {
    }
   }
  }
+ // Prepend modifier keys to k BEFORE passing to script (for keyon=0 mode)
+ // This ensures scripts get "alt m" instead of just "m" when ALT+M is pressed
+ if (run && k && !keyon && l) {
+   let hasCtrl = ctrl || (typeof event !== 'undefined' && event.ctrlKey);
+   let hasAlt = alt || (typeof event !== 'undefined' && event.altKey);
+   
+   if (hasCtrl || hasAlt) {
+     let modifiers = [];
+     if (hasCtrl) modifiers.push("ctrl");
+     if (hasAlt) modifiers.push("alt");
+     k = modifiers.join(" ") + " " + l;
+     // Reset virtual keyboard modifier keys after use
+     if (ctrl) {
+       ctrl = 0;
+       document.getElementById("ctrl").style.backgroundColor = "#222";
+       document.getElementById("ctrl").style.color = "#fff";
+     }
+     if (alt) {
+       alt = 0;
+       document.getElementById("alt").style.backgroundColor = "#222";
+       document.getElementById("alt").style.color = "#fff";
+     }
+   }
+ }
+ 
  // Pass key to script's keydown() handler if script is running and key wasn't consumed
  if (run && k) { keydown(k); }
  updateDisplay();
@@ -1297,6 +1383,139 @@ codes: {
 }};
 
 // system functions
+
+// DOS Command Handlers
+function dosCommand_save(line) {
+  // Parse: save [filename]
+  var parts = line.trim().split(/\s+/);
+  var filename = parts.length >= 2 ? parts[1] : RAMFILE;
+  
+  if (!filename) {
+    print("\x1b[1;31mUsage: save <filename>\x1b[0m\n");
+    print("Example: save myprogram.js\n");
+    print("Or load a file first, then use 'save' without filename\n\n");
+    return;
+  }
+  
+  // Save RAM content to file
+  var contentToSave = RAM || "// Empty file\n";
+  
+  var result = DOS.save(filename, contentToSave);
+  if (result.success) {
+    RAMFILE = filename;  // Update current filename
+    RAMTYPE = filename.split('.').pop();  // Update type
+    print("\x1b[1;32m✓ File saved: " + filename + " (" + result.data.size + " bytes)\x1b[0m\n\n");
+  } else {
+    print("\x1b[1;31m✗ Error: " + result.error + "\x1b[0m\n\n");
+  }
+}
+
+function dosCommand_load(line) {
+  // Parse: load filename [option]
+  var parts = line.trim().split(/\s+/);
+  if (parts.length < 2) {
+    print("\x1b[1;31mUsage: load <filename> [run|edit]\x1b[0m\n");
+    print("  load myfile.js       - Load into RAM for editing\n");
+    print("  load myfile.js run   - Load and execute immediately\n");
+    print("  load myfile.js edit  - Load into RAM (same as default)\n\n");
+    return;
+  }
+  
+  var filename = parts[1];
+  var option = parts.length >= 3 ? parts[2] : "edit";  // Default to edit mode
+  var result = DOS.load(filename);
+  
+  if (result.success) {
+    if (option === "run" && filename.endsWith('.js')) {
+      // RUN mode - execute immediately without loading into RAM
+      print("\x1b[1;32m✓ Running: " + filename + "\x1b[0m\n\n");
+      try {
+        eval(result.data.content);
+      } catch (e) {
+        print("\x1b[1;31m✗ Error executing file: " + e.message + "\x1b[0m\n\n");
+      }
+    } else {
+      // EDIT mode (default) - load into RAM
+      RAM = result.data.content;
+      RAMFILE = filename;
+      RAMTYPE = result.data.type;
+      print("\x1b[1;32m✓ File loaded into RAM: " + filename + "\x1b[0m\n");
+      print("  Size: " + result.data.size + " bytes\n");
+      print("  Type: " + result.data.type + "\n");
+      print("\n");
+      print("RAM is now ready for editing.\n");
+      print("Use '\x1b[1;36msave\x1b[0m' to save changes, or '\x1b[1;36msave newfile.js\x1b[0m' to save as new file.\n");
+      print("Use '\x1b[1;36mtype\x1b[0m' to view RAM contents, '\x1b[1;36mrun\x1b[0m' to execute (if .js)\n\n");
+    }
+  } else {
+    print("\x1b[1;31m✗ Error: " + result.error + "\x1b[0m\n\n");
+  }
+}
+
+function dosCommand_dir() {
+  var result = DOS.list();
+  
+  if (result.success) {
+    print("\n\x1b[1;36m╔══════════════════════════════════════════╗\x1b[0m\n");
+    print("\x1b[1;36m║     QANDY DISK OPERATING SYSTEM (DOS)   ║\x1b[0m\n");
+    print("\x1b[1;36m╚══════════════════════════════════════════╝\x1b[0m\n\n");
+    
+    // List built-in programs
+    print("\x1b[1;33mBUILT-IN PROGRAMS:\x1b[0m\n");
+    print("  ascii.js\n");
+    print("  sound.js\n");
+    print("  piano.js\n");
+    print("  demo.js\n");
+    print("  q.js\n");
+    print("  world.js\n");
+    print("\n");
+    
+    // List user files
+    if (result.data.length > 0) {
+      print("\x1b[1;32mUSER FILES:\x1b[0m\n");
+      for (var i = 0; i < result.data.length; i++) {
+        var file = result.data[i];
+        var name = file.filename.padEnd(20, ' ');
+        var size = file.formattedSize.padStart(10, ' ');
+        var date = file.formattedDate;
+        print("  " + name + size + "  " + date + "\n");
+      }
+      print("\n");
+      
+      // Show stats
+      var stats = DOS.stats();
+      if (stats.success) {
+        print("\x1b[1;37mTotal: " + stats.data.fileCount + " file(s), " + stats.data.formattedSize + "\x1b[0m\n");
+      }
+    } else {
+      print("\x1b[1;33mUSER FILES: (none)\x1b[0m\n");
+    }
+    print("\n");
+    print("Commands: \x1b[1;36msave\x1b[0m, \x1b[1;36mload\x1b[0m, \x1b[1;36mdir\x1b[0m, \x1b[1;36mdel\x1b[0m\n");
+    print("Type '\x1b[1;36mhelp\x1b[0m' for help on DOS commands\n\n");
+  } else {
+    print("\x1b[1;31m✗ Error: " + result.error + "\x1b[0m\n\n");
+  }
+}
+
+function dosCommand_delete(line) {
+  // Parse: del filename
+  var parts = line.trim().split(/\s+/);
+  if (parts.length < 2) {
+    print("\x1b[1;31mUsage: del <filename>\x1b[0m\n");
+    print("Example: del myprogram.js\n\n");
+    return;
+  }
+  
+  var filename = parts[1];
+  var result = DOS.delete(filename);
+  
+  if (result.success) {
+    print("\x1b[1;32m✓ File deleted: " + filename + "\x1b[0m\n\n");
+  } else {
+    print("\x1b[1;31m✗ Error: " + result.error + "\x1b[0m\n\n");
+  }
+}
 
 function showFiles() {
   print("\n");
@@ -1702,7 +1921,6 @@ function cls() {
   // Reset pagination state
   paginationPaused = false;
   paginationBuffer = [];
-  keyon = 1;
 }
 
 function gfx(scr) { a=0; for (b=0; b<=mapy; b++) { for (c=0; c<=mapx; c++) { e=document.getElementById("T"+a).src="t/"+scr.charAt(a*2)+scr.charAt((a*2)+1)+".png"; a++; }}}
