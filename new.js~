@@ -1,0 +1,17 @@
+
+run="new.js"; // name of script, reset to "qandy.js" on exit
+
+function input(l) {
+  // required to handle l (input line)
+}
+
+function keydown(k) {
+  // required to process k (onkeydown)
+}
+
+menuColor="^[[37;40m";
+
+let menu="\x1b[37;40 File Edit"; 
+cls(); print(menu); menu== ' '.repeat(cursorX); print(menu);
+
+
