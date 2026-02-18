@@ -26,7 +26,7 @@ var ctrl=0;  // ctrl key pressed
 var alt=0;   // alt key pressed
 var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
-var keyon=1; // turn keyboard input on/off
+var keyboard=1; // turn keyboard input on/off
 
 // Normal character mapping for lowercase (caps level 0)
 // User can edit these to customize keyboard layout
@@ -661,7 +661,7 @@ function renderInputLine() {
 }
 
   // --- Route the key depending on mode ---
-  if (keyon) {
+  if (keyboard) {
     // If program is running and has keydown, send it there first
     if (run && typeof keydown !== 'undefined') {
       try { keydown(k || l); } catch (e) { /* swallow */ }
@@ -685,7 +685,7 @@ function renderInputLine() {
         cursorPos = (line ? line.length : 0);
       } else if (k === "up" || k === "down") {
         // basic history nav if available
-        if (typeof commandHistory !== 'undefined' && keyon) {
+        if (typeof commandHistory !== 'undefined' && keyboard) {
           if (k === "up") {
             if (commandHistory && commandHistory.length > 0) {
               if (typeof historyIndex === 'undefined' || historyIndex === -1) {
@@ -715,6 +715,7 @@ function renderInputLine() {
         }
       } else if (k === "enter") {
         // Submit the current line
+        
         if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
         if (line !== undefined) {
           // Save history
@@ -742,11 +743,11 @@ function renderInputLine() {
             txt = (typeof txt !== 'undefined' ? txt : "") + line + "<br>";
             print("\n");
             if (line.slice(-3) === ".js") {
-              keyon = 0;
+              keyboard = 0;
               var prg = document.createElement('script');
               prg.src = line;
-              prg.onload = function() { keyon = 1; };
-              prg.onerror = function() { print("Error loading program\n"); keyon = 1; };
+              prg.onload = function() { keyson(); };
+              prg.onerror = function() { print("Error loading program\n"); keyson(); };
               document.head.appendChild(prg);
               line = "";
               cursorPos = 0;
@@ -794,7 +795,6 @@ function renderInputLine() {
       renderInputLine();
     }
   } else {
-    // keyon === 0: program mode - route key to running script if handler present
     if (run && typeof keydown !== 'undefined') {
       try { keydown(k || l); } catch (e) { /* ignore */ }
     }
@@ -1090,6 +1090,10 @@ function pressup(event) {
   window.setCellStyle = window.setCellStyle; // already set above
   window.poke = function (x, y, ch, styleObj) { return window.pokeCell(x, y, ch, styleObj); };
   window.peek = function (x, y) { return safeGet(window.screenBuffer, y, x); };
+
+
+function keyson() { keyon=1; cursor(1); }
+function keysoff() { keyon=0; cursor(0); }
 
 function cursor(a) {
   // Ensure buffers exist (best-effort)
@@ -1400,7 +1404,7 @@ function triggerPaginationPause() {
 
   // Mark pagination state and disable normal input
   paginationPaused = true;
-  keyon = 0;
+  keysoff();
 
   // Reset any printed-line counters so next page starts fresh
   if (typeof printedLinesSinceLastPause !== 'undefined') printedLinesSinceLastPause = 0;
@@ -1802,7 +1806,7 @@ function resumePagination() {
   
   // Reset pagination state
   paginationPaused = false;
-  keyon = 1;  // Re-enable keyboard input
+  keyson();  // Re-enable keyboard input
   
   // Clear the screen and reset cursor
   initScreen();
@@ -2648,6 +2652,6 @@ for (i=0;i<mySearch.length;i++) {
   SFiles=0;
  }
 }
-//if (SFiles) { showFiles(); }
+if (SFiles) { showFiles(); }
 
 </script></body></html>

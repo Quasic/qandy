@@ -26,7 +26,7 @@ var ctrl=0;  // ctrl key pressed
 var alt=0;   // alt key pressed
 var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
-var keyon=1; // turn keyboard input on/off
+var keyboard=1; // turn keyboard input on/off
 
 // Normal character mapping for lowercase (caps level 0)
 // User can edit these to customize keyboard layout
@@ -661,7 +661,7 @@ function renderInputLine() {
 }
 
   // --- Route the key depending on mode ---
-  if (keyon) {
+  if (keyboard) {
     // If program is running and has keydown, send it there first
     if (run && typeof keydown !== 'undefined') {
       try { keydown(k || l); } catch (e) { /* swallow */ }
@@ -685,7 +685,7 @@ function renderInputLine() {
         cursorPos = (line ? line.length : 0);
       } else if (k === "up" || k === "down") {
         // basic history nav if available
-        if (typeof commandHistory !== 'undefined' && keyon) {
+        if (typeof commandHistory !== 'undefined' && keyboard) {
           if (k === "up") {
             if (commandHistory && commandHistory.length > 0) {
               if (typeof historyIndex === 'undefined' || historyIndex === -1) {
@@ -715,6 +715,7 @@ function renderInputLine() {
         }
       } else if (k === "enter") {
         // Submit the current line
+        
         if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
         if (line !== undefined) {
           // Save history
@@ -742,7 +743,7 @@ function renderInputLine() {
             txt = (typeof txt !== 'undefined' ? txt : "") + line + "<br>";
             print("\n");
             if (line.slice(-3) === ".js") {
-              keyon = 0;
+              keyboard = 0;
               var prg = document.createElement('script');
               prg.src = line;
               prg.onload = function() { keyon = 1; };
@@ -1091,6 +1092,10 @@ function pressup(event) {
   window.poke = function (x, y, ch, styleObj) { return window.pokeCell(x, y, ch, styleObj); };
   window.peek = function (x, y) { return safeGet(window.screenBuffer, y, x); };
 
+
+function keyson() { keyon=1; cursor(1); }
+function keysoff() { keyon=0; cursor(0); }
+
 function cursor(a) {
   // Ensure buffers exist (best-effort)
   if (!screenBuffer || !styleBuffer) {
@@ -1355,22 +1360,22 @@ function showFiles() {
   print("world.js\n");
   print("\n");
   
-  //// List files from localStorage
-  //var userFiles = [];
-  //for (var i = 0; i < localStorage.length; i++) {
-  //  var key = localStorage.key(i);
-  //  if (key.startsWith("qandy_file_")) {
-  //    userFiles.push(key.substring(11)); // Remove "qandy_file_" prefix
-  //  }
-  //}
+  // List files from localStorage
+  var userFiles = [];
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key.startsWith("qandy_file_")) {
+      userFiles.push(key.substring(11)); // Remove "qandy_file_" prefix
+    }
+  }
   
-  //if (userFiles.length > 0) {
-  //  print("\x1b[1;32mUSER FILES:\x1b[0m\n");
-  //  for (var j = 0; j < userFiles.length; j++) {
-  //    print(userFiles[j] + "\n");
-  //  }
-  //  print("\n");
-  //}
+  if (userFiles.length > 0) {
+    print("\x1b[1;32mUSER FILES:\x1b[0m\n");
+    for (var j = 0; j < userFiles.length; j++) {
+      print(userFiles[j] + "\n");
+    }
+    print("\n");
+  }
 }
 
 function triggerPaginationPause() {
@@ -2648,7 +2653,6 @@ for (i=0;i<mySearch.length;i++) {
   SFiles=0;
  }
 }
-
 if (SFiles) { showFiles(); }
 
 </script></body></html>
