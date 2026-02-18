@@ -95,6 +95,8 @@ var selectionFgColor = '#000000';   // Selection text color
 var screenBuffer = [];
 var cursorX = 0;
 var cursorY = 0;
+var cursorOn=0;
+var prevCursor = { set: false, x: 0, y: 0, inverse: false };
 var screenWidth = 32;
 var screenHeight = 25;
 
@@ -1091,7 +1093,7 @@ function button(b) {
       } else {
        // OS command mode
        inInputMode = true;  // Prevent pagination during command echo
-       print("\n");  // Just newline, input already displayed by renderInputLine()
+       print(line); print("\n");
        inInputMode = false;  // Re-enable pagination after command echo
        if (line.slice(-3) === ".js") {
         // Load external .js file
@@ -1199,13 +1201,116 @@ function button(b) {
  if (run && k) { keydown(k); }
  updateDisplay();
 }
+// Replace the existing function cursor(a) with this code:
 
-// Replacement executeCode() for qandy2.htm
-// Behavior:
-// - If the user enters a simple name or dotted path (e.g. `dos` or `obj.method`) that resolves to a function,
-//   the REPL will NOT print the function source. Instead it prints an error telling the user to call it with ().
-// - All other inputs are evaluated as before: expressions are eval()'d and their result is printed (if not undefined).
-// - Returns true on success, false on thrown errors (matches original executeCode() behavior).
+function cursor(a) {
+  // Ensure buffers exist
+  if (!screenBuffer || !styleBuffer) {
+    try { initScreen(); } catch (e) { /* best-effort */ }
+  }
+
+  // clamp logical coords
+  const cx = Math.max(0, Math.min(screenWidth - 1, cursorX || 0));
+  const cy = Math.max(0, Math.min(screenHeight - 1, cursorY || 0));
+
+  // Ensure prevCursor object contains fields for restore
+  if (!prevCursor) prevCursor = { set: false, x: 0, y: 0, inverse: false, ch: ' ', style: null };
+
+  if (a === 1) {
+    // Show cursor: if a previous cursor is set at a different position, restore it first
+    if (prevCursor.set && !(prevCursor.x === cx && prevCursor.y === cy)) {
+      // restore previous char & style
+      if (screenBuffer[prevCursor.y] && styleBuffer[prevCursor.y] && styleBuffer[prevCursor.y][prevCursor.x]) {
+        screenBuffer[prevCursor.y][prevCursor.x] = prevCursor.ch;
+        styleBuffer[prevCursor.y][prevCursor.x] = prevCursor.style || {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: prevCursor.inverse
+        };
+        pokeCell(prevCursor.x, prevCursor.y);
+      }
+      prevCursor.set = false;
+    }
+
+    // Save the existing char and style at this new cursor cell
+    if (!screenBuffer[cy]) {
+      // ensure row exists
+      screenBuffer[cy] = new Array(screenWidth).fill(' ');
+    }
+    if (!styleBuffer[cy]) {
+      styleBuffer[cy] = [];
+      for (let x = 0; x < screenWidth; x++) {
+        styleBuffer[cy][x] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+      }
+    }
+
+    const existingChar = (screenBuffer[cy][cx] === undefined || screenBuffer[cy][cx] === null) ? ' ' : screenBuffer[cy][cx];
+    const existingStyle = styleBuffer[cy][cx] ? Object.assign({}, styleBuffer[cy][cx]) : {
+      color: currentStyle.color,
+      bgcolor: currentStyle.bgcolor,
+      bold: currentStyle.bold,
+      inverse: currentStyle.inverse
+    };
+
+    // Save for restore
+    prevCursor = {
+      set: true,
+      x: cx,
+      y: cy,
+      inverse: !!existingStyle.inverse,
+      ch: existingChar,
+      style: existingStyle
+    };
+
+    // Write a full block into the buffer and set visually-contrasting style
+    // Choose colors so the block is visible (black block on white bg or white block on black bg)
+    // We'll set the glyph and invert colors: make foreground = existingStyle.bgcolor (if available)
+    // and bgcolor = existingStyle.color
+    screenBuffer[cy][cx] = '\u2588'; // full block glyph
+    styleBuffer[cy][cx] = {
+      color: existingStyle.bgcolor || 37,
+      bgcolor: existingStyle.color || 40,
+      bold: true,
+      inverse: false
+    };
+
+    // Update just this cell in the DOM
+    pokeCell(cx, cy);
+
+    cursorOn = 1;
+
+  } else {
+    // Hide cursor: restore previous cell if we set one
+    if (prevCursor && prevCursor.set) {
+      const px = prevCursor.x, py = prevCursor.y;
+      // restore char and style into buffers
+      if (!screenBuffer[py]) {
+        screenBuffer[py] = new Array(screenWidth).fill(' ');
+      }
+      screenBuffer[py][px] = prevCursor.ch;
+      if (!styleBuffer[py]) styleBuffer[py] = [];
+      styleBuffer[py][px] = prevCursor.style || {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: currentStyle.bold,
+        inverse: prevCursor.inverse
+      };
+
+      // update that cell
+      pokeCell(px, py);
+
+      prevCursor.set = false;
+    }
+
+    cursorOn = 0;
+  }
+}
 
 function executeCode(code) {
   try {
@@ -1460,53 +1565,298 @@ function triggerPaginationPause() {
   currentStyle.inverse = savedStyle.inverse;
 }
 
-function print(inputString) {
-  // If pagination is paused, queue the text for later
-  if (paginationPaused) {
-    paginationBuffer.push(inputString);
-    return;
+// logical index = position within `line` (0-based)
+function logicalToScreen(index) {
+  const charsPerLine = screenWidth;
+  // baseRow = screen row where logical index 0 maps to
+  // derive from current cursor location and cursorPos:
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  const rowOffset = Math.floor(index / charsPerLine);
+  const col = index % charsPerLine;
+  const row = baseRow + rowOffset;
+  return { row: row, col: col };
+}
+
+// Recompute cursorX/cursorY from cursorPos using logicalToScreen
+function syncCursorCoordsFromPos() {
+  const charsPerLine = screenWidth;
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  const row = baseRow + Math.floor(cursorPos / charsPerLine);
+  const col = cursorPos % charsPerLine;
+  cursorX = Math.max(0, Math.min(screenWidth - 1, col));
+  cursorY = Math.max(0, Math.min(screenHeight - 1, row));
+  // visually re-place cursor using existing cursor() routine
+  if (cursorOn) {
+    cursor(0); // hide previous visual
   }
+  cursor(1);   // show at new coords
+}
 
-  // Ensure buffers are initialized
-  if (!screenBuffer || screenBuffer.length === 0) {
-    initScreen();
+function writeInputSegmentToScreenRow(targetRow, startIdx, length) {
+  if (targetRow < 0 || targetRow >= screenHeight) return;
+  if (!screenBuffer[targetRow]) {
+    screenBuffer[targetRow] = new Array(screenWidth).fill('\u00A0');
   }
-
-  // Track how many lines we've printed from this specific inputString.
-  // Pagination should be based on this number, not the absolute cursorY.
-  var linesPrintedThisCall = 0;
-
-  // Helper: write a single character to the screenBuffer at cursorX/cursorY
-  function writeChar(ch) {
-    // Ensure valid row exists
-    if (cursorY >= screenHeight) {
-      // scroll screen up and keep cursorY at last visible line
-      scrollScreenDown();
-      cursorY = screenHeight - 1;
-    }
-    if (!screenBuffer[cursorY]) {
-      // safety: initialize row if missing
-      screenBuffer[cursorY] = new Array(screenWidth).fill(' ');
-      styleBuffer[cursorY] = new Array(screenWidth).fill({
+  if (!styleBuffer[targetRow]) {
+    styleBuffer[targetRow] = new Array(screenWidth);
+    for (let x = 0; x < screenWidth; x++) {
+      styleBuffer[targetRow][x] = {
         color: currentStyle.color,
         bgcolor: currentStyle.bgcolor,
-        bold: currentStyle.bold,
-        inverse: currentStyle.inverse
-      });
+        bold: false,
+        inverse: false
+      };
     }
+  }
+  for (let i = 0; i < length; i++) {
+    const strIdx = startIdx + i;
+    const ch = (strIdx < line.length) ? line.charAt(strIdx) : '\u00A0'; // NBSP when beyond text
+    const col = i;
+    if (screenBuffer[targetRow][col] !== ch) {
+      screenBuffer[targetRow][col] = ch;
+      // default style for input text (tweak as you wish)
+      styleBuffer[targetRow][col] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: false,
+        inverse: false
+      };
+      pokeCell(col, targetRow);
+    }
+  }
+}
 
-    // Place character
-    if (cursorX >= screenWidth) {
-      cursorX = 0;
-      cursorY++;
-      linesPrintedThisCall++; // wrapped to next line -> counts as another printed line
-      if (cursorY >= screenHeight) {
-        scrollScreenDown();
-        cursorY = screenHeight - 1;
+// Update visual selection between selStart and selEnd (logical indices)
+function updateSelectionVisuals(selStart, selEnd) {
+  if (selStart === -1 || selEnd === -1) return;
+  if (selStart > selEnd) { const t = selStart; selStart = selEnd; selEnd = t; }
+  const charsPerLine = screenWidth;
+  for (let i = selStart; i < selEnd; i++) {
+    const { row, col } = logicalToScreen(i);
+    if (row < 0 || row >= screenHeight || col < 0 || col >= screenWidth) continue;
+    if (!styleBuffer[row]) continue;
+    if (!styleBuffer[row][col]) {
+      styleBuffer[row][col] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: false,
+        inverse: true
+      };
+      pokeCell(col, row);
+    } else if (!styleBuffer[row][col].inverse) {
+      styleBuffer[row][col].inverse = true;
+      pokeCell(col, row);
+    }
+  }
+  // Clear inverse for cells outside selection in visible area (optional clean pass)
+  // (you can optimize this to only clear previously-selected region)
+  const totalVisible = Math.min(Math.ceil(Math.max(1, line.length) / charsPerLine), screenHeight);
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  for (let r = baseRow; r < baseRow + totalVisible; r++) {
+    if (!styleBuffer[r]) continue;
+    for (let c = 0; c < screenWidth; c++) {
+      const logicalIndex = (r - baseRow) * charsPerLine + c;
+      if (logicalIndex < selStart || logicalIndex >= selEnd) {
+        if (styleBuffer[r][c] && styleBuffer[r][c].inverse) {
+          styleBuffer[r][c].inverse = false;
+          pokeCell(c, r);
+        }
       }
     }
+  }
+}
 
-    if (screenBuffer[cursorY] && typeof screenBuffer[cursorY][cursorX] !== 'undefined') {
+function print(inputString) {
+  // Ensure buffers exist
+  if (!screenBuffer || !styleBuffer || !screenWidth || !screenHeight) {
+    try { initScreen(); } catch (e) { /* best-effort */ }
+  }
+
+  // Helper to ensure a row exists in styleBuffer
+  function ensureStyleRow(y) {
+    if (!styleBuffer[y]) {
+      styleBuffer[y] = [];
+      for (let x = 0; x < screenWidth; x++) {
+        styleBuffer[y][x] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+      }
+    }
+  }
+
+  // Simple ANSI CSI parsing loop and character writer.
+  // Supports: \n, \r, \b, CSI [ params ] H/f (cursor pos), A/B/C/D (moves), K (erase in line), m (SGR - stored minimally).
+  let i = 0;
+  while (i < inputString.length) {
+    const ch = inputString.charAt(i);
+
+    // ESC / CSI handling
+    if (inputString.charCodeAt(i) === 27 && inputString.charAt(i + 1) === '[') {
+      // parse params until a letter command
+      let j = i + 2;
+      let params = '';
+      while (j < inputString.length && !/[A-Za-z]/.test(inputString.charAt(j))) {
+        params += inputString.charAt(j);
+        j++;
+      }
+      const cmd = inputString.charAt(j) || '';
+      const paramsArr = params.length ? params.split(';').map(s => s === '' ? NaN : Number(s)) : [];
+
+      // Handle cursor / SGR / clearline / moves
+      switch (cmd) {
+        case 'H':
+        case 'f': {
+          // 1-based row;col
+          const row = paramsArr[0] ? paramsArr[0] : 1;
+          const col = paramsArr[1] ? paramsArr[1] : 1;
+          cursorY = Math.max(0, Math.min(screenHeight - 1, row - 1));
+          cursorX = Math.max(0, Math.min(screenWidth - 1, col - 1));
+          break;
+        }
+        case 'A': { // CUU - cursor up
+          const n = paramsArr[0] ? paramsArr[0] : 1;
+          cursorY = Math.max(0, cursorY - n);
+          break;
+        }
+        case 'B': { // CUD - cursor down
+          const n = paramsArr[0] ? paramsArr[0] : 1;
+          cursorY = Math.min(screenHeight - 1, cursorY + n);
+          break;
+        }
+        case 'C': { // CUF - cursor forward
+          const n = paramsArr[0] ? paramsArr[0] : 1;
+          cursorX = Math.min(screenWidth - 1, cursorX + n);
+          break;
+        }
+        case 'D': { // CUB - cursor backward
+          const n = paramsArr[0] ? paramsArr[0] : 1;
+          cursorX = Math.max(0, cursorX - n);
+          break;
+        }
+        case 'K': { // EL - erase in line
+          const mode = (paramsArr[0] === undefined || isNaN(paramsArr[0])) ? 0 : paramsArr[0];
+          ensureStyleRow(cursorY);
+          if (mode === 0) {
+            // clear from cursor to end
+            for (let x = cursorX; x < screenWidth; x++) {
+              screenBuffer[cursorY][x] = ' ';
+              styleBuffer[cursorY][x] = {
+                color: currentStyle.color,
+                bgcolor: currentStyle.bgcolor,
+                bold: currentStyle.bold,
+                inverse: currentStyle.inverse
+              };
+            }
+          } else if (mode === 1) {
+            // clear from start to cursor
+            for (let x = 0; x <= cursorX; x++) {
+              screenBuffer[cursorY][x] = ' ';
+              styleBuffer[cursorY][x] = {
+                color: currentStyle.color,
+                bgcolor: currentStyle.bgcolor,
+                bold: currentStyle.bold,
+                inverse: currentStyle.inverse
+              };
+            }
+          } else if (mode === 2) {
+            // clear entire line
+            for (let x = 0; x < screenWidth; x++) {
+              screenBuffer[cursorY][x] = ' ';
+              styleBuffer[cursorY][x] = {
+                color: currentStyle.color,
+                bgcolor: currentStyle.bgcolor,
+                bold: currentStyle.bold,
+                inverse: currentStyle.inverse
+              };
+            }
+          }
+          break;
+        }
+        case 'm': {
+          // Minimal SGR handling - update currentStyle for subsequent characters.
+          // We'll parse a few basics: 0 reset, 1 bold, 7 inverse, 30-37 foreground, 40-47 background
+          if (paramsArr.length === 0) paramsArr.push(0);
+          for (let p = 0; p < paramsArr.length; p++) {
+            const code = paramsArr[p];
+            if (isNaN(code)) continue;
+            if (code === 0) {
+              currentStyle.color = 37; currentStyle.bgcolor = 40; currentStyle.bold = false; currentStyle.inverse = false;
+            } else if (code === 1) {
+              currentStyle.bold = true;
+            } else if (code === 7) {
+              currentStyle.inverse = true;
+            } else if (code >= 30 && code <= 37) {
+              currentStyle.color = code - 30 + 30; // store raw-ish (keep existing mapping)
+            } else if (code >= 40 && code <= 47) {
+              currentStyle.bgcolor = code - 40 + 40;
+            } else if (code === 22) { // normal intensity
+              currentStyle.bold = false;
+            } else if (code === 27) { // inverse off
+              currentStyle.inverse = false;
+            }
+          }
+          break;
+        }
+        default:
+          // Unknown/unsupported CSI - ignore
+          break;
+      }
+
+      // advance i past the CSI sequence
+      i = j + 1;
+      continue;
+    }
+
+    // Printable / control characters
+    if (ch === '\n') {
+      cursorX = 0;
+      cursorY++;
+      if (cursorY >= screenHeight) {
+        // clamp at bottom (preserves current draw contract)
+        cursorY = screenHeight - 1;
+      }
+      i++;
+      continue;
+    }
+
+    if (ch === '\r') {
+      cursorX = 0;
+      i++;
+      continue;
+    }
+
+    if (ch === '\b') {
+      // backspace: move left and erase
+      if (cursorX > 0) {
+        cursorX--;
+        if (screenBuffer[cursorY]) {
+          screenBuffer[cursorY][cursorX] = ' ';
+          ensureStyleRow(cursorY);
+          styleBuffer[cursorY][cursorX] = {
+            color: currentStyle.color,
+            bgcolor: currentStyle.bgcolor,
+            bold: currentStyle.bold,
+            inverse: currentStyle.inverse
+          };
+        }
+      }
+      i++;
+      continue;
+    }
+
+    // Regular character - write into buffer at cursor
+    // Ensure row exists
+    if (!screenBuffer[cursorY]) {
+      screenBuffer[cursorY] = [];
+      for (let x = 0; x < screenWidth; x++) screenBuffer[cursorY][x] = ' ';
+    }
+    ensureStyleRow(cursorY);
+
+    // Write character if within visible bounds
+    if (cursorX >= 0 && cursorX < screenWidth && cursorY >= 0 && cursorY < screenHeight) {
       screenBuffer[cursorY][cursorX] = ch;
       styleBuffer[cursorY][cursorX] = {
         color: currentStyle.color,
@@ -1514,82 +1864,46 @@ function print(inputString) {
         bold: currentStyle.bold,
         inverse: currentStyle.inverse
       };
-    }
-    cursorX++;
-  }
-
-  // Walk the input string and handle characters one by one.
-  // If pagination threshold (for this call) is reached, queue remainder and pause.
-  for (var i = 0; i < inputString.length; i++) {
-    var ch = inputString.charAt(i);
-
-    // Handle Form Feed explicitly: immediate page break
-    if (ch === '\f') {
-      // trigger pause if pagination enabled
-      if (paginationEnabled) {
-        // queue remainder (characters after the form-feed)
-        var remainderAfterFF = inputString.slice(i + 1);
-        if (remainderAfterFF && remainderAfterFF.length > 0) {
-          paginationBuffer.push(remainderAfterFF);
-        }
-        triggerPaginationPause();
-        return;
-      } else {
-        // treat as newline if pagination disabled
+      cursorX++;
+      if (cursorX >= screenWidth) {
         cursorX = 0;
         cursorY++;
-        linesPrintedThisCall++;
         if (cursorY >= screenHeight) {
-          scrollScreenDown();
           cursorY = screenHeight - 1;
         }
-        continue;
+      }
+    } else {
+      // Cursor outside bounds horizontally: clamp and/or move to next line
+      if (cursorX >= screenWidth) {
+        cursorX = 0;
+        cursorY++;
+        if (cursorY >= screenHeight) cursorY = screenHeight - 1;
+      } else if (cursorX < 0) {
+        cursorX = 0;
       }
     }
 
-    // Newline handling
-    if (ch === '\n') {
-      cursorX = 0;
-      cursorY++;
-      linesPrintedThisCall++;
-      if (cursorY >= screenHeight) {
-        scrollScreenDown();
-        cursorY = screenHeight - 1;
-      }
+    i++;
+  } // end while chars
 
-      // After moving to a new line, check if this call reached the pagination threshold.
-      if (paginationEnabled && !inInputMode && linesPrintedThisCall >= paginationLinesBeforePause) {
-        // queue remainder (characters after this newline)
-        var remainder = inputString.slice(i + 1);
-        if (remainder && remainder.length > 0) {
-          paginationBuffer.push(remainder);
-        }
-        triggerPaginationPause();
-        return;
-      }
-      continue;
+  // Force display refresh so the new buffer contents are visible
+  try {
+    updateDisplay();
+  } catch (e) {
+    // best-effort fallback: touch the DOM manually if updateDisplay not available
+    try { document.getElementById('txt').innerHTML = document.getElementById('txt').innerHTML; } catch (_) {}
+  }
+
+  // Re-apply cursor visual at the new logical position
+  if (typeof cursor === 'function') {
+    if (typeof cursorOn !== 'undefined' && cursorOn === 1) {
+      cursor(1);
+    } else {
+      cursor(0);
     }
-
-    // Regular printable character - write it
-    writeChar(ch);
-
-    // After writing a character, only trigger pagination on line boundaries,
-    // because pagination counts lines (not characters). However wrapped lines
-    // already incremented linesPrintedThisCall in writeChar() when wrap occurred.
-    if (paginationEnabled && !inInputMode && linesPrintedThisCall >= paginationLinesBeforePause) {
-      // queue remainder (characters after the current character)
-      var rem = inputString.slice(i + 1);
-      if (rem && rem.length > 0) {
-        paginationBuffer.push(rem);
-      }
-      triggerPaginationPause();
-      return;
-    }
-  } // end for loop
-
-  // If we finished printing the whole string without pausing, update display.
-  updateDisplay();
+  }
 }
+
 function draw(inputString) {
   // Draw text at current cursor location with ANSI codes
   // Does NOT scroll, trigger pagination, or update txt variable
@@ -1776,74 +2090,55 @@ function updateDisplay() {
   }
 
   for (let y = 0; y < rowsToRender; y++) {
-    // Ensure row arrays exist
-    if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
-    if (!styleBuffer[y]) {
-      styleBuffer[y] = new Array(screenWidth);
-      for (let x = 0; x < screenWidth; x++) {
-        styleBuffer[y][x] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-      }
-    }
-
-    let lineHtml = '';
-    let currentSpanStyle = null;
-
+  // ensure row arrays exist (same as before)
+  if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
+  if (!styleBuffer[y]) {
+    styleBuffer[y] = new Array(screenWidth);
     for (let x = 0; x < screenWidth; x++) {
-      const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
-      const style = styleBuffer[y][x] || {
+      styleBuffer[y][x] = {
         color: currentStyle.color,
         bgcolor: currentStyle.bgcolor,
         bold: currentStyle.bold,
         inverse: currentStyle.inverse
       };
-
-      // Build a simple style key for grouping spans
-      const styleKey = `${style.color}-${style.bgcolor}-${style.bold}-${style.inverse}`;
-
-      // When style changes, close previous span and open a new one
-      if (currentSpanStyle !== styleKey) {
-        if (currentSpanStyle !== null) {
-          lineHtml += '</span>';
-        }
-
-        // Build classes similar to the earlier approach so existing CSS stays usable
-        let classes = [];
-        if (style.inverse) {
-          classes.push(`ansi-${ANSI.bgColors[style.bgcolor] || style.bgcolor}`);
-          classes.push(`ansi-bg-${ANSI.colors[style.color] || style.color}`);
-        } else {
-          classes.push(`ansi-${ANSI.colors[style.color] || style.color}`);
-          classes.push(`ansi-bg-${ANSI.bgColors[style.bgcolor] || style.bgcolor}`);
-        }
-        if (style.bold) classes.push('ansi-bold');
-
-        lineHtml += `<span class="${classes.join(' ')}">`;
-        currentSpanStyle = styleKey;
-      }
-
-      // Render the character. If this is the logical cursor position and input is enabled,
-      // draw a cursor indicator by wrapping the char in a .cursor span (read-only).
-      const chEscaped = escapeChar(ch);
-      if (keyon && y === cursorY && x === cursorX) {
-        lineHtml += `<span class="cursor">${chEscaped}</span>`;
-      } else {
-        lineHtml += chEscaped;
-      }
     }
-
-    // Close any open span for the line
-    if (currentSpanStyle !== null) {
-      lineHtml += '</span>';
-    }
-
-    // Append the rendered line. Use a block element per line for easier CSS control.
-    htmlContent += `<div class="row">${lineHtml}</div>`;
   }
+
+  let lineHtml = '<span class="qandy-line">';
+
+  for (let x = 0; x < screenWidth; x++) {
+    const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
+    const style = styleBuffer[y][x] || {
+      color: currentStyle.color,
+      bgcolor: currentStyle.bgcolor,
+      bold: currentStyle.bold,
+      inverse: currentStyle.inverse
+    };
+
+    // Build the class list for the character (map your ANSI to classes)
+    const classes = [];
+    if (style.inverse) {
+      classes.push('ansi-inverse');
+    } else {
+      classes.push(`ansi-fg-${style.color}`);   // adjust names to match your CSS
+      classes.push(`ansi-bg-${style.bgcolor}`);
+    }
+    if (style.bold) classes.push('ansi-bold');
+
+    // Escape char for HTML; keep spaces as &nbsp;
+    const escapedChar = (ch === ' ') ? '&nbsp;' :
+                        (ch === '&') ? '&amp;' :
+                        (ch === '<') ? '&lt;' :
+                        (ch === '>') ? '&gt;' :
+                        ch;
+
+    // Give each cell an id so it can be updated independently later.
+    lineHtml += `<span id="c${y}_${x}" class="${classes.join(' ')}">${escapedChar}</span>`;
+  }
+
+  lineHtml += '</span><br>';
+  htmlContent += lineHtml;
+}
 
   // Fill remaining visible rows with blank lines if buffer is shorter than screenHeight
   for (let y = rowsToRender; y < screenHeight; y++) {
@@ -1853,11 +2148,105 @@ function updateDisplay() {
   // Write to DOM in one shot
   txtElement.innerHTML = htmlContent;
 
-  // NOTE:
-  // - This function intentionally does NOT modify cursorX or cursorY.
-  // - It only reads them to position the visible cursor indicator.
-  // - Any code that currently mutates cursorY to force a redraw should be changed
-  //   to simply call updateDisplay() and NOT touch cursor variables.
+  try {
+    // Remove previous cursor markers (if any)
+    const prev = document.querySelectorAll('.qandy-cursor');
+    for (let p = 0; p < prev.length; p++) prev[p].classList.remove('qandy-cursor');
+
+    // Add cursor marker to current cursor position (cursorX, cursorY are logical coords)
+    if (typeof cursorX === 'number' && typeof cursorY === 'number') {
+      const curEl = document.getElementById(`c${cursorY}_${cursorX}`);
+      if (curEl) {
+        curEl.classList.add('qandy-cursor');
+      }
+    }
+  } catch (e) {
+    // Non-fatal: best-effort only
+    console.warn('Failed to apply qandy cursor marker', e);
+  }
+
+}
+
+// Update one cell from buffers (or update buffers then DOM)
+function pokeCell(x, y) {
+  // bounds check
+  if (y < 0 || y >= screenHeight || x < 0 || x >= screenWidth) return;
+
+  // Ensure buffers exist
+  if (!screenBuffer[y] || !styleBuffer[y]) {
+    // if buffers aren't initialized, bail or init as you prefer
+    try { initScreen(); } catch (e) { return; }
+  }
+
+  // Get values from buffers
+  const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
+  const style = styleBuffer[y][x] || {
+    color: currentStyle.color,
+    bgcolor: currentStyle.bgcolor,
+    bold: currentStyle.bold,
+    inverse: currentStyle.inverse
+  };
+
+  // Find DOM element for that cell
+  const el = document.getElementById(`c${y}_${x}`);
+  if (!el) {
+    // If element not present (maybe updateDisplay hasn't been run),
+    // we won't create full DOM here -- caller can call updateDisplay() instead.
+    return;
+  }
+
+  // Update classes to reflect style
+  const classes = [];
+  if (style.inverse) {
+    classes.push('ansi-inverse');
+  } else {
+    classes.push(`ansi-fg-${style.color}`);
+    classes.push(`ansi-bg-${style.bgcolor}`);
+  }
+  if (style.bold) classes.push('ansi-bold');
+
+  el.className = classes.join(' ');
+
+  // Update content (escape as above)
+  const escaped = (ch === ' ') ? '\u00A0' : ch;
+  // Use textContent to avoid HTML injection; but use NBSP for spaces
+  if (ch === ' ') {
+    // innerHTML for &nbsp;
+    el.innerHTML = '&nbsp;';
+  } else {
+    el.textContent = ch;
+  }
+}
+
+function cursorMoveTo(nx, ny) {
+  const old = { x: cursorX, y: cursorY };
+  cursorX = Math.max(0, Math.min(screenWidth - 1, nx));
+  cursorY = Math.max(0, Math.min(screenHeight - 1, ny));
+  if (cursorOn) {
+    // restore old cell
+    if (prevCursor.set && styleBuffer[old.y] && styleBuffer[old.y][old.x]) {
+      styleBuffer[old.y][old.x].inverse = prevCursor.inverse;
+      pokeCell(old.x, old.y);
+    }
+    // mark new one
+    if (!styleBuffer[cursorY]) {
+      styleBuffer[cursorY] = [];
+      for (let x = 0; x < screenWidth; x++) {
+        styleBuffer[cursorY][x] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+      }
+    }
+    prevCursor = { set: true, x: cursorX, y: cursorY, inverse: !!styleBuffer[cursorY][cursorX].inverse };
+    styleBuffer[cursorY][cursorX].inverse = true;
+    pokeCell(old.x, old.y);
+    pokeCell(cursorX, cursorY);
+  } else {
+    // cursor isn't shown — just update logical coords
+  }
 }
 
 function cls() { 
@@ -2051,9 +2440,10 @@ function initScreen() {
   }
 }
 
+
 window.ANSI=ANSI;
-print("\nQandy Pocket\nComputer v1.j\n"); 
-keyon = 1; updateDisplay();
+print("\nQandy Pocket\nComputer v1.j\n");
+cursor(1); 
 
 SFiles=1;
 mySearch=location.search.substr(1).split("&")
