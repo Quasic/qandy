@@ -1508,10 +1508,7 @@ function updateSelectionVisuals(selStart, selEnd) {
 }
 
 function print(inputString) {
-  // Ensure screen is ready
-  if (!screenBuffer || !styleBuffer || !screenWidth || !screenHeight) {
-    try { initScreen(); } catch (e) { /* best-effort */ }
-  }
+  if (!screenBuffer || !styleBuffer || !screenWidth || !screenHeight) { try { initScreen(); } catch (e) { /* best-effort */ } }
 
   // Ensure a style row exists and each cell has its own object
   function ensureStyleRow(y) {
@@ -1564,7 +1561,6 @@ function print(inputString) {
 
     // Place character and style copy
     if (screenBuffer[cursorY] && typeof screenBuffer[cursorY][cursorX] !== 'undefined') {
-      screenBuffer[cursorY][cursorX] = ch;
       // copy current style into that cell (make a new object)
       styleBuffer[cursorY][cursorX] = {
         color: currentStyle.color,
@@ -1572,8 +1568,8 @@ function print(inputString) {
         bold: currentStyle.bold,
         inverse: currentStyle.inverse
       };
-      try { pokeCell(cursorX, cursorY); } catch (e) { /* best-effort */ }
-    }
+      try { pokeCell(cursorX, cursorY,ch); } catch (e) { /* best-effort */ }
+    } 
 
     cursorX++;
   }
