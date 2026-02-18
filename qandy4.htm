@@ -669,11 +669,86 @@ function renderInputLine() {
     } else {
       // OS / shell input handling
       if (k === "back") {
-        if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
-        if (cursorPos > 0) {
-          line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
-          cursorPos--;
-        }
+      
+      
+      if (k === "back") {
+      
+// Replace the existing `if (k === "back") { ... }` block with this:
+
+if (k === "back") {
+  // Ensure cursorPos is defined
+  if (typeof cursorPos === 'undefined' || cursorPos === null) cursorPos = (line ? line.length : 0);
+
+  if (cursorPos > 0) {
+    // Capture previous state so we can clear the tail mapped to the prior layout
+    const prevCursorPos = cursorPos;
+    const prevLineLen = (typeof line === 'string') ? line.length : 0;
+
+    // Hide cursor while we mutate overlay/buffers to avoid prevCursor races
+    try { cursor(0); } catch (e) { /* ignore if not available yet */ }
+
+    // Remove the character logically
+    line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
+    cursorPos--;
+
+    // Recompute/sync cursor coordinates and re-render the input overlay
+    try {
+      if (typeof syncCursorCoordsFromPos === 'function') {
+        syncCursorCoordsFromPos();
+      } else {
+        // fallback: recompute cursorX/cursorY
+        const charsPerLine = screenWidth || 32;
+        const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : 0 - Math.floor(cursorPos / charsPerLine);
+        const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
+        const newCol = cursorPos % charsPerLine;
+        cursorX = Math.max(0, Math.min((screenWidth||32)-1, newCol));
+        cursorY = Math.max(0, Math.min((screenHeight||25)-1, newRow));
+      }
+
+      // Redraw the live input overlay so the new text is shown
+      if (typeof renderInputLine === 'function') {
+        renderInputLine();
+      } else if (typeof updateDisplay === 'function') {
+        updateDisplay();
+      } else {
+        // legacy fallback: nudge print to refresh DOM
+        try { print(""); } catch (e) { /* ignore */ }
+      }
+    } catch (e) {
+      /* non-fatal */
+    }
+
+    // Clear trailing characters that belonged to the previous input but no longer exist.
+    // Use previous baseRow calculation so we clear the cells that were actually used.
+    try {
+      const charsPerLine = screenWidth || 32;
+      const prevBaseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(prevCursorPos / charsPerLine)) : -Math.floor(prevCursorPos / charsPerLine);
+      const newLineLen = (typeof line === 'string') ? line.length : 0;
+
+      for (let i = newLineLen; i < prevLineLen; i++) {
+        const row = prevBaseRow + Math.floor(i / charsPerLine);
+        const col = i % charsPerLine;
+        if (row < 0 || row >= screenHeight || col < 0 || col >= screenWidth) continue;
+        // Clear cell to NBSP so layout is stable; set sensible style (non-inverse)
+        try {
+          pokeCell(col, row, '\u00A0', {
+            color: (currentStyle && currentStyle.color) || 37,
+            bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
+            bold: false,
+            inverse: false
+          });
+        } catch (e) { /* best-effort */ }
+      }
+    } catch (e) { /* ignore clearing errors */ }
+
+    // Show the cursor at the new location
+    try { cursor(1); } catch (e) { /* ignore */ }
+  }
+}}      
+      
+      
+      
+
       } else if (k === "left") {
         if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
         if (cursorPos > 0) cursorPos--;
@@ -787,7 +862,17 @@ function renderInputLine() {
         }
         line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
         cursorPos += finalChar.length;
-
+        const charsPerLine = screenWidth || 32;
+        const logicalIndex = cursorPos - 1; // index of char just inserted
+        const { row, col } = logicalToScreen(logicalIndex);
+        const ch = finalChar;
+        const inputStyle = {
+          color: (currentStyle && currentStyle.color) || 37,
+          bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
+          bold: false,
+          inverse: false
+        };
+        try { pokeCell(col, row, ch, inputStyle); } catch (e) { /* fallback to renderInputLine */ renderInputLine && renderInputLine(); }
         // Reset history browsing when typing
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
       }
@@ -1505,20 +1590,24 @@ function writeInputSegmentToScreenRow(targetRow, startIdx, length) {
       };
     }
   }
+
+  const inputStyle = {
+    color: (currentStyle && currentStyle.color) || 37,
+    bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
+    bold: false,
+    inverse: false
+  };
+
   for (let i = 0; i < length; i++) {
     const strIdx = startIdx + i;
     const ch = (strIdx < line.length) ? line.charAt(strIdx) : '\u00A0'; // NBSP when beyond text
     const col = i;
-    if (screenBuffer[targetRow][col] !== ch) {
+    if (screenBuffer[targetRow][col] !== ch || !styleBuffer[targetRow][col] || styleBuffer[targetRow][col].inverse) {
       screenBuffer[targetRow][col] = ch;
-      // default style for input text (tweak as you wish)
-      styleBuffer[targetRow][col] = {
-        color: currentStyle.color,
-        bgcolor: currentStyle.bgcolor,
-        bold: false,
-        inverse: false
-      };
-      pokeCell(col, targetRow);
+      // set explicit style for input text (non-inverse)
+      styleBuffer[targetRow][col] = Object.assign({}, inputStyle);
+      // update DOM via pokeCell and pass style so prevCursor can't accidentally capture inverse
+      try { pokeCell(col, targetRow, ch, inputStyle); } catch (e) { /* best-effort */ }
     }
   }
 }
