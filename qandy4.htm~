@@ -563,82 +563,75 @@ function button(b, event) {
       
       if (k === "back") {
       
-// Replace the existing `if (k === "back") { ... }` block with this:
+      if (k === "back") {
+        // Ensure cursorPos is defined
+        if (typeof cursorPos === 'undefined' || cursorPos === null) cursorPos = (line ? line.length : 0);
 
-if (k === "back") {
-  // Ensure cursorPos is defined
-  if (typeof cursorPos === 'undefined' || cursorPos === null) cursorPos = (line ? line.length : 0);
+        if (cursorPos > 0) {
+          // Capture previous state so we can clear the tail mapped to the prior layout
+          const prevCursorPos = cursorPos;
+          const prevLineLen = (typeof line === 'string') ? line.length : 0;
 
-  if (cursorPos > 0) {
-    // Capture previous state so we can clear the tail mapped to the prior layout
-    const prevCursorPos = cursorPos;
-    const prevLineLen = (typeof line === 'string') ? line.length : 0;
+          // Hide cursor while we mutate overlay/buffers to avoid prevCursor races
+          try { cursor(0); } catch (e) { /* ignore if not available yet */ }
 
-    // Hide cursor while we mutate overlay/buffers to avoid prevCursor races
-    try { cursor(0); } catch (e) { /* ignore if not available yet */ }
-
-    // Remove the character logically
-    line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
-    cursorPos--;
-
-    // Recompute/sync cursor coordinates and re-render the input overlay
-    try {
-      if (typeof syncCursorCoordsFromPos === 'function') {
-        syncCursorCoordsFromPos();
-      } else {
-        // fallback: recompute cursorX/cursorY
-        const charsPerLine = screenWidth || 32;
-        const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : 0 - Math.floor(cursorPos / charsPerLine);
-        const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
-        const newCol = cursorPos % charsPerLine;
-        cursorX = Math.max(0, Math.min((screenWidth||32)-1, newCol));
-        cursorY = Math.max(0, Math.min((screenHeight||25)-1, newRow));
-      }
-
-      // Redraw the live input overlay so the new text is shown
-      if (typeof renderInputLine === 'function') {
-        renderInputLine();
-      } else if (typeof updateDisplay === 'function') {
-        updateDisplay();
-      } else {
-        // legacy fallback: nudge print to refresh DOM
-        try { print(""); } catch (e) { /* ignore */ }
-      }
-    } catch (e) {
-      /* non-fatal */
-    }
-
-    // Clear trailing characters that belonged to the previous input but no longer exist.
-    // Use previous baseRow calculation so we clear the cells that were actually used.
-    try {
-      const charsPerLine = screenWidth || 32;
-      const prevBaseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(prevCursorPos / charsPerLine)) : -Math.floor(prevCursorPos / charsPerLine);
-      const newLineLen = (typeof line === 'string') ? line.length : 0;
-
-      for (let i = newLineLen; i < prevLineLen; i++) {
-        const row = prevBaseRow + Math.floor(i / charsPerLine);
-        const col = i % charsPerLine;
-        if (row < 0 || row >= screenHeight || col < 0 || col >= screenWidth) continue;
-        // Clear cell to NBSP so layout is stable; set sensible style (non-inverse)
-        try {
-          pokeCell(col, row, '\u00A0', {
-            color: (currentStyle && currentStyle.color) || 37,
-            bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
-            bold: false,
-            inverse: false
-          });
-        } catch (e) { /* best-effort */ }
-      }
-    } catch (e) { /* ignore clearing errors */ }
-
-    // Show the cursor at the new location
-    try { cursor(1); } catch (e) { /* ignore */ }
-  }
-}}      
+          // Remove the character logically
+          line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
+          cursorPos--;
       
-      
-      
+          // Recompute/sync cursor coordinates and re-render the input overlay
+          try {
+            if (typeof syncCursorCoordsFromPos === 'function') {
+              syncCursorCoordsFromPos();
+            } else {
+              // fallback: recompute cursorX/cursorY
+              const charsPerLine = screenWidth || 32;
+              const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : 0 - Math.floor(cursorPos / charsPerLine);
+              const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
+              const newCol = cursorPos % charsPerLine;
+              cursorX = Math.max(0, Math.min((screenWidth||32)-1, newCol));
+              cursorY = Math.max(0, Math.min((screenHeight||25)-1, newRow));
+            }
 
+            // Redraw the live input overlay so the new text is shown
+            if (typeof renderInputLine === 'function') {
+              renderInputLine();
+            } else if (typeof updateDisplay === 'function') {
+              updateDisplay();
+            } else {
+              // legacy fallback: nudge print to refresh DOM
+              try { print(""); } catch (e) { /* ignore */ }
+            }
+          } catch (e) {
+            /* non-fatal */
+          }
+
+          // Clear trailing characters that belonged to the previous input but no longer exist.
+          // Use previous baseRow calculation so we clear the cells that were actually used.
+          try {
+            const charsPerLine = screenWidth || 32;
+            const prevBaseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(prevCursorPos / charsPerLine)) : -Math.floor(prevCursorPos / charsPerLine);
+            const newLineLen = (typeof line === 'string') ? line.length : 0;
+
+            for (let i = newLineLen; i < prevLineLen; i++) {
+              const row = prevBaseRow + Math.floor(i / charsPerLine);
+              const col = i % charsPerLine;
+              if (row < 0 || row >= screenHeight || col < 0 || col >= screenWidth) continue;
+              // Clear cell to NBSP so layout is stable; set sensible style (non-inverse)
+              try {
+                pokeCell(col, row, '\u00A0', {
+                  color: (currentStyle && currentStyle.color) || 37,
+                  bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
+                  bold: false,
+                  inverse: false
+                });
+              } catch (e) { /* best-effort */ }
+            }
+          } catch (e) { /* ignore clearing errors */ }
+
+          // Show the cursor at the new location
+          try { cursor(1); } catch (e) { /* ignore */ }
+        }}
       } else if (k === "left") {
         if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
         if (cursorPos > 0) cursorPos--;
@@ -1274,38 +1267,33 @@ function cursor(a) {
   } else {
     // Hide cursor: restore previous cell if we set one
 
+    if (prevCursor && prevCursor.set) {
+      const px = prevCursor.x, py = prevCursor.y;
+      ensureRow(py); // helper present in cursor() — ensure buffer rows exist
 
-if (prevCursor && prevCursor.set) {
-  const px = prevCursor.x, py = prevCursor.y;
-  ensureRow(py); // helper present in cursor() — ensure buffer rows exist
+      // remove DOM marker if present
+      const el = document.getElementById(`c${py}_${px}`);
+      if (el) el.classList.remove('qandy-cursor');
 
-  // remove DOM marker if present
-  const el = document.getElementById(`c${py}_${px}`);
-  if (el) el.classList.remove('qandy-cursor');
+      // restore char and style into buffers
+      screenBuffer[py][px] = prevCursor.ch;
+      // make an explicit copy of the saved style
+      styleBuffer[py][px] = prevCursor.style ? Object.assign({}, prevCursor.style) : {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: currentStyle.bold,
+        inverse: prevCursor.inverse
+      };
 
-  // restore char and style into buffers
-  screenBuffer[py][px] = prevCursor.ch;
-  // make an explicit copy of the saved style
-  styleBuffer[py][px] = prevCursor.style ? Object.assign({}, prevCursor.style) : {
-    color: currentStyle.color,
-    bgcolor: currentStyle.bgcolor,
-    bold: currentStyle.bold,
-    inverse: prevCursor.inverse
-  };
-
-  // Force DOM update through pokeCell (pass style so DOM and prevCursor stay consistent)
-  try {
-    pokeCell(px, py, screenBuffer[py][px], styleBuffer[py][px]);
-  } catch (e) {
-    // fallback: try updateDisplay
-    try { if (typeof updateDisplay === 'function') updateDisplay(); } catch (_) {}
-  }
-
-  prevCursor.set = false;
-}
-
-cursorOn = 0;
-
+      // Force DOM update through pokeCell (pass style so DOM and prevCursor stay consistent)
+      try {
+        pokeCell(px, py, screenBuffer[py][px], styleBuffer[py][px]);
+      } catch (e) {
+        // fallback: try updateDisplay
+        try { if (typeof updateDisplay === 'function') updateDisplay(); } catch (_) {}
+      }
+      prevCursor.set = false;
+    }
     cursorOn = 0;
   }
 }
