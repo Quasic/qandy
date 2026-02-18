@@ -20,6 +20,7 @@ var RAM="";           // Current file content in memory
 var RAMFILE="";       // Current filename loaded in RAM
 var RAMTYPE="";       // Current file type (js, txt, etc)
 
+var keyon=1;
 var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
 var ctrl=0;  // ctrl key pressed
@@ -1581,8 +1582,21 @@ function print(inputString) {
     try { initScreen(); } catch (e) { /* best-effort */ }
   }
 
-  // Write into buffers using draw() which handles ANSI codes, cursor movement, etc.
+  // Save whether input (and cursor) were enabled before we print.
+  var wasKeyon = !!keyon;
+
+  // Hide cursor / disable input while we mutate buffers and DOM so
+  // writers can't corrupt prevCursor or the currently-visible cell.
   try {
+    if (typeof keysoff === 'function') keysoff();
+    else cursor(0);
+  } catch (e) {
+    /* ignore if helpers not available yet */
+  }
+
+  // Perform printing/drawing. Always attempt to restore input/cursor in finally.
+  try {
+    // Write into buffers using draw() which handles ANSI codes, cursor movement, etc.
     if (typeof draw === 'function') {
       draw(inputString);
     } else {
@@ -1605,57 +1619,54 @@ function print(inputString) {
               };
             }
           }
-          if (cursorX >= screenWidth) { cursorX = 0; cursorY++; }
-          if (cursorY >= screenHeight) { cursorY = screenHeight - 1; /* clamp or implement scrollScreenDown() */ }
-          screenBuffer[cursorY][cursorX] = ch;
-          styleBuffer[cursorY][cursorX] = {
-            color: currentStyle.color,
-            bgcolor: currentStyle.bgcolor,
-            bold: currentStyle.bold,
-            inverse: currentStyle.inverse
-          };
+          // place char, update style for that cell
+          if (typeof screenBuffer[cursorY][cursorX] !== 'undefined') {
+            screenBuffer[cursorY][cursorX] = ch;
+            styleBuffer[cursorY][cursorX] = {
+              color: currentStyle.color,
+              bgcolor: currentStyle.bgcolor,
+              bold: currentStyle.bold,
+              inverse: currentStyle.inverse
+            };
+          }
           cursorX++;
+          if (cursorX >= screenWidth) {
+            cursorX = 0;
+            cursorY++;
+            if (cursorY >= screenHeight) {
+              scrollScreenDown();
+              cursorY = screenHeight - 1;
+            }
+          }
         }
       }
     }
-  } catch (e) {
-    console.warn('print(): draw/buffer write failed, falling back to direct DOM render', e);
-    // As a last resort, update innerHTML so user still sees something
+
+    // After updating buffers, refresh the visual DOM if available.
     try {
-      const el = document.getElementById('txt');
-      if (el) {
-        el.innerHTML = "<p>" + txt + (keyon ? (line || "") + "<font id=cursor>&nbsp;</font>" : "") + "</p>";
+      if (typeof updateDisplay === 'function') updateDisplay();
+      else {
+        // best-effort fallback for very old path (if present)
+        try { document.getElementById("txt").innerHTML = document.getElementById("txt").innerHTML; } catch (_) {}
       }
-    } catch (_) {}
-    return;
-  }
-
-  // After buffer changes, update display once
-  try {
-    if (typeof updateDisplay === 'function') updateDisplay();
-  } catch (e) {
-    // If updateDisplay fails, attempt safe DOM fallback
-    try { document.getElementById('txt').innerHTML = document.getElementById('txt').innerHTML; } catch (_) {}
-  }
-
-  // If we're in input/edit mode, overlay the live input line so typing shows up correctly.
-  if (typeof keyon !== 'undefined' && keyon) {
+    } catch (e) {
+      // ignore display refresh errors
+    }
+  } finally {
+    // Restore input/cursor only if it was previously enabled.
     try {
-      if (typeof renderInputLine === 'function') {
-        renderInputLine();
+      if (wasKeyon) {
+        if (typeof keyson === 'function') keyson();
+        else cursor(1);
       } else {
-        // Fallback: call updateDisplay() again or re-render prompt via legacy path
-        if (typeof updateDisplay === 'function') updateDisplay();
+        // leave keyon/cursor off if it was already off
       }
-    } catch (e) { /* non-fatal */ }
+    } catch (e) {
+      /* best-effort restore; ignore errors */
+    }
   }
-
-  // Scroll to bottom if element exists
-  try {
-    const textElement = document.getElementById("txt");
-    if (textElement) textElement.scrollTop = textElement.scrollHeight;
-  } catch (e) {}
 }
+
 function draw(inputString) {
   // Draw text at current cursor location with ANSI codes
   // Does NOT scroll, trigger pagination, or update txt variable
@@ -2043,7 +2054,104 @@ function updateDisplay() {
   };
 
 
+function pokeCell(x, y, ch, styleObj) {
+  // Defensive: ensure buffers and dimensions exist
+  if (typeof screenWidth === 'undefined' || typeof screenHeight === 'undefined') return false;
+  if (!screenBuffer) screenBuffer = [];
+  if (!styleBuffer) styleBuffer = [];
+
+  // Validate coords
+  if (typeof x !== 'number' || typeof y !== 'number') return false;
+  if (x < 0 || y < 0 || x >= screenWidth || y >= screenHeight) return false;
+
+  // Ensure row exists
+  if (!screenBuffer[y]) {
+    screenBuffer[y] = new Array(screenWidth);
+    for (let i = 0; i < screenWidth; i++) screenBuffer[y][i] = ' ';
+  }
+  if (!styleBuffer[y]) {
+    styleBuffer[y] = new Array(screenWidth);
+    for (let i = 0; i < screenWidth; i++) {
+      styleBuffer[y][i] = {
+        color: (currentStyle && currentStyle.color) || 37,
+        bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
+        bold: !!(currentStyle && currentStyle.bold),
+        inverse: !!(currentStyle && currentStyle.inverse)
+      };
+    }
+  }
+
+  // Apply character (if provided)
+  if (typeof ch !== 'undefined') {
+    screenBuffer[y][x] = ch;
+  } else if (typeof screenBuffer[y][x] === 'undefined' || screenBuffer[y][x] === null) {
+    screenBuffer[y][x] = ' ';
+  }
+
+  // Merge style
+  if (!styleBuffer[y][x]) {
+    styleBuffer[y][x] = {
+      color: (currentStyle && currentStyle.color) || 37,
+      bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
+      bold: !!(currentStyle && currentStyle.bold),
+      inverse: !!(currentStyle && currentStyle.inverse)
+    };
+  }
+  if (styleObj && typeof styleObj === 'object') {
+    if (typeof styleObj.color !== 'undefined') styleBuffer[y][x].color = styleObj.color;
+    if (typeof styleObj.bgcolor !== 'undefined') styleBuffer[y][x].bgcolor = styleObj.bgcolor;
+    if (typeof styleObj.bold !== 'undefined') styleBuffer[y][x].bold = !!styleObj.bold;
+    if (typeof styleObj.inverse !== 'undefined') styleBuffer[y][x].inverse = !!styleObj.inverse;
+  }
+
+  // If a visible cursor snapshot exists at this cell, update prevCursor
+  try {
+    if (prevCursor && prevCursor.set && prevCursor.x === x && prevCursor.y === y) {
+      // Writer intends this to become the underlying content while cursor visible.
+      prevCursor.ch = screenBuffer[y][x];
+
+      // Create a snapshot of style for prevCursor.
+      var snapshot = Object.assign({}, styleBuffer[y][x]);
+
+      // If writer explicitly provided inverse, use it; otherwise preserve
+      // the prevCursor.inverse value that was present when the cursor was shown.
+      if (styleObj && typeof styleObj.inverse !== 'undefined') {
+        snapshot.inverse = !!styleObj.inverse;
+        prevCursor.inverse = snapshot.inverse;
+      } else {
+        snapshot.inverse = !!prevCursor.inverse;
+      }
+
+      prevCursor.style = snapshot;
+    }
+  } catch (e) {
+    // best-effort: ignore prevCursor update failures
+  }
+
+  // Update DOM: prefer an in-place update helper, otherwise fall back to updateDisplay
+  try {
+    var updated = false;
+    if (typeof updateDomCellInPlace === 'function') {
+      updated = updateDomCellInPlace(x, y);
+    }
+    if (!updated && typeof poke === 'function' && poke !== pokeCell) {
+      // call existing global poke wrapper if present
+      try { poke(x, y); updated = true; } catch (e) { /* ignore */ }
+    }
+    if (!updated && typeof updateDisplay === 'function') {
+      try { updateDisplay(); updated = true; } catch (e) { /* ignore */ }
+    }
+  } catch (e) {
+    // ignore DOM update errors
+  }
+
+  return true;
+}
+
+window.pokeCell = pokeCell;
+window.poke = pokeCell;
 // helper: ensure buffers and row exist
+
 function ensureBuffersAndRow(y) {
   if (!window.screenHeight) window.screenHeight = 25;
   if (!window.screenBuffer) window.screenBuffer = [];
