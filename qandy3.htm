@@ -1998,11 +1998,23 @@ function updateDisplay() {
   // Write to DOM in one shot
   txtElement.innerHTML = htmlContent;
 
-  // NOTE:
-  // - This function intentionally does NOT modify cursorX or cursorY.
-  // - It only reads them to position the visible cursor indicator.
-  // - Any code that currently mutates cursorY to force a redraw should be changed
-  //   to simply call updateDisplay() and NOT touch cursor variables.
+  try {
+    // Remove previous cursor markers (if any)
+    const prev = document.querySelectorAll('.qandy-cursor');
+    for (let p = 0; p < prev.length; p++) prev[p].classList.remove('qandy-cursor');
+
+    // Add cursor marker to current cursor position (cursorX, cursorY are logical coords)
+    if (typeof cursorX === 'number' && typeof cursorY === 'number') {
+      const curEl = document.getElementById(`c${cursorY}_${cursorX}`);
+      if (curEl) {
+        curEl.classList.add('qandy-cursor');
+      }
+    }
+  } catch (e) {
+    // Non-fatal: best-effort only
+    console.warn('Failed to apply qandy cursor marker', e);
+  }
+
 }
 
 // Update one cell from buffers (or update buffers then DOM)
@@ -2278,9 +2290,10 @@ function initScreen() {
   }
 }
 
-cursor(1);
+
 window.ANSI=ANSI;
-print("\nQandy Pocket\nComputer v1.j\n"); 
+print("\nQandy Pocket\nComputer v1.j\n");
+cursor(1); 
 
 SFiles=1;
 mySearch=location.search.substr(1).split("&")
