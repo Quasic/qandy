@@ -1,4 +1,3 @@
-/* Qandy Pocket Computer Styles */
 
 /* Import authentic IBM VGA fonts from The Ultimate Oldschool PC Font Pack */
 /* License: CC BY-SA 4.0 - https://int10h.org/oldschool-pc-fonts/ */
@@ -105,10 +104,12 @@ body { background-color: #333 }
 }
 
 .qandy-cursor {
-  animation: qandy-blink 1s steps(1) infinite;
-  background-color: #fff !important;
-  color: #000 !important;
-  font-weight: bold;
+  display: inline-block;
+  /* make sure background/foreground visible; adjust to taste */
+  background-color: #fff;
+  color: #000;
+  /* use the qandy-blink keyframes already defined */
+  animation: qandy-blink 1s steps(1, start) infinite;
 }
 
 .ansi-inverse {

@@ -548,71 +548,93 @@ function button(b, event) {
   }
 
   // Helper: render the entire visible input `line` into screenBuffer/DOM using pokeCell
-  function renderInputLine() {
-    var charsPerLine = window.screenWidth || 32;
-    // Compute baseRow using the same anchor logic as the rest of the terminal:
-    var baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : (0 - Math.floor(cursorPos / charsPerLine));
-    // Render visible rows
-    for (var rOff = 0; rOff < (window.screenHeight || 25); rOff++) {
-      var row = baseRow + rOff;
-      if (row < 0 || row >= (window.screenHeight || 25)) continue;
-      // ensure buffers
-      if (!window.screenBuffer[row]) {
-        window.screenBuffer[row] = new Array(charsPerLine);
-        for (var zi = 0; zi < charsPerLine; zi++) window.screenBuffer[row][zi] = '\u00A0';
+
+function renderInputLine() {
+  var charsPerLine = window.screenWidth || 32;
+  var rows = window.screenHeight || 25;
+  // cursorPos is the index in the logical input string; line is the current input string
+  var cp = typeof cursorPos === 'number' ? cursorPos : (line ? line.length : 0);
+
+  // Compute baseRow same as the rest of the terminal (anchor for input)
+  var baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cp / charsPerLine)) : (0 - Math.floor(cp / charsPerLine));
+
+  // Backup storage on window so it's preserved across calls
+  if (!window._inputOverlayBackup) window._inputOverlayBackup = { cells: {} };
+  var backup = window._inputOverlayBackup.cells;
+
+  // Ensure buffers exist helper
+  function ensureRow(y) {
+    if (!window.screenBuffer[y]) {
+      window.screenBuffer[y] = new Array(charsPerLine);
+      for (var zi = 0; zi < charsPerLine; zi++) window.screenBuffer[y][zi] = '\u00A0';
+    }
+    if (!window.styleBuffer[y]) {
+      window.styleBuffer[y] = new Array(charsPerLine);
+      for (var zi2 = 0; zi2 < charsPerLine; zi2++) {
+        window.styleBuffer[y][zi2] = {
+          color: (window.currentStyle && window.currentStyle.color) || 37,
+          bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
+          bold: false,
+          inverse: false
+        };
       }
-      if (!window.styleBuffer[row]) {
-        window.styleBuffer[row] = new Array(charsPerLine);
-        for (var zi2 = 0; zi2 < charsPerLine; zi2++) {
-          window.styleBuffer[row][zi2] = {
-            color: (window.currentStyle && window.currentStyle.color) || 37,
-            bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
-            bold: false,
-            inverse: false
+    }
+  }
+
+  for (var rOff = 0; rOff < rows; rOff++) {
+    var row = baseRow + rOff;
+    if (row < 0 || row >= rows) continue;
+    ensureRow(row);
+
+    for (var col = 0; col < charsPerLine; col++) {
+      var logicalIndex = rOff * charsPerLine + col;
+      var key = row + '_' + col;
+
+      if (line && logicalIndex < (line.length || 0)) {
+        // Input character overlays this cell
+        var ch = line.charAt(logicalIndex);
+
+        // Back up original cell if we haven't already
+        if (typeof backup[key] === 'undefined') {
+          backup[key] = {
+            ch: window.screenBuffer[row][col],
+            style: window.styleBuffer && window.styleBuffer[row] && window.styleBuffer[row][col]
+              ? Object.assign({}, window.styleBuffer[row][col]) : null
           };
         }
-      }
 
-      for (var col = 0; col < charsPerLine; col++) {
-        var logicalIndex = rOff * charsPerLine + col;
-        var ch = (logicalIndex < (line ? line.length : 0)) ? line.charAt(logicalIndex) : '\u00A0';
+        // Only write if changed
         if (window.screenBuffer[row][col] !== ch) {
-          // update buffer and DOM via pokeCell
           window.screenBuffer[row][col] = ch;
-          // ensure styleBuffer cell exists
           if (!window.styleBuffer[row][col]) {
             window.styleBuffer[row][col] = {
               color: (window.currentStyle && window.currentStyle.color) || 37,
               bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
-              bold: false,
-              inverse: false
+              bold: window.currentStyle && window.currentStyle.bold,
+              inverse: window.currentStyle && window.currentStyle.inverse
             };
           }
-          try {
-            // call pokeCell(column, row, ch) — our pokeCell keeps prevCursor in sync
-            if (typeof window.pokeCell === 'function') {
-              window.pokeCell(col, row, ch);
-            } else {
-              // fallback: if pokeCell missing, write to screenBuffer and call updateDisplay()
-              // (this preserves behavior on older builds)
-              if (typeof updateDisplay === 'function') updateDisplay();
-            }
-          } catch (e) {
-            // ignore per-cell errors and fallback to full redraw
-            console.warn('pokeCell write failed at', col, row, e);
-            if (typeof updateDisplay === 'function') updateDisplay();
-            return;
-          }
+          try { pokeCell(col, row); } catch (e) { /* best-effort */ }
+        }
+
+      } else {
+        // No input char overlays this cell.
+        // If we have a backup (we previously overlaid here), restore it.
+        if (typeof backup[key] !== 'undefined') {
+          var orig = backup[key];
+          // If original is undefined or null, put a space (or NBSP) so DOM remains stable
+          var restoreCh = (typeof orig.ch === 'undefined' || orig.ch === null) ? '\u00A0' : orig.ch;
+          window.screenBuffer[row][col] = restoreCh;
+          if (orig.style) window.styleBuffer[row][col] = Object.assign({}, orig.style);
+          try { pokeCell(col, row); } catch (e) { /* best-effort */ }
+          delete backup[key];
+        } else {
+          // Leave underlying content untouched (do not write NBSP)
         }
       }
     }
-
-    // Recompute cursor coordinates from cursorPos and baseRow without toggling cursor display
-    var newCol = cursorPos % charsPerLine;
-    var newRow = baseRow + Math.floor(cursorPos / charsPerLine);
-    window.cursorX = Math.max(0, Math.min(charsPerLine - 1, newCol));
-    window.cursorY = Math.max(0, Math.min((window.screenHeight || 25) - 1, newRow));
   }
+}
 
   // --- Route the key depending on mode ---
   if (keyon) {
