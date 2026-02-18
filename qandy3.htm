@@ -2056,6 +2056,36 @@ function pokeCell(x, y) {
   }
 }
 
+function cursorMoveTo(nx, ny) {
+  const old = { x: cursorX, y: cursorY };
+  cursorX = Math.max(0, Math.min(screenWidth - 1, nx));
+  cursorY = Math.max(0, Math.min(screenHeight - 1, ny));
+  if (cursorOn) {
+    // restore old cell
+    if (_prevCursor.set && styleBuffer[old.y] && styleBuffer[old.y][old.x]) {
+      styleBuffer[old.y][old.x].inverse = _prevCursor.inverse;
+      pokeCell(old.x, old.y);
+    }
+    // mark new one
+    if (!styleBuffer[cursorY]) {
+      styleBuffer[cursorY] = [];
+      for (let x = 0; x < screenWidth; x++) {
+        styleBuffer[cursorY][x] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+      }
+    }
+    _prevCursor = { set: true, x: cursorX, y: cursorY, inverse: !!styleBuffer[cursorY][cursorX].inverse };
+    styleBuffer[cursorY][cursorX].inverse = true;
+    pokeCell(old.x, old.y);
+    pokeCell(cursorX, cursorY);
+  } else {
+    // cursor isn't shown — just update logical coords
+  }
+}
 
 function cls() { 
   screenBuffer = [];  // Reset global screenBuffer (removed 'var' to avoid shadowing)
