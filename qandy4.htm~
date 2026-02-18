@@ -440,22 +440,14 @@ function button(b, event) {
     return;
   }
 
-  // Keep physical shift state if event provided
   if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
-
-  // Hide cursor while we mutate buffers/DOM (use cursor() helper)
-  var hadCursor = !!cursorOn;
-  if (hadCursor) cursor(0);
-
-  // logical key and printable char
+  cursor(0);
   var k = "", l = "";
-
-  // Navigation / control mapping
   switch (b) {
     case 16: // SHIFT (physical) - toggle when virtual pressed
       if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
       else shift = !shift;
-      if (hadCursor) cursor(1);
+      cursor(1);
       return;
     case 17: k = "ctrl"; break;
     case 18: k = "alt"; break;
@@ -495,47 +487,24 @@ function button(b, event) {
     32: [' ',' ']
   };
 
-  if (!k && keyMap[b]) {
-    l = shift ? keyMap[b][1] : keyMap[b][0];
-    k = l;
-  }
+  if (!k && keyMap[b]) { l = shift ? keyMap[b][1] : keyMap[b][0]; k = l; }
 
   // Ignore raw control codes (<32) - do not insert them
-  if (!k && b < 32) {
-    if (hadCursor) cursor(1);
-    return;
-  }
-
-  // Fallback best-effort
-  if (!k) {
-    try {
-      l = String.fromCharCode(b);
-      if (/[A-Za-z]/.test(l)) {
-        var caps2 = !!caps, shk = !!shift;
-        l = ((shk && !caps2) || (!shk && caps2)) ? l.toUpperCase() : l.toLowerCase();
-      } else if (shift) l = l.toUpperCase();
-      k = l;
-    } catch (e) {
-      k = ""; l = "";
-    }
-  }
-
-  // expose globals for compatibility
-  window.k = k; window.l = l;
+  if (!k && b < 32) { cursor(1); return; }
 
   // Modifier key toggles (virtual keyboard)
   if (k === "ctrl") {
     ctrl = !ctrl;
     var el = document.getElementById("ctrl");
     if (el) { el.style.backgroundColor = ctrl ? "#fff" : "#222"; el.style.color = ctrl ? "#000" : "#fff"; }
-    if (hadCursor) cursor(1);
+    cursor(1);
     return;
   }
   if (k === "alt") {
     alt = !alt;
     var el2 = document.getElementById("alt");
     if (el2) { el2.style.backgroundColor = alt ? "#fff" : "#222"; el2.style.color = alt ? "#000" : "#fff"; }
-    if (hadCursor) cursor(1);
+    cursor(1);
     return;
   }
   if (k === "caps") {
@@ -545,48 +514,41 @@ function button(b, event) {
       if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
       else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
     }
-    if (hadCursor) cursor(1);
+    cursor(1);
     return;
   }
 
   // Helper: render the entire visible input `line` into screenBuffer/DOM using pokeCell
-
-
   // --- Route the key depending on mode ---
   if (keyboard) {
     // If program is running and has keydown, send it there first
     if (run && typeof keydown !== 'undefined') {
-      try { keydown(k || l); } catch (e) { /* swallow */ }
+      try { keydown(k || l); } catch (e) {
+        print("ERROR: keydown();\n\n");
+      }
     } else {
       // OS / shell input handling
       if (k === "back") {
         if (typeof cursorPos === 'undefined' || cursorPos === null) cursorPos = (line ? line.length : 0);
         if (cursorPos > 0) {
-          // Capture previous state so we can clear the tail mapped to the prior layout
-
-          // const prevCursorPos = cursorPos;
-          // const prevLineLen = (typeof line === 'string') ? line.length : 0;
-
-          cursor(0);
-          line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
-
-          pokeCell(cursorX, cursorY, '\u00A0', {
+         // const prevCursorPos = cursorPos;
+         // const prevLineLen = (typeof line === 'string') ? line.length : 0;
+         cursor(0);
+         line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
+         pokeCell(cursorX, cursorY, '\u00A0', {
           color: (currentStyle && currentStyle.color) || 37,
           bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
           bold: false,
           inverse: false
-          });
-
-          cursorPos--;
-
-          const charsPerLine = screenWidth || 32;
-          const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : 0 - Math.floor(cursorPos / charsPerLine);
-          const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
-          const newCol = cursorPos % charsPerLine;
-          cursorX = Math.max(0, Math.min((screenWidth||32)-1, newCol));
-          cursorY = Math.max(0, Math.min((screenHeight||25)-1, newRow));
-          renderInputLine();
-
+         });
+         cursorPos--;
+         const charsPerLine = screenWidth || 32;
+         const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : 0 - Math.floor(cursorPos / charsPerLine);
+         const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
+         const newCol = cursorPos % charsPerLine;
+         cursorX = Math.max(0, Math.min((screenWidth||32)-1, newCol));
+         cursorY = Math.max(0, Math.min((screenHeight||25)-1, newRow));
+         renderInputLine();
         }
       } else if (k === "left") {
         if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
@@ -711,22 +673,18 @@ function button(b, event) {
           bold: false,
           inverse: false
         };
-        try { pokeCell(col, row, ch, inputStyle); } catch (e) { /* fallback to renderInputLine */ renderInputLine && renderInputLine(); }
-        // Reset history browsing when typing
+        pokeCell(col, row, ch, inputStyle); }
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
       }
-
       // After any input mutation, re-render visible input
       renderInputLine();
-    }
+      cursor(1);
   } else {
-    if (run && typeof keydown !== 'undefined') {
-      try { keydown(k || l); } catch (e) { /* ignore */ }
-    }
+    if (run) { keydown(k || l); } 
   }
 
   // Restore cursor visual state via canonical helper
-  if (hadCursor) cursor(1);
+  cursor(1);
 }
 
 function renderInputLine() {
@@ -2793,6 +2751,7 @@ for (i=0;i<mySearch.length;i++) {
   SFiles=0;
  }
 }
-if (SFiles) { showFiles(); }
+
+// if (SFiles) { showFiles(); }
 
 </script></body></html>
