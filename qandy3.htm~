@@ -78,6 +78,7 @@ var extendedChars = {
 };
 var line=""; // input text line
 var cursorPos=0; // cursor position in input line for editing
+var cursorOn=0; // cursor on/off 
 var inputScrollPos=0; // starting position of visible input window
 
 // Command history support (like Linux terminal)
@@ -95,7 +96,6 @@ var selectionFgColor = '#000000';   // Selection text color
 var screenBuffer = [];
 var cursorX = 0;
 var cursorY = 0;
-var cursorOn=0; 
 var screenWidth = 32;
 var screenHeight = 25;
 
@@ -1199,16 +1199,6 @@ function button(b) {
  // Pass key to script's keydown() handler if script is running and key wasn't consumed
  if (run && k) { keydown(k); }
  updateDisplay();
-}
-
-
-function cursor(a) {
- if (a==0) {
-   // turn cursor off 
- }
- if (a==1) {
-   // turn curosr on
- }
 }
 
 // Replacement executeCode() for qandy2.htm
