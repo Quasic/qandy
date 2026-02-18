@@ -1191,6 +1191,9 @@ function button(b) {
        print("");
       } else {
        // OS command mode
+       alert(inInputMode);
+       inInputMode = true;  // Prevent pagination during command echo
+       inInputMode = false;  // Re-enable pagination after command echo
        if (line.slice(-3) === ".js") {
         // Load external .js file
         keyon = 0;
