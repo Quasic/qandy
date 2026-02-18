@@ -403,6 +403,8 @@ tiles(); function tiles() {
  }
 }
 
+
+
 resize(); function resize() {
  // Position text element based on mode
  if (mode=="gfx") {
@@ -450,35 +452,18 @@ document.addEventListener('paste', function (event) {
 });
 function press(event) { 
  key=""; k=event.keyCode; shift=event.shiftKey;
- 
- // Prevent browser from handling ALT key - must be done before any conditionals
- if (event.keyCode === 18 || event.altKey) {
-  event.preventDefault(); // Prevent browser menu from opening
- }
- 
- // Prevent browser from handling ESC key - must be done before any conditionals
- if (event.keyCode === 27) {
-  event.preventDefault(); // Prevent browser from handling ESC
- }
- 
- // Handle physical CTRL key press (highlight while pressed)
+ if (event.keyCode === 18 || event.altKey) { event.preventDefault(); }
+ if (event.keyCode === 27) { event.preventDefault(); }
  if (event.keyCode === 17 && !ctrl) {
-  ctrl = 1;
-  ctrlPhysical = true;
+  ctrl=1; ctrlPhysical=true;
   document.getElementById("ctrl").style.backgroundColor = "#0a0";
   document.getElementById("ctrl").style.color = "#000";
   return;
  }
- 
- // Handle physical ALT key press (highlight while pressed)
  if (event.keyCode === 18 && !alt) {
-  alt = 1;
-  altPhysical = true;
-  document.getElementById("alt").style.backgroundColor = "#0a0";
+  alt = 1; altPhysical = true; document.getElementById("alt").style.backgroundColor = "#0a0";
   document.getElementById("alt").style.color = "#000";
-  // Don't return - let the key be passed to button() so apps can handle "alt"
  }
- 
  // Handle Ctrl+C for copy
  if (event.ctrlKey && event.key === 'c') {
   event.preventDefault();
@@ -502,12 +487,8 @@ function press(event) {
   return;
  }
  
- // Don't handle keydown if Ctrl is pressed (let paste event handle it)
  if (event.ctrlKey) { return; }
- 
- // Highlight the virtual key for visual feedback
  highlightKey(k);
- 
  button(k);
 }
 
@@ -1434,7 +1415,7 @@ function triggerPaginationPause() {
   const row = Math.max(1, (typeof screenHeight === 'number' ? screenHeight : 25)); // ANSI rows are 1-based
   const pauseMsgPlain = "Press Any Key to Continue:";
   const ansiPause =
-    "\x1b[" + (row-1) + ";1H" +    // CUP to bottom line, col 1
+    "\x1b[" + row + ";1H" +    // CUP to bottom line, col 1
     "\x1b[2K" +               // Erase entire line
     "\x1b[1;37m" +            // Bold + white foreground
     pauseMsgPlain +
@@ -1774,24 +1755,29 @@ function resumePagination() {
   }
 }
 
-
 function updateDisplay() {
   if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
+  if (!styleBuffer) { styleBuffer = []; }
   const txtElement = document.getElementById("txt");
   let htmlContent = '';
-
-  // Render the full visible screen. Use screenHeight (not cursorY) to avoid off-by-one.
+  // Render the full visible screen (clamped to available buffer).
   const rowsToRender = Math.min(screenHeight, screenBuffer.length);
+  // small helper to escape characters for HTML
+  function escapeChar(c) {
+    if (c === ' ') return '&nbsp;';
+    if (c === '&') return '&amp;';
+    if (c === '<') return '&lt;';
+    if (c === '>') return '&gt;';
+    // keep control chars out of output
+    if (c === '\t') return '&nbsp;&nbsp;&nbsp;&nbsp;';
+    if (c === '\r' || c === '\n') return '';
+    // default: return the character as-is (assumes ASCII printable)
+    return c;
+  }
 
   for (let y = 0; y < rowsToRender; y++) {
-    let lineContent = '';
-    let currentSpanStyle = null;
-    let spanContent = '';
-
-    // Ensure the row exists and has styles
-    if (!screenBuffer[y]) {
-      screenBuffer[y] = new Array(screenWidth).fill(' ');
-    }
+    // Ensure row arrays exist
+    if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
     if (!styleBuffer[y]) {
       styleBuffer[y] = new Array(screenWidth);
       for (let x = 0; x < screenWidth; x++) {
@@ -1804,8 +1790,11 @@ function updateDisplay() {
       }
     }
 
+    let lineHtml = '';
+    let currentSpanStyle = null;
+
     for (let x = 0; x < screenWidth; x++) {
-      const char = screenBuffer[y][x] || ' ';
+      const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
       const style = styleBuffer[y][x] || {
         color: currentStyle.color,
         bgcolor: currentStyle.bgcolor,
@@ -1813,48 +1802,62 @@ function updateDisplay() {
         inverse: currentStyle.inverse
       };
 
-      // Build style identifier for this character
+      // Build a simple style key for grouping spans
       const styleKey = `${style.color}-${style.bgcolor}-${style.bold}-${style.inverse}`;
 
-      // If style changed, close previous span and open new one
+      // When style changes, close previous span and open a new one
       if (currentSpanStyle !== styleKey) {
-        if (spanContent.length > 0) {
-          lineContent += spanContent + '</span>';
-          spanContent = '';
+        if (currentSpanStyle !== null) {
+          lineHtml += '</span>';
         }
 
-        // Open new span with current style
+        // Build classes similar to the earlier approach so existing CSS stays usable
         let classes = [];
-        if (style.inverse) classes.push('inverse');
-        if (style.bold) classes.push('bold');
+        if (style.inverse) {
+          classes.push(`ansi-${ANSI.bgColors[style.bgcolor] || style.bgcolor}`);
+          classes.push(`ansi-bg-${ANSI.colors[style.color] || style.color}`);
+        } else {
+          classes.push(`ansi-${ANSI.colors[style.color] || style.color}`);
+          classes.push(`ansi-bg-${ANSI.bgColors[style.bgcolor] || style.bgcolor}`);
+        }
+        if (style.bold) classes.push('ansi-bold');
 
-        // Build style inline or using classes — preserve existing approach
-        let styleAttr = `color:${ansiColorToCss(style.color)};background:${ansiBgToCss(style.bgcolor)};`;
-        spanContent = `<span style="${styleAttr}">`;
+        lineHtml += `<span class="${classes.join(' ')}">`;
         currentSpanStyle = styleKey;
       }
 
-      // Escape HTML special chars
-      let chEscaped = char === ' ' ? '&nbsp;' : (char === '<' ? '&lt;' : (char === '>' ? '&gt;' : char));
-      spanContent += chEscaped;
+      // Render the character. If this is the logical cursor position and input is enabled,
+      // draw a cursor indicator by wrapping the char in a .cursor span (read-only).
+      const chEscaped = escapeChar(ch);
+      if (keyon && y === cursorY && x === cursorX) {
+        lineHtml += `<span class="cursor">${chEscaped}</span>`;
+      } else {
+        lineHtml += chEscaped;
+      }
     }
 
-    if (spanContent.length > 0) {
-      lineContent += spanContent + '</span>';
+    // Close any open span for the line
+    if (currentSpanStyle !== null) {
+      lineHtml += '</span>';
     }
 
-    htmlContent += lineContent + '<br>';
+    // Append the rendered line. Use a block element per line for easier CSS control.
+    htmlContent += `<div class="row">${lineHtml}</div>`;
   }
 
-  // Fill any remaining visible rows with blank lines (if screenBuffer is shorter)
-  for (let y = screenBuffer.length; y < screenHeight; y++) {
-    htmlContent += '&nbsp;<br>';
+  // Fill remaining visible rows with blank lines if buffer is shorter than screenHeight
+  for (let y = rowsToRender; y < screenHeight; y++) {
+    htmlContent += `<div class="row">&nbsp;</div>`;
   }
 
-  txtElement.innerHTML = "<p>" + htmlContent + "</p>";
+  // Write to DOM in one shot
+  txtElement.innerHTML = htmlContent;
 
-  // Optionally position a visible cursor if keyon is true (preserve existing cursor rendering behavior)
-  // (Keep your existing cursor rendering logic here — don't overwrite it unless required.)
+  // NOTE:
+  // - This function intentionally does NOT modify cursorX or cursorY.
+  // - It only reads them to position the visible cursor indicator.
+  // - Any code that currently mutates cursorY to force a redraw should be changed
+  //   to simply call updateDisplay() and NOT touch cursor variables.
 }
 
 function cls() { 
@@ -2050,6 +2053,7 @@ function initScreen() {
 
 window.ANSI=ANSI;
 print("\nQandy Pocket\nComputer v1.j\n"); 
+keyon = 1; updateDisplay();
 
 SFiles=1;
 mySearch=location.search.substr(1).split("&")
