@@ -1202,20 +1202,30 @@ function button(b) {
  updateDisplay();
 }
 
-
-
-   
 function cursor(a) {
-  if (!screenBuffer || !styleBuffer) { try { initScreen(); } catch (e) {}}
-  const cx=Math.max(0, Math.min(screenWidth-1, cursorX || 0));
-  const cy=Math.max(0, Math.min(screenHeight-1, cursorY || 0));
-  if (prevCursor.set) {
-    const px = prevCursor.x, py = prevCursor.y;
-    if (styleBuffer[py] && styleBuffer[py][px]) { styleBuffer[py][px].inverse = prevCursor.inverse; }
-    prevCursor.set = false;
+  // a === 1 to show cursor (set inverse), a === 0 to hide (restore)
+  if (!screenBuffer || !styleBuffer) {
+    try { initScreen(); } catch (e) { /* best-effort */ }
   }
+
+  // clamp logical coords
+  const cx = Math.max(0, Math.min(screenWidth - 1, cursorX || 0));
+  const cy = Math.max(0, Math.min(screenHeight - 1, cursorY || 0));
+
   if (a === 1) {
-    cursorOn = 1;
+    // Turning on: restore previous if on a different cell
+    if (prevCursor.set) {
+      // if we are re-enabling but at same cell, nothing to restore
+      if (!(prevCursor.x === cx && prevCursor.y === cy)) {
+        // restore previous inverse flag from saved value
+        if (styleBuffer[prevCursor.y] && styleBuffer[prevCursor.y][prevCursor.x]) {
+          styleBuffer[prevCursor.y][prevCursor.x].inverse = prevCursor.inverse;
+          pokeCell(prevCursor.x, prevCursor.y);
+        }
+      }
+    }
+
+    // ensure target row exists
     if (!styleBuffer[cy]) {
       styleBuffer[cy] = [];
       for (let x = 0; x < screenWidth; x++) {
@@ -1227,15 +1237,29 @@ function cursor(a) {
         };
       }
     }
-    const prevInverse = styleBuffer[cy][cx] ? !!styleBuffer[cy][cx].inverse : false;
-    prevCursor = { set: true, x: cx, y: cy, inverse: prevInverse };
-    styleBuffer[cy][cx].inverse = true;
-    try { updateDisplay(); } catch (e) { /* best-effort */ }
 
+    // save previous inverse for the new cursor cell
+    const prevInv = !!styleBuffer[cy][cx].inverse;
+    prevCursor = { set: true, x: cx, y: cy, inverse: prevInv };
+
+    // set inverse on the new cursor cell (POKE)
+    styleBuffer[cy][cx].inverse = true;
+
+    // update only this cell in the DOM
+    pokeCell(cx, cy);
+
+    cursorOn = 1;
   } else {
+    // Turning off: restore previously-saved inverse state
+    if (prevCursor.set) {
+      const px = prevCursor.x, py = prevCursor.y;
+      if (styleBuffer[py] && styleBuffer[py][px]) {
+        styleBuffer[py][px].inverse = prevCursor.inverse;
+        pokeCell(px, py);
+      }
+      prevCursor.set = false;
+    }
     cursorOn = 0;
-    // Nothing to leave inverted; updateDisplay will reflect restored state
-    try { updateDisplay(); } catch (e) { /* best-effort */ }
   }
 }
 
