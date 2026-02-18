@@ -526,244 +526,680 @@ function pressup(event) {
 }
 
 function button(b) {
-  // If pagination paused, resume (existing behavior)
-  if (paginationPaused) { resumePagination(); return; }
-
-  // Map keycode to logical k and printable l (re-uses prior mapping)
-  let k = "", l = "";
-  // NOTE: keep the existing key mapping table here unchanged; for brevity we call the old mapping routine if present
-  // If your file has a separate mapping, keep it. Otherwise include the mapping block from qandy3.htm here.
-  // For this replacement assume mapping from earlier code still runs (the long switch you already have).
-  // We'll call the existing mapping via a helper if present, otherwise fall back:
-  if (typeof mapKeyCodeToKL === 'function') {
-    ({k,l} = mapKeyCodeToKL(b, shift, caps)); // you can implement mapKeyCodeToKL as a small wrapper
+ // Handle pagination resume - any key continues
+ if (paginationPaused) {
+   resumePagination();
+   return;
+ }
+ 
+ k=""; l=""; switch (b) {
+  case 17: k="ctrl"; break;   // CTRL key
+  case 18: k="alt"; break;    // ALT key  
+  case 37: k="left"; break;
+  case 38: k="up"; break;
+  case 39: k="right"; break;
+  case 40: k="down"; break;
+  case 36: k="home"; break;
+  case 35: k="end"; break;
+  case 27: k="esc"; break;
+  case 13: k="enter"; break;
+  case  8: k="back"; break;
+  case 46: k="delete"; break;
+  case 20: k="caps"; break;
+  case 49: if (shift||caps===1) { k="!"; l=k; } else if (caps===2) { l=extendedChars['1']; k=l; } else { k="1"; l=k; } break;  
+  case 50: if (shift||caps===1) { k="@"; l=k; } else if (caps===2) { l=extendedChars['2']; k=l; } else { k="2"; l=k; } break;  
+  case 51: if (shift||caps===1) { k="#"; l=k; } else if (caps===2) { l=extendedChars['3']; k=l; } else { k="3"; l=k; } break;  
+  case 52: if (shift||caps===1) { k="$"; l=k; } else if (caps===2) { l=extendedChars['4']; k=l; } else { k="4"; l=k; } break;  
+  case 53: if (shift||caps===1) { k="%"; l=k; } else if (caps===2) { l=extendedChars['5']; k=l; } else { k="5"; l=k; } break;  
+  case 54: if (shift||caps===1) { k="^"; l=k; } else if (caps===2) { l=extendedChars['6']; k=l; } else { k="6"; l=k; } break;  
+  case 55: if (shift||caps===1) { k="&"; l=k; } else if (caps===2) { l=extendedChars['7']; k=l; } else { k="7"; l=k; } break;
+  case 56: if (shift||caps===1) { k="*"; l=k; } else if (caps===2) { l=extendedChars['8']; k=l; } else { k="8"; l=k; } break;
+  case 57: if (shift||caps===1) { k="("; l=k; } else if (caps===2) { l=extendedChars['9']; k=l; } else { k="9"; l=k; } break;
+  case 48: if (shift||caps===1) { k=")"; l=k; } else if (caps===2) { l=extendedChars['0']; k=l; } else { k="0"; l=k; } break;
+  case 81: if (shift||caps===1) { k="Q"; l=k; } else if (caps===2) { l=extendedChars['q']; k=l; } else { k="q"; l=k; } break; 
+  case 87: if (shift||caps===1) { k="W"; l=k; } else if (caps===2) { l=extendedChars['w']; k=l; } else { k="w"; l=k; } break; 
+  case 69: if (shift||caps===1) { k="E"; l=k; } else if (caps===2) { l=extendedChars['e']; k=l; } else { k="e"; l=k; } break; 
+  case 82: if (shift||caps===1) { k="R"; l=k; } else if (caps===2) { l=extendedChars['r']; k=l; } else { k="r"; l=k; } break; 
+  case 84: if (shift||caps===1) { k="T"; l=k; } else if (caps===2) { l=extendedChars['t']; k=l; } else { k="t"; l=k; } break; 
+  case 89: if (shift||caps===1) { k="Y"; l=k; } else if (caps===2) { l=extendedChars['y']; k=l; } else { k="y"; l=k; } break; 
+  case 85: if (shift||caps===1) { k="U"; l=k; } else if (caps===2) { l=extendedChars['u']; k=l; } else { k="u"; l=k; } break; 
+  case 73: if (shift||caps===1) { k="I"; l=k; } else if (caps===2) { l=extendedChars['i']; k=l; } else { k="i"; l=k; } break; 
+  case 79: if (shift||caps===1) { k="O"; l=k; } else if (caps===2) { l=extendedChars['o']; k=l; } else { k="o"; l=k; } break; 
+  case 80: if (shift||caps===1) { k="P"; l=k; } else if (caps===2) { l=extendedChars['p']; k=l; } else { k="p"; l=k; } break; 
+  case 65: if (shift||caps===1) { k="A"; l=k; } else if (caps===2) { l=extendedChars['a']; k=l; } else { k="a"; l=k; } break; 
+  case 83: if (shift||caps===1) { k="S"; l=k; } else if (caps===2) { l=extendedChars['s']; k=l; } else { k="s"; l=k; } break; 
+  case 68: if (shift||caps===1) { k="D"; l=k; } else if (caps===2) { l=extendedChars['d']; k=l; } else { k="d"; l=k; } break; 
+  case 70: if (shift||caps===1) { k="F"; l=k; } else if (caps===2) { l=extendedChars['f']; k=l; } else { k="f"; l=k; } break; 
+  case 71: if (shift||caps===1) { k="G"; l=k; } else if (caps===2) { l=extendedChars['g']; k=l; } else { k="g"; l=k; } break; 
+  case 72: if (shift||caps===1) { k="H"; l=k; } else if (caps===2) { l=extendedChars['h']; k=l; } else { k="h"; l=k; } break; 
+  case 74: if (shift||caps===1) { k="J"; l=k; } else if (caps===2) { l=extendedChars['j']; k=l; } else { k="j"; l=k; } break; 
+  case 75: if (shift||caps===1) { k="K"; l=k; } else if (caps===2) { l=extendedChars['k']; k=l; } else { k="k"; l=k; } break; 
+  case 76: if (shift||caps===1) { k="L"; l=k; } else if (caps===2) { l=extendedChars['l']; k=l; } else { k="l"; l=k; } break; 
+  case 90: if (shift||caps===1) { k="Z"; l=k; } else if (caps===2) { l=extendedChars['z']; k=l; } else { k="z"; l=k; } break; 
+  case 88: if (shift||caps===1) { k="X"; l=k; } else if (caps===2) { l=extendedChars['x']; k=l; } else { k="x"; l=k; } break; 
+  case 67: if (shift||caps===1) { k="C"; l=k; } else if (caps===2) { l=extendedChars['c']; k=l; } else { k="c"; l=k; } break; 
+  case 86: if (shift||caps===1) { k="V"; l=k; } else if (caps===2) { l=extendedChars['v']; k=l; } else { k="v"; l=k; } break; 
+  case 66: if (shift||caps===1) { k="B"; l=k; } else if (caps===2) { l=extendedChars['b']; k=l; } else { k="b"; l=k; } break; 
+  case 78: if (shift||caps===1) { k="N"; l=k; } else if (caps===2) { l=extendedChars['n']; k=l; } else { k="n"; l=k; } break;  
+  case 77: if (shift||caps===1) { k="M"; l=k; } else if (caps===2) { l=extendedChars['m']; k=l; } else { k="m"; l=k; } break;
+  case  61: if (shift||caps===1) { k="equal"; l="+"; } else if (caps===2) { k="equal"; l=extendedChars['=']; } else { k="="; l=k; } break; 
+  case 191: if (shift||caps===1) { k="slash"; l="?"; } else if (caps===2) { k="slash"; l=extendedChars['/']; } else { k="/"; l=k; } break; 
+  case  59: if (shift||caps===1) { k="colon"; l=":"; } else if (caps===2) { k="colon"; l=extendedChars[';']; } else { k=";"; l=k; } break; 
+  case 222: if (shift||caps===1) { k="quote"; l="\""; } else if (caps===2) { k="quote"; l=extendedChars['\'']; } else { k="\'"; l=k; } break; 
+  case  32: if (shift||caps===1) { k="space"; l=" "; } else if (caps===2) { k="space"; l=extendedChars[' ']; } else { k=" "; l=k; } break;
+  case 188: if (shift||caps===1) { k="comma"; l="<"; } else if (caps===2) { k="comma"; l=extendedChars[',']; } else { k=","; l=k; } break;
+  case 190: if (shift||caps===1) { k="dot";   l=">"; } else if (caps===2) { k="dot"; l=extendedChars['.']; } else { k="."; l=k; } break;
+  case 173: if (shift||caps===1) { k="dash";  l="_"; } else if (caps===2) { k="dash"; l=extendedChars['-']; } else { k="-"; l=k; } break;
+  case 219: if (shift||caps===1) { k="open";  l="{"; } else if (caps===2) { k="open"; l=extendedChars['[']; } else { k="["; l=k; } break;
+  case 221: if (shift||caps===1) { k="close"; l="}"; } else if (caps===2) { k="close"; l=extendedChars[']']; } else { k="]"; l=k; } break;
+  case 192: if (shift||caps===1) { k="backtick"; l="~"; } else if (caps===2) { k="backtick"; l=extendedChars['`']; } else { k="`"; l=k; } break;
+  case 220: if (shift||caps===1) { k="backslash"; l="|"; } else if (caps===2) { k="backslash"; l=extendedChars['\\']; } else { k="\\"; l=k; } break;  
+ }
+ if (k==="esc") {
+  // Universal ESC handler: terminate any running script and return to OS
+  // UNLESS script has set allowScriptESC=true to handle ESC itself
+  if (run && !allowScriptESC) {
+   // Script is running and hasn't opted out - terminate it
+   run = "";
+   if (typeof document !== 'undefined' && document.getElementById("run")) {
+    document.getElementById("run").innerHTML = run;
+   }
+   // Show termination message (don't clear screen so user can see function names, etc.)
+   print("\x1b[1;33m[Script terminated by ESC key]\x1b[0m\n\n");
+   // Prevent key from being passed to the terminated script
+   k = "";
+  }
+  // If allowScriptESC is true, ESC will be passed to script's keydown() handler
+  // If no script running, ESC does nothing
+ } else if (k==="ctrl") {
+  // Toggle ctrl key state
+  ctrl = ctrl ? 0 : 1;
+  if (ctrl) {
+   document.getElementById("ctrl").style.backgroundColor = "#0a0";
+   document.getElementById("ctrl").style.color = "#000";
   } else {
-    // minimal mapping for navigation keys:
-    switch (b) {
-      case 37: k = "left"; break;
-      case 38: k = "up"; break;
-      case 39: k = "right"; break;
-      case 40: k = "down"; break;
-      case 36: k = "home"; break;
-      case 35: k = "end"; break;
-      case 27: k = "esc"; break;
-      case 13: k = "enter"; break;
-      case 8:  k = "back"; break;
-      case 46: k = "delete"; break;
-      case 20: k = "caps"; break;
-      default:
-        // printable characters: get the char from keyboardData mapping if available
-        // fallback: use String.fromCharCode
-        l = String.fromCharCode(b);
-    }
+   document.getElementById("ctrl").style.backgroundColor = "#222";
+   document.getElementById("ctrl").style.color = "#fff";
   }
-
-  // If mapping code left k empty and l empty, try fallback as printable
-  if (!k && !l) l = String.fromCharCode(b || 0);
-
-  // Helper to refresh only the visible input area (assumes input starts at row 0 of a multi-line input)
-  // Refresh the visible input window (draw the portion of `line` that should appear on screen)
-  function refreshInputWindow() {
-    const charsPerLine = screenWidth;
-    // baseRow: screen row that corresponds to logical index 0
-    const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
-    const visibleRows = screenHeight; // you can clamp if input area is smaller
-    for (let r = 0; r < visibleRows; r++) {
-      const targetRow = baseRow + r;
-      const segStart = (inputScrollPos || 0) + r * charsPerLine;
-      writeInputSegmentToScreenRow(targetRow, segStart, charsPerLine);
-    }
-    // selection visuals (if present)
-    if (selectionStart !== -1 && selectionEnd !== -1) {
-      updateSelectionVisuals(selectionStart, selectionEnd);
-    }
-    // finally reposition cursor to match cursorPos
-    syncCursorCoordsFromPos();
+ } else if (k==="alt") {
+  // Toggle alt key state
+  alt = alt ? 0 : 1;
+  if (alt) {
+   document.getElementById("alt").style.backgroundColor = "#0a0";
+   document.getElementById("alt").style.color = "#000";
+  } else {
+   document.getElementById("alt").style.backgroundColor = "#222";
+   document.getElementById("alt").style.color = "#fff";
   }
-  
-  // Process special keys
-  if (k === "left") {
+ } else {
+  if (k==="caps") {
+   // Cycle through three states: 0 (lowercase) -> 1 (uppercase) -> 2 (extended graphics)
+   // The modulo operation wraps from 2 back to 0
+   caps = (caps + 1) % 3;
+   
+   // Update all key labels based on caps lock state
+   if (caps === 0) {
+    // Lowercase
+    document.getElementById("open").innerHTML = "[";
+    document.getElementById("close").innerHTML = "]";
+    document.getElementById("n1").innerHTML = "1";
+    document.getElementById("n2").innerHTML = "2";
+    document.getElementById("n3").innerHTML = "3";
+    document.getElementById("n4").innerHTML = "4";
+    document.getElementById("n5").innerHTML = "5";
+    document.getElementById("n6").innerHTML = "6";
+    document.getElementById("n7").innerHTML = "7";
+    document.getElementById("n8").innerHTML = "8";
+    document.getElementById("n9").innerHTML = "9";
+    document.getElementById("n0").innerHTML = "0";
+    document.getElementById("q").innerHTML = "q";
+    document.getElementById("w").innerHTML = "w";
+    document.getElementById("e").innerHTML = "e";
+    document.getElementById("r").innerHTML = "r";
+    document.getElementById("t").innerHTML = "t";
+    document.getElementById("y").innerHTML = "y";
+    document.getElementById("u").innerHTML = "u";
+    document.getElementById("i").innerHTML = "i";
+    document.getElementById("o").innerHTML = "o";
+    document.getElementById("p").innerHTML = "p";
+    document.getElementById("a").innerHTML = "a";
+    document.getElementById("s").innerHTML = "s";
+    document.getElementById("d").innerHTML = "d";
+    document.getElementById("f").innerHTML = "f";
+    document.getElementById("g").innerHTML = "g";
+    document.getElementById("h").innerHTML = "h";
+    document.getElementById("j").innerHTML = "j";
+    document.getElementById("k").innerHTML = "k";
+    document.getElementById("l").innerHTML = "l";
+    document.getElementById("z").innerHTML = "z";
+    document.getElementById("x").innerHTML = "x";
+    document.getElementById("c").innerHTML = "c";
+    document.getElementById("v").innerHTML = "v";
+    document.getElementById("b").innerHTML = "b";
+    document.getElementById("n").innerHTML = "n";
+    document.getElementById("m").innerHTML = "m";
+    document.getElementById("equal").innerHTML = "=";
+    document.getElementById("slash").innerHTML = "/";
+    document.getElementById("colon").innerHTML = ";";
+    document.getElementById("quote").innerHTML = "'";
+    document.getElementById("comma").innerHTML = ",";
+    document.getElementById("dot").innerHTML = ".";
+    document.getElementById("dash").innerHTML = "-";
+    document.getElementById("backtick").innerHTML = "`";
+    document.getElementById("backslash").innerHTML = "\\";
+    document.getElementById("caps").style.backgroundColor = "#222";
+    document.getElementById("caps").style.color = "#fff";
+   } else if (caps === 1) {
+    // Uppercase
+    document.getElementById("open").innerHTML = "{";
+    document.getElementById("close").innerHTML = "}";
+    document.getElementById("n1").innerHTML = "!";
+    document.getElementById("n2").innerHTML = "@";
+    document.getElementById("n3").innerHTML = "#";
+    document.getElementById("n4").innerHTML = "$";
+    document.getElementById("n5").innerHTML = "%";
+    document.getElementById("n6").innerHTML = "^";
+    document.getElementById("n7").innerHTML = "&";
+    document.getElementById("n8").innerHTML = "*";
+    document.getElementById("n9").innerHTML = "(";
+    document.getElementById("n0").innerHTML = ")";
+    document.getElementById("q").innerHTML = "Q";
+    document.getElementById("w").innerHTML = "W";
+    document.getElementById("e").innerHTML = "E";
+    document.getElementById("r").innerHTML = "R";
+    document.getElementById("t").innerHTML = "T";
+    document.getElementById("y").innerHTML = "Y";
+    document.getElementById("u").innerHTML = "U";
+    document.getElementById("i").innerHTML = "I";
+    document.getElementById("o").innerHTML = "O";
+    document.getElementById("p").innerHTML = "P";
+    document.getElementById("a").innerHTML = "A";
+    document.getElementById("s").innerHTML = "S";
+    document.getElementById("d").innerHTML = "D";
+    document.getElementById("f").innerHTML = "F";
+    document.getElementById("g").innerHTML = "G";
+    document.getElementById("h").innerHTML = "H";
+    document.getElementById("j").innerHTML = "J";
+    document.getElementById("k").innerHTML = "K";
+    document.getElementById("l").innerHTML = "L";
+    document.getElementById("z").innerHTML = "Z";
+    document.getElementById("x").innerHTML = "X";
+    document.getElementById("c").innerHTML = "C";
+    document.getElementById("v").innerHTML = "V";
+    document.getElementById("b").innerHTML = "B";
+    document.getElementById("n").innerHTML = "N";
+    document.getElementById("m").innerHTML = "M";
+    document.getElementById("equal").innerHTML = "+";
+    document.getElementById("slash").innerHTML = "?";
+    document.getElementById("colon").innerHTML = ":";
+    document.getElementById("quote").innerHTML = '"';
+    document.getElementById("comma").innerHTML = "<";
+    document.getElementById("dot").innerHTML = ">";
+    document.getElementById("dash").innerHTML = "_";
+    document.getElementById("backtick").innerHTML = "~";
+    document.getElementById("backslash").innerHTML = "|";
+    document.getElementById("caps").style.backgroundColor = "#444";
+    document.getElementById("caps").style.color = "#000";
+   } else {
+    // Extended graphics (caps === 2)
+    document.getElementById("open").innerHTML = extendedChars['['];
+    document.getElementById("close").innerHTML = extendedChars[']'];
+    document.getElementById("n1").innerHTML = extendedChars['1'];
+    document.getElementById("n2").innerHTML = extendedChars['2'];
+    document.getElementById("n3").innerHTML = extendedChars['3'];
+    document.getElementById("n4").innerHTML = extendedChars['4'];
+    document.getElementById("n5").innerHTML = extendedChars['5'];
+    document.getElementById("n6").innerHTML = extendedChars['6'];
+    document.getElementById("n7").innerHTML = extendedChars['7'];
+    document.getElementById("n8").innerHTML = extendedChars['8'];
+    document.getElementById("n9").innerHTML = extendedChars['9'];
+    document.getElementById("n0").innerHTML = extendedChars['0'];
+    document.getElementById("q").innerHTML = extendedChars['q'];
+    document.getElementById("w").innerHTML = extendedChars['w'];
+    document.getElementById("e").innerHTML = extendedChars['e'];
+    document.getElementById("r").innerHTML = extendedChars['r'];
+    document.getElementById("t").innerHTML = extendedChars['t'];
+    document.getElementById("y").innerHTML = extendedChars['y'];
+    document.getElementById("u").innerHTML = extendedChars['u'];
+    document.getElementById("i").innerHTML = extendedChars['i'];
+    document.getElementById("o").innerHTML = extendedChars['o'];
+    document.getElementById("p").innerHTML = extendedChars['p'];
+    document.getElementById("a").innerHTML = extendedChars['a'];
+    document.getElementById("s").innerHTML = extendedChars['s'];
+    document.getElementById("d").innerHTML = extendedChars['d'];
+    document.getElementById("f").innerHTML = extendedChars['f'];
+    document.getElementById("g").innerHTML = extendedChars['g'];
+    document.getElementById("h").innerHTML = extendedChars['h'];
+    document.getElementById("j").innerHTML = extendedChars['j'];
+    document.getElementById("k").innerHTML = extendedChars['k'];
+    document.getElementById("l").innerHTML = extendedChars['l'];
+    document.getElementById("z").innerHTML = extendedChars['z'];
+    document.getElementById("x").innerHTML = extendedChars['x'];
+    document.getElementById("c").innerHTML = extendedChars['c'];
+    document.getElementById("v").innerHTML = extendedChars['v'];
+    document.getElementById("b").innerHTML = extendedChars['b'];
+    document.getElementById("n").innerHTML = extendedChars['n'];
+    document.getElementById("m").innerHTML = extendedChars['m'];
+    document.getElementById("equal").innerHTML = extendedChars['='];
+    document.getElementById("slash").innerHTML = extendedChars['/'];
+    document.getElementById("colon").innerHTML = extendedChars[';'];
+    document.getElementById("quote").innerHTML = extendedChars['\''];
+    document.getElementById("comma").innerHTML = extendedChars[','];
+    document.getElementById("dot").innerHTML = extendedChars['.'];
+    document.getElementById("dash").innerHTML = extendedChars['-'];
+    document.getElementById("backtick").innerHTML = extendedChars['`'];
+    document.getElementById("backslash").innerHTML = extendedChars['\\'];
+    document.getElementById("caps").style.backgroundColor = "#888";
+    document.getElementById("caps").style.color = "#000";
+   }
+  } else {
+   // Handle arrow key cursor movement
+   if (k === "left") {
     if (shift) {
-      if (selectionStart === -1) selectionStart = cursorPos;
-      selectionEnd = Math.max(0, cursorPos - 1);
-    } else {
-      selectionStart = -1; selectionEnd = -1;
+     // Selection mode - extend selection left
+     if (selectionStart === -1) {
+      // Start new selection
+      selectionStart = Math.max(0, cursorPos - 1);
+      selectionEnd = cursorPos;
+     } else {
+      // Extend existing selection
+      if (cursorPos > 0) {
+       selectionStart = Math.min(selectionStart, cursorPos - 1);
+      }
+     }
     }
-    if (cursorPos > 0) cursorPos--;
-    refreshInputWindow();
-    return;
-  }
-
-  if (k === "right") {
+    
+    if (cursorPos > 0) {
+     cursorPos--;
+    }
+    
+    // Update selection after cursor moves
+    if (shift && selectionStart !== -1 && selectionEnd !== -1) {
+     selectionStart = Math.max(0, Math.min(selectionStart, cursorPos));
+     // Clear selection if start >= end
+     if (selectionStart >= selectionEnd) {
+      selectionStart = -1;
+      selectionEnd = -1;
+     }
+    } else if (!shift) {
+     // Clear selection if not holding shift
+     selectionStart = -1;
+     selectionEnd = -1;
+    }
+   } else if (k === "right") {
     if (shift) {
-      if (selectionStart === -1) selectionStart = cursorPos;
-      selectionEnd = Math.min(line.length, cursorPos + 1);
-    } else {
-      selectionStart = -1; selectionEnd = -1;
+     // Selection mode - extend selection right
+     if (selectionStart === -1) {
+      // Start new selection
+      selectionStart = cursorPos;
+      selectionEnd = cursorPos + 1;
+     } else {
+      // Extend existing selection
+      if (cursorPos < line.length) {
+       selectionEnd = Math.max(selectionEnd, cursorPos + 1);
+      }
+     }
     }
-    if (cursorPos < line.length) cursorPos++;
-    refreshInputWindow();
-    return;
-  }
-
-  if (k === "up") {
-    // history if on first line, else move up in multi-line input
+    
+    if (cursorPos < line.length) {
+     cursorPos++;
+    }
+    
+    // Clear selection if start >= end or not holding shift
+    if (shift && selectionStart !== -1 && selectionEnd !== -1) {
+     selectionEnd = Math.max(selectionStart, cursorPos);
+     // Clear selection if start >= end
+     if (selectionStart >= selectionEnd) {
+      selectionStart = -1;
+      selectionEnd = -1;
+     }
+    } else if (!shift) {
+     // Clear selection if not holding shift
+     selectionStart = -1;
+     selectionEnd = -1;
+    }
+   } else if (k === "up") {
+    // Arrow Up - command history (previous) or move cursor to line above
+    const cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
     const charsPerLine = screenWidth;
     const currentLine = Math.floor(cursorPos / charsPerLine);
+    const currentColumn = cursorPos % charsPerLine;
+    
+    // If on first line and not in selection mode, navigate command history
     if (currentLine === 0 && !shift && keyon) {
-      if (commandHistory.length > 0) {
-        if (historyIndex === -1) { tempCommand = line; historyIndex = commandHistory.length; }
-        if (historyIndex > 0) { historyIndex--; line = commandHistory[historyIndex]; cursorPos = line.length; inputScrollPos = 0; }
-        refreshInputWindow();
+     if (commandHistory.length > 0) {
+      // Save current command if starting to browse history
+      if (historyIndex === -1) {
+       tempCommand = line;
+       historyIndex = commandHistory.length;
       }
+      
+      // Move to previous command in history
+      if (historyIndex > 0) {
+       historyIndex--;
+       line = commandHistory[historyIndex];
+       cursorPos = line.length;
+       inputScrollPos = 0;
+      }
+     }
     } else {
-      // multi-line up
-      if (cursorPos >= charsPerLine) {
-        cursorPos = cursorPos - charsPerLine;
-        if (shift) {
-          if (selectionStart === -1) selectionStart = cursorPos + charsPerLine;
-          selectionEnd = cursorPos;
-        } else { selectionStart = -1; selectionEnd = -1; }
-        refreshInputWindow();
+     // Multi-line navigation
+     if (shift) {
+      // Selection mode
+      if (selectionStart === -1) {
+       selectionStart = cursorPos;
       }
+     }
+     
+     if (currentLine > 0) {
+      // Not on first line, can move up
+      const prevLineStart = (currentLine - 1) * charsPerLine;
+      const prevLineLength = Math.min(charsPerLine, cleanInput.length - prevLineStart);
+      
+      // Move to same column on line above, or end of line if column doesn't exist
+      const newPos = prevLineStart + Math.min(currentColumn, prevLineLength);
+      cursorPos = newPos;
+     }
+     
+     if (shift && selectionStart !== -1) {
+      selectionEnd = cursorPos;
+      // Normalize selection
+      if (selectionStart > selectionEnd) {
+       const temp = selectionStart;
+       selectionStart = selectionEnd;
+       selectionEnd = temp;
+      }
+     } else if (!shift) {
+      selectionStart = -1;
+      selectionEnd = -1;
+     }
     }
-    return;
-  }
-
-  if (k === "down") {
+   } else if (k === "down") {
+    // Arrow Down - command history (next) or move cursor to line below
+    const cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
     const charsPerLine = screenWidth;
-    const totalLines = Math.ceil(Math.max(1, line.length) / charsPerLine);
     const currentLine = Math.floor(cursorPos / charsPerLine);
+    const currentColumn = cursorPos % charsPerLine;
+    const totalLines = Math.ceil(cleanInput.length / charsPerLine);
+    
+    // If on last line and not in selection mode, navigate command history
     if (currentLine >= totalLines - 1 && !shift && keyon) {
-      if (historyIndex !== -1) {
-        if (historyIndex < commandHistory.length - 1) { historyIndex++; line = commandHistory[historyIndex]; cursorPos = line.length; inputScrollPos = 0; }
-        else { historyIndex = -1; line = tempCommand; cursorPos = line.length; inputScrollPos = 0; tempCommand = ""; }
-        refreshInputWindow();
+     if (historyIndex !== -1) {
+      // Move to next command in history
+      if (historyIndex < commandHistory.length - 1) {
+       historyIndex++;
+       line = commandHistory[historyIndex];
+       cursorPos = line.length;
+       inputScrollPos = 0;
+      } else if (historyIndex === commandHistory.length - 1) {
+       // At newest history entry, go back to what user was typing
+       historyIndex = -1;
+       line = tempCommand;
+       cursorPos = line.length;
+       inputScrollPos = 0;
+       tempCommand = "";
       }
+     }
     } else {
-      if (cursorPos + charsPerLine <= line.length) {
-        cursorPos = Math.min(line.length, cursorPos + charsPerLine);
-        if (shift) {
-          if (selectionStart === -1) selectionStart = cursorPos - charsPerLine;
-          selectionEnd = cursorPos;
-        } else { selectionStart = -1; selectionEnd = -1; }
-        refreshInputWindow();
+     // Multi-line navigation
+     if (shift) {
+      // Selection mode
+      if (selectionStart === -1) {
+       selectionStart = cursorPos;
       }
+     }
+     
+     if (currentLine < totalLines - 1) {
+      // Not on last line, can move down
+      const nextLineStart = (currentLine + 1) * charsPerLine;
+      const nextLineLength = Math.min(charsPerLine, cleanInput.length - nextLineStart);
+      
+      // Move to same column on line below, or end of line if column doesn't exist
+      const newPos = nextLineStart + Math.min(currentColumn, nextLineLength);
+      cursorPos = newPos;
+     }
+     
+     if (shift && selectionStart !== -1) {
+      selectionEnd = cursorPos;
+      // Normalize selection
+      if (selectionStart > selectionEnd) {
+       const temp = selectionStart;
+       selectionStart = selectionEnd;
+       selectionEnd = temp;
+      }
+     } else if (!shift) {
+      selectionStart = -1;
+      selectionEnd = -1;
+     }
     }
-    return;
-  }
-
-  if (k === "home") {
-    const charsPerLine = screenWidth;
-    const currentLine = Math.floor(cursorPos / charsPerLine);
-    const lineStart = currentLine * charsPerLine;
-    if (shift) { if (selectionStart === -1) selectionStart = cursorPos; selectionEnd = lineStart; }
-    else { selectionStart = -1; selectionEnd = -1; }
-    cursorPos = lineStart;
-    refreshInputWindow();
-    return;
-  }
-
-  if (k === "end") {
-    const charsPerLine = screenWidth;
-    const currentLine = Math.floor(cursorPos / charsPerLine);
-    const lineEnd = Math.min((currentLine + 1) * charsPerLine, line.length);
-    if (shift) { if (selectionStart === -1) selectionStart = cursorPos; selectionEnd = lineEnd; }
-    else { selectionStart = -1; selectionEnd = -1; }
-    cursorPos = lineEnd;
-    refreshInputWindow();
-    return;
-  }
-
-  if (k === "back") {
-    // backspace: delete char before cursor or delete selection
-    if (selectionStart !== -1 && selectionEnd !== -1 && selectionStart !== selectionEnd) {
-      const s = Math.min(selectionStart, selectionEnd), e = Math.max(selectionStart, selectionEnd);
-      line = line.substring(0, s) + line.substring(e);
-      cursorPos = s;
-      selectionStart = -1; selectionEnd = -1;
-    } else if (cursorPos > 0) {
-      line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
-      cursorPos--;
+   } else if (k === "home") {
+    if (shift) {
+     if (selectionStart === -1) {
+      selectionStart = cursorPos;
+     }
+     const charsPerLine = screenWidth;
+     const currentLine = Math.floor(cursorPos / charsPerLine);
+     const lineStart = currentLine * charsPerLine;
+     cursorPos = lineStart;
+     selectionEnd = cursorPos;
+     // Normalize selection
+     if (selectionStart > selectionEnd) {
+      const temp = selectionStart;
+      selectionStart = selectionEnd;
+      selectionEnd = temp;
+     }
+    } else {
+     const charsPerLine = screenWidth;
+     const currentLine = Math.floor(cursorPos / charsPerLine);
+     const lineStart = currentLine * charsPerLine;
+     cursorPos = lineStart;
+     selectionStart = -1;
+     selectionEnd = -1;
     }
-    refreshInputWindow();
-    return;
-  }
-
-  if (k === "delete") {
-    if (selectionStart !== -1 && selectionEnd !== -1 && selectionStart !== selectionEnd) {
-      const s = Math.min(selectionStart, selectionEnd), e = Math.max(selectionStart, selectionEnd);
-      line = line.substring(0, s) + line.substring(e);
-      cursorPos = s;
-      selectionStart = -1; selectionEnd = -1;
-    } else if (cursorPos < line.length) {
-      line = line.substring(0, cursorPos) + line.substring(cursorPos + 1);
+   } else if (k === "end") {
+    if (shift) {
+     if (selectionStart === -1) {
+      selectionStart = cursorPos;
+     }
+     const charsPerLine = screenWidth;
+     const currentLine = Math.floor(cursorPos / charsPerLine);
+     const lineEnd = Math.min((currentLine + 1) * charsPerLine, line.length);
+     cursorPos = lineEnd;
+     selectionEnd = cursorPos;
+     // Normalize selection
+     if (selectionStart > selectionEnd) {
+      const temp = selectionStart;
+      selectionStart = selectionEnd;
+      selectionEnd = temp;
+     }
+    } else {
+     const charsPerLine = screenWidth;
+     const currentLine = Math.floor(cursorPos / charsPerLine);
+     const lineEnd = Math.min((currentLine + 1) * charsPerLine, line.length);
+     cursorPos = lineEnd;
+     selectionStart = -1;
+     selectionEnd = -1;
     }
-    refreshInputWindow();
-    return;
-  }
-
-  if (k === "enter") {
-    if (keyon) {
-      // add to history
+   } else if (k === "back") {
+    // Backspace - delete character before cursor
+    if (cursorPos > 0) {
+     line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
+     cursorPos--;
+    }
+    // Clear selection
+    selectionStart = -1;
+    selectionEnd = -1;
+   } else if (k === "delete") {
+    // Check for Shift+Delete (cut operation)
+    if (shift && selectionStart !== -1 && selectionEnd !== -1) {
+     // Cut operation: copy then delete
+     const start = Math.min(selectionStart, selectionEnd);
+     const end = Math.max(selectionStart, selectionEnd);
+     const selectedText = line.substring(start, end);
+     
+     // Copy to clipboard
+     navigator.clipboard.writeText(selectedText).then(() => {
+      // Delete the selected text
+      line = line.substring(0, start) + line.substring(end);
+      cursorPos = start;
+      selectionStart = -1;
+      selectionEnd = -1;
+      updateDisplay();
+      print("\x1b[32mCut to clipboard!\x1b[0m\n");
+     }).catch(err => {
+      print("\x1b[31mCut failed\x1b[0m\n");
+     });
+     return; // Don't call updateDisplay again
+    }
+    // Delete selected text (without copy)
+    else if (selectionStart !== -1 && selectionEnd !== -1) {
+     const start = Math.min(selectionStart, selectionEnd);
+     const end = Math.max(selectionStart, selectionEnd);
+     line = line.substring(0, start) + line.substring(end);
+     cursorPos = start;
+     selectionStart = -1;
+     selectionEnd = -1;
+    }
+    // Normal delete - remove character at cursor position
+    else if (cursorPos < line.length) {
+     line = line.substring(0, cursorPos) + line.substring(cursorPos + 1);
+    }
+   } else {
+    if (k === "enter") {
+     if (keyon) {
+      // Add command to history (skip empty commands and duplicates)
       if (line.trim().length > 0) {
-        if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== line) {
-          commandHistory.push(line);
-          if (commandHistory.length > maxHistorySize) commandHistory.shift();
+       // Don't add if it's the same as the last command
+       if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== line) {
+        commandHistory.push(line);
+        // Limit history size
+        if (commandHistory.length > maxHistorySize) {
+         commandHistory.shift();
         }
+       }
       }
-      historyIndex = -1; tempCommand = "";
+      // Reset history navigation
+      historyIndex = -1;
+      tempCommand = "";
+      
       if (run) {
-        txt = txt + line + "<br>";
-        input(line); line = ""; cursorPos = 0; inputScrollPos = 0;
-        // render the cleared input area
-        refreshInputWindow();
-        print("");
+       // Program is running
+       txt = txt + line + "<br>";
+       input(line);
+       line = "";
+       cursorPos = 0;
+       inputScrollPos = 0;
+       print("");
       } else {
-        inInputMode = true;
-        // echo line using print (keeps backward compatibility)
-        print(line); print("\n");
-        inInputMode = false;
-        // dispatch OS command path (existing logic)
-        if (line.slice(-3) === ".js") {
-          keyon = 0;
-          txt = txt + line + "<br>";
-          const prg = document.createElement('script'); prg.src = line;
-          prg.onload = () => { keyon = 1; };
-          prg.onerror = () => { print("Error loading program\n"); keyon = 1; };
-          document.head.appendChild(prg); line = ""; cursorPos = 0; inputScrollPos = 0;
-        } else if (line.substr(0,3) === "cls") {
-          initScreen(); line = ""; cursorPos = 0; inputScrollPos = 0;
-        } else if (line.substr(0,4) === "help") {
-          showFiles(); line = "";
-        } else {
-          executeCode(line); line = ""; cursorPos = 0; inputScrollPos = 0;
-        }
+       // OS command mode
+       inInputMode = true;  // Prevent pagination during command echo
+       print(line); print("\n");
+       inInputMode = false;  // Re-enable pagination after command echo
+       if (line.slice(-3) === ".js") {
+        // Load external .js file
+        keyon = 0;
+        txt = txt + line + "<br>";
+        const prg = document.createElement('script');
+        prg.src = line;
+        prg.onload = () => { keyon = 1; };
+        prg.onerror = () => { 
+         print("Error loading program\n");
+         keyon = 1;
+        };
+        document.head.appendChild(prg);
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 3) === "cls") {
+        initScreen();
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       } else if (line.substr(0, 4) === "help") {
+        // display list of install .js files
+        showFiles(); line="";        
+       } else {
+        // Execute command/code
+        executeCode(line);
+        line = "";
+        cursorPos = 0;
+        inputScrollPos = 0;
+       }
       }
+     }
+    } else if (l) {
+     // Insert character at cursor position
+     if (keyon) {
+      // Prepend modifier keys if active (from virtual or physical keyboard)
+      let finalChar = l;
+      let hasCtrl = ctrl || (typeof event !== 'undefined' && event.ctrlKey);
+      let hasAlt = alt || (typeof event !== 'undefined' && event.altKey);
+      
+      if (hasCtrl || hasAlt) {
+       let modifiers = [];
+       if (hasCtrl) modifiers.push("ctrl");
+       if (hasAlt) modifiers.push("alt");
+       finalChar = modifiers.join(" ") + " " + l;
+       // Reset virtual keyboard modifier keys after use (they're consumed)
+       if (ctrl) {
+        ctrl = 0;
+        document.getElementById("ctrl").style.backgroundColor = "#222";
+        document.getElementById("ctrl").style.color = "#fff";
+       }
+       if (alt) {
+        alt = 0;
+        document.getElementById("alt").style.backgroundColor = "#222";
+        document.getElementById("alt").style.color = "#fff";
+       }
+      }
+      line = line.substring(0, cursorPos) + finalChar + line.substring(cursorPos);
+      cursorPos += finalChar.length;
+      // Clear selection when typing
+      selectionStart = -1;
+      selectionEnd = -1;
+      // Reset history navigation when user types
+      historyIndex = -1;
+      tempCommand = "";
+     }
     }
-    refreshInputWindow();
-    return;
+   }
   }
-
-  // Default: printable characters (l contains printable char when available)
-  if (l && keyon) {
-    // if selection active, replace selection with typed char
-    if (selectionStart !== -1 && selectionEnd !== -1 && selectionStart !== selectionEnd) {
-      const s = Math.min(selectionStart, selectionEnd), e = Math.max(selectionStart, selectionEnd);
-      line = line.substring(0, s) + l + line.substring(e);
-      cursorPos = s + l.length;
-      selectionStart = -1; selectionEnd = -1;
-    } else {
-      line = line.substring(0, cursorPos) + l + line.substring(cursorPos);
-      cursorPos += l.length;
-    }
-    historyIndex = -1; tempCommand = "";
-    refreshInputWindow();
-    return;
-  }
-
-  // If we get here, no action; update cursor visual anyway
-  syncCursorCoordsFromPos();
+ }
+ // Prepend modifier keys to k BEFORE passing to script (for keyon=0 mode)
+ // This ensures scripts get "alt m" instead of just "m" when ALT+M is pressed
+ // Also prepend shift for navigation keys and other keys when needed
+ if (run && k && !keyon) {
+   let hasCtrl = ctrl || (typeof event !== 'undefined' && event.ctrlKey);
+   let hasAlt = alt || (typeof event !== 'undefined' && event.altKey);
+   let hasShift = shift || (typeof event !== 'undefined' && event.shiftKey);
+   
+   // List of keys that should get shift prefix (navigation keys)
+   let shiftableKeys = ["left", "right", "up", "down", "home", "end", "delete"];
+   let shouldAddShift = shiftableKeys.indexOf(k) !== -1 && hasShift;
+   
+   if (hasCtrl || hasAlt || shouldAddShift) {
+     let modifiers = [];
+     if (hasShift && shouldAddShift) modifiers.push("shift");
+     if (hasCtrl) modifiers.push("ctrl");
+     if (hasAlt) modifiers.push("alt");
+     k = modifiers.join(" ") + " " + (l || k);
+     // Reset virtual keyboard modifier keys after use
+     if (ctrl) {
+       ctrl = 0;
+       document.getElementById("ctrl").style.backgroundColor = "#222";
+       document.getElementById("ctrl").style.color = "#fff";
+     }
+     if (alt) {
+       alt = 0;
+       document.getElementById("alt").style.backgroundColor = "#222";
+       document.getElementById("alt").style.color = "#fff";
+     }
+   }
+ }
+ 
+ // Pass key to script's keydown() handler if script is running and key wasn't consumed
+ if (run && k) { keydown(k); }
+ updateDisplay();
 }
 // Replace the existing function cursor(a) with this code:
 
