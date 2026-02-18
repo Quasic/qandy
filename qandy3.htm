@@ -1507,47 +1507,100 @@ function updateSelectionVisuals(selStart, selEnd) {
   }
 }
 
-function print(a) {
-  // Ensure a is a string
-  a = String(a || "");
+function print(inputString) {
+  // Accept undefined/null safely
+  inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
 
-  // Append to the internal txt buffer
-  txt = (typeof txt !== 'undefined' && txt !== null) ? txt + a : a;
+  // Keep the textual history buffer for compatibility with other code
+  txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
 
-  // When in input mode, we still want to show the in-progress input line after printed text,
-  // but we must not overwrite the printed argument.
-  var promptSuffix = (typeof keyon !== 'undefined' && keyon) ? (line || "") : "";
+  // If pagination is paused, queue the text (keeps previous behavior)
+  if (typeof paginationPaused !== 'undefined' && paginationPaused) {
+    if (typeof paginationBuffer === 'undefined') paginationBuffer = [];
+    paginationBuffer.push(inputString);
+    return;
+  }
 
-  // Render: printed text + live input (if any). Show cursor marker only in input mode.
-  var inner = "<p>" + txt + promptSuffix;
-  if (typeof keyon !== 'undefined' && keyon) inner += "<font id=cursor>&nbsp;</font>";
-  inner += "</p>";
+  // Ensure screen buffers exist
+  if (!window.screenBuffer || !window.styleBuffer || !window.screenWidth || !window.screenHeight) {
+    try { initScreen(); } catch (e) { /* best-effort */ }
+  }
 
-  var el = document.getElementById("txt");
-  if (el) el.innerHTML = inner;
-
-  // positioning logic from the original implementation (keep existing math if needed)
+  // Write into buffers using draw() which handles ANSI codes, cursor movement, etc.
   try {
-    if (mode === "gfx") {
-      up = 32 + (404 - (document.getElementById('txt').offsetHeight));
-      left = 32 + 22 + 300;
-      document.getElementById("txt").style.left = left + "px";
-      document.getElementById("txt").style.top = up + "px";
+    if (typeof draw === 'function') {
+      draw(inputString);
     } else {
-      left = 32 + 22;
-      up = 32 + (402 - (document.getElementById('txt').offsetHeight));
-      document.getElementById("txt").style.left = "54px";
-      document.getElementById("txt").style.top = up + "px";
+      // Fallback: naive per-character write into buffers
+      for (let i = 0; i < inputString.length; i++) {
+        const ch = inputString[i];
+        if (ch === '\n') {
+          cursorX = 0;
+          cursorY++;
+        } else {
+          if (!screenBuffer[cursorY]) {
+            screenBuffer[cursorY] = new Array(screenWidth).fill(' ');
+            styleBuffer[cursorY] = new Array(screenWidth);
+            for (let x = 0; x < screenWidth; x++) {
+              styleBuffer[cursorY][x] = {
+                color: currentStyle.color,
+                bgcolor: currentStyle.bgcolor,
+                bold: currentStyle.bold,
+                inverse: currentStyle.inverse
+              };
+            }
+          }
+          if (cursorX >= screenWidth) { cursorX = 0; cursorY++; }
+          if (cursorY >= screenHeight) { cursorY = screenHeight - 1; /* clamp or implement scrollScreenDown() */ }
+          screenBuffer[cursorY][cursorX] = ch;
+          styleBuffer[cursorY][cursorX] = {
+            color: currentStyle.color,
+            bgcolor: currentStyle.bgcolor,
+            bold: currentStyle.bold,
+            inverse: currentStyle.inverse
+          };
+          cursorX++;
+        }
+      }
     }
-  } catch (e) { /* non-fatal - keep best-effort */ }
+  } catch (e) {
+    console.warn('print(): draw/buffer write failed, falling back to direct DOM render', e);
+    // As a last resort, update innerHTML so user still sees something
+    try {
+      const el = document.getElementById('txt');
+      if (el) {
+        el.innerHTML = "<p>" + txt + (keyon ? (line || "") + "<font id=cursor>&nbsp;</font>" : "") + "</p>";
+      }
+    } catch (_) {}
+    return;
+  }
 
-  // scroll to bottom
+  // After buffer changes, update display once
+  try {
+    if (typeof updateDisplay === 'function') updateDisplay();
+  } catch (e) {
+    // If updateDisplay fails, attempt safe DOM fallback
+    try { document.getElementById('txt').innerHTML = document.getElementById('txt').innerHTML; } catch (_) {}
+  }
+
+  // If we're in input/edit mode, overlay the live input line so typing shows up correctly.
+  if (typeof keyon !== 'undefined' && keyon) {
+    try {
+      if (typeof renderInputLine === 'function') {
+        renderInputLine();
+      } else {
+        // Fallback: call updateDisplay() again or re-render prompt via legacy path
+        if (typeof updateDisplay === 'function') updateDisplay();
+      }
+    } catch (e) { /* non-fatal */ }
+  }
+
+  // Scroll to bottom if element exists
   try {
     const textElement = document.getElementById("txt");
     if (textElement) textElement.scrollTop = textElement.scrollHeight;
   } catch (e) {}
 }
-
 function draw(inputString) {
   // Draw text at current cursor location with ANSI codes
   // Does NOT scroll, trigger pagination, or update txt variable
