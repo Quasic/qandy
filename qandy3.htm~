@@ -525,20 +525,6 @@ function pressup(event) {
  }
 }
 
-// Enhanced pokeCell that also supports updating ANSI style/color
-// Usage:
-//   pokeCell(x, y, 'A'); // existing behavior (char only)
-//   pokeCell(x, y, 'A', { color:37, bgcolor:40, bold:true, inverse:false });
-//   setCellStyle(x, y, { color:32, bgcolor:40, bold:false, inverse:false });
-//   // address-style POKE still works (unchanged)
-//
-// Notes:
-// - color/bgcolor expected to be ANSI numeric values used by repo (e.g. 30..37 for fg, 40..47 for bg).
-// - This updates styleBuffer[y][x] and the DOM classes 'ansi-fg-<n>' / 'ansi-bg-<n>' as used elsewhere.
-(function () {
-  if (window.__pokeCell_color_installed) return;
-  window.__pokeCell_color_installed = true;
-
   // helper: ensure buffers and row exist
   function ensureBuffersAndRow(y) {
     if (!window.screenWidth) window.screenWidth = 32;
@@ -724,13 +710,9 @@ function pressup(event) {
     return ok;
   };
 
-  // Convenience alias, keep poke/peek for compatibility
   window.setCellStyle = window.setCellStyle; // already set above
   window.poke = function (x, y, ch, styleObj) { return window.pokeCell(x, y, ch, styleObj); };
   window.peek = function (x, y) { return safeGet(window.screenBuffer, y, x); };
-
-  console.info('Enhanced pokeCell installed: accepts optional styleObj; setCellStyle(x,y,styleObj) provided.');
-})();
 
 function cursor(a) {
   // Ensure buffers exist (best-effort)

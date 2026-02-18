@@ -431,6 +431,331 @@ resize(); function resize() {
  }
 }
 
+function button(b, event) {
+  // Resume pagination if paused
+  if (typeof paginationPaused !== 'undefined' && paginationPaused) {
+    if (typeof resumePagination === 'function') resumePagination();
+    return;
+  }
+
+  // Keep physical shift state if event provided
+  if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
+
+  // Hide cursor while we mutate buffers/DOM (use cursor() helper)
+  var hadCursor = !!cursorOn;
+  if (hadCursor) cursor(0);
+
+  // logical key and printable char
+  var k = "", l = "";
+
+  // Navigation / control mapping
+  switch (b) {
+    case 16: // SHIFT (physical) - toggle when virtual pressed
+      if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
+      else shift = !shift;
+      if (hadCursor) cursor(1);
+      return;
+    case 17: k = "ctrl"; break;
+    case 18: k = "alt"; break;
+    case 20: k = "caps"; break;
+    case 27: k = "esc"; break;
+    case 13: k = "enter"; break;
+    case 8:  k = "back"; break;
+    case 46: k = "delete"; break;
+    case 37: k = "left"; break;
+    case 38: k = "up"; break;
+    case 39: k = "right"; break;
+    case 40: k = "down"; break;
+    case 36: k = "home"; break;
+    case 35: k = "end"; break;
+    default:
+      // fallthrough to printable handling
+  }
+
+  // Letters A-Z (respect shift xor caps)
+  if (!k && b >= 65 && b <= 90) {
+    var base = String.fromCharCode(b); // 'A'..'Z'
+    var capsOn = !!caps;
+    var shiftOn = !!shift;
+    var makeUpper = (shiftOn && !capsOn) || (!shiftOn && capsOn);
+    l = makeUpper ? base.toUpperCase() : base.toLowerCase();
+    k = l;
+  }
+
+  // Common non-letter printable key mapping
+  var keyMap = {
+    48: ['0', ')'], 49: ['1','!'], 50: ['2','@'], 51: ['3','#'],
+    52: ['4','$'], 53: ['5','%'], 54: ['6','^'], 55: ['7','&'],
+    56: ['8','*'], 57: ['9','('],
+    186: [';',':'], 187: ['=','+'], 188: [',','<'], 189: ['-','_'],
+    190: ['.','>'], 191: ['/','?'], 192: ['`','~'],
+    219: ['[','{'], 220: ['\\','|'], 221: [']','}'], 222: ["'",'"'],
+    32: [' ',' ']
+  };
+
+  if (!k && keyMap[b]) {
+    l = shift ? keyMap[b][1] : keyMap[b][0];
+    k = l;
+  }
+
+  // Ignore raw control codes (<32) - do not insert them
+  if (!k && b < 32) {
+    if (hadCursor) cursor(1);
+    return;
+  }
+
+  // Fallback best-effort
+  if (!k) {
+    try {
+      l = String.fromCharCode(b);
+      if (/[A-Za-z]/.test(l)) {
+        var caps2 = !!caps, shk = !!shift;
+        l = ((shk && !caps2) || (!shk && caps2)) ? l.toUpperCase() : l.toLowerCase();
+      } else if (shift) l = l.toUpperCase();
+      k = l;
+    } catch (e) {
+      k = ""; l = "";
+    }
+  }
+
+  // expose globals for compatibility
+  window.k = k; window.l = l;
+
+  // Modifier key toggles (virtual keyboard)
+  if (k === "ctrl") {
+    ctrl = !ctrl;
+    var el = document.getElementById("ctrl");
+    if (el) { el.style.backgroundColor = ctrl ? "#fff" : "#222"; el.style.color = ctrl ? "#000" : "#fff"; }
+    if (hadCursor) cursor(1);
+    return;
+  }
+  if (k === "alt") {
+    alt = !alt;
+    var el2 = document.getElementById("alt");
+    if (el2) { el2.style.backgroundColor = alt ? "#fff" : "#222"; el2.style.color = alt ? "#000" : "#fff"; }
+    if (hadCursor) cursor(1);
+    return;
+  }
+  if (k === "caps") {
+    caps = !caps;
+    var capsEl = document.getElementById("kcaps") || document.getElementById("caps");
+    if (capsEl) {
+      if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
+      else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
+    }
+    if (hadCursor) cursor(1);
+    return;
+  }
+
+  // Helper: render the entire visible input `line` into screenBuffer/DOM using pokeCell
+  function renderInputLine() {
+    var charsPerLine = window.screenWidth || 32;
+    // Compute baseRow using the same anchor logic as the rest of the terminal:
+    var baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : (0 - Math.floor(cursorPos / charsPerLine));
+    // Render visible rows
+    for (var rOff = 0; rOff < (window.screenHeight || 25); rOff++) {
+      var row = baseRow + rOff;
+      if (row < 0 || row >= (window.screenHeight || 25)) continue;
+      // ensure buffers
+      if (!window.screenBuffer[row]) {
+        window.screenBuffer[row] = new Array(charsPerLine);
+        for (var zi = 0; zi < charsPerLine; zi++) window.screenBuffer[row][zi] = '\u00A0';
+      }
+      if (!window.styleBuffer[row]) {
+        window.styleBuffer[row] = new Array(charsPerLine);
+        for (var zi2 = 0; zi2 < charsPerLine; zi2++) {
+          window.styleBuffer[row][zi2] = {
+            color: (window.currentStyle && window.currentStyle.color) || 37,
+            bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
+            bold: false,
+            inverse: false
+          };
+        }
+      }
+
+      for (var col = 0; col < charsPerLine; col++) {
+        var logicalIndex = rOff * charsPerLine + col;
+        var ch = (logicalIndex < (line ? line.length : 0)) ? line.charAt(logicalIndex) : '\u00A0';
+        if (window.screenBuffer[row][col] !== ch) {
+          // update buffer and DOM via pokeCell
+          window.screenBuffer[row][col] = ch;
+          // ensure styleBuffer cell exists
+          if (!window.styleBuffer[row][col]) {
+            window.styleBuffer[row][col] = {
+              color: (window.currentStyle && window.currentStyle.color) || 37,
+              bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
+              bold: false,
+              inverse: false
+            };
+          }
+          try {
+            // call pokeCell(column, row, ch) — our pokeCell keeps prevCursor in sync
+            if (typeof window.pokeCell === 'function') {
+              window.pokeCell(col, row, ch);
+            } else {
+              // fallback: if pokeCell missing, write to screenBuffer and call updateDisplay()
+              // (this preserves behavior on older builds)
+              if (typeof updateDisplay === 'function') updateDisplay();
+            }
+          } catch (e) {
+            // ignore per-cell errors and fallback to full redraw
+            console.warn('pokeCell write failed at', col, row, e);
+            if (typeof updateDisplay === 'function') updateDisplay();
+            return;
+          }
+        }
+      }
+    }
+
+    // Recompute cursor coordinates from cursorPos and baseRow without toggling cursor display
+    var newCol = cursorPos % charsPerLine;
+    var newRow = baseRow + Math.floor(cursorPos / charsPerLine);
+    window.cursorX = Math.max(0, Math.min(charsPerLine - 1, newCol));
+    window.cursorY = Math.max(0, Math.min((window.screenHeight || 25) - 1, newRow));
+  }
+
+  // --- Route the key depending on mode ---
+  if (keyon) {
+    // If program is running and has keydown, send it there first
+    if (run && typeof keydown !== 'undefined') {
+      try { keydown(k || l); } catch (e) { /* swallow */ }
+    } else {
+      // OS / shell input handling
+      if (k === "back") {
+        if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
+        if (cursorPos > 0) {
+          line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
+          cursorPos--;
+        }
+      } else if (k === "left") {
+        if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
+        if (cursorPos > 0) cursorPos--;
+      } else if (k === "right") {
+        if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
+        if (cursorPos < (line ? line.length : 0)) cursorPos++;
+      } else if (k === "home") {
+        cursorPos = 0;
+      } else if (k === "end") {
+        cursorPos = (line ? line.length : 0);
+      } else if (k === "up" || k === "down") {
+        // basic history nav if available
+        if (typeof commandHistory !== 'undefined' && keyon) {
+          if (k === "up") {
+            if (commandHistory && commandHistory.length > 0) {
+              if (typeof historyIndex === 'undefined' || historyIndex === -1) {
+                tempCommand = line;
+                historyIndex = commandHistory.length;
+              }
+              if (historyIndex > 0) {
+                historyIndex--;
+                line = commandHistory[historyIndex];
+                cursorPos = line.length;
+              }
+            }
+          } else {
+            if (typeof historyIndex !== 'undefined' && historyIndex !== -1) {
+              if (historyIndex < commandHistory.length - 1) {
+                historyIndex++;
+                line = commandHistory[historyIndex];
+                cursorPos = line.length;
+              } else {
+                historyIndex = -1;
+                line = tempCommand || "";
+                cursorPos = line.length;
+                tempCommand = "";
+              }
+            }
+          }
+        }
+      } else if (k === "enter") {
+        // Submit the current line
+        if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
+        if (line !== undefined) {
+          // Save history
+          if (typeof commandHistory !== 'undefined' && line.trim().length > 0) {
+            if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== line) {
+              commandHistory.push(line);
+              if (typeof maxHistorySize !== 'undefined' && commandHistory.length > maxHistorySize) {
+                commandHistory.shift();
+              }
+            }
+          }
+          if (typeof historyIndex !== 'undefined') historyIndex = -1;
+          tempCommand = "";
+
+          // echo/route line
+          if (run) {
+            txt = (typeof txt !== 'undefined' ? txt : "") + line + "<br>";
+            try { input(line); } catch (e) { /* ignore */ }
+            line = "";
+            cursorPos = 0;
+            // redraw full screen after submission
+            if (typeof updateDisplay === 'function') updateDisplay();
+          } else {
+            txt = (typeof txt !== 'undefined' ? txt : "") + line + "<br>";
+            if (line.slice(-3) === ".js") {
+              keyon = 0;
+              var prg = document.createElement('script');
+              prg.src = line;
+              prg.onload = function() { keyon = 1; };
+              prg.onerror = function() { print("Error loading program\n"); keyon = 1; };
+              document.head.appendChild(prg);
+              line = "";
+              cursorPos = 0;
+            } else if (line.substr(0,3) === "cls") {
+              if (typeof initScreen === 'function') initScreen(); else txt = "";
+              line = "";
+              cursorPos = 0;
+            } else {
+              try { executeCode(line); } catch (e) { /* ignore */ }
+              line = "";
+              cursorPos = 0;
+            }
+            if (typeof updateDisplay === 'function') updateDisplay();
+          }
+        }
+      } else if (l) {
+        // Insert printable character(s)
+        if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
+        var finalChar = l;
+        var hasCtrl = !!ctrl;
+        var hasAlt = !!alt;
+        if (hasCtrl || hasAlt) {
+          var modifiers = [];
+          if (hasCtrl) modifiers.push("ctrl");
+          if (hasAlt) modifiers.push("alt");
+          finalChar = modifiers.join(" ") + " " + l;
+          // consume virtual modifiers after use
+          if (hasCtrl) {
+            ctrl = 0;
+            var cel = document.getElementById("ctrl"); if (cel) { cel.style.backgroundColor = "#222"; cel.style.color = "#fff"; }
+          }
+          if (hasAlt) {
+            alt = 0;
+            var ael = document.getElementById("alt"); if (ael) { ael.style.backgroundColor = "#222"; ael.style.color = "#fff"; }
+          }
+        }
+        line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
+        cursorPos += finalChar.length;
+
+        // Reset history browsing when typing
+        if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
+      }
+
+      // After any input mutation, re-render visible input
+      renderInputLine();
+    }
+  } else {
+    // keyon === 0: program mode - route key to running script if handler present
+    if (run && typeof keydown !== 'undefined') {
+      try { keydown(k || l); } catch (e) { /* ignore */ }
+    }
+  }
+
+  // Restore cursor visual state via canonical helper
+  if (hadCursor) cursor(1);
+}
+
 document.addEventListener('keydown', function (event) { press(event); });
 document.addEventListener('keyup', function (event) { pressup(event); });
 document.addEventListener('paste', function (event) {
