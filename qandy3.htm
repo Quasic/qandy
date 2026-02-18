@@ -562,25 +562,25 @@ function button(b) {
   if (!k && !l) l = String.fromCharCode(b || 0);
 
   // Helper to refresh only the visible input area (assumes input starts at row 0 of a multi-line input)
+  // Refresh the visible input window (draw the portion of `line` that should appear on screen)
   function refreshInputWindow() {
-    // Determine input start index for top-left of the input window (inputScrollPos) and rows occupied by the input
     const charsPerLine = screenWidth;
-    const startIdx = inputScrollPos || 0;
-    // We'll render one logical screen-height worth of input (or fewer rows depending on line length)
-    const totalLines = Math.ceil(Math.max(1, line.length) / charsPerLine);
-    for (let r = 0; r < Math.min(screenHeight, totalLines); r++) {
-      const row = r; // you may offset if input lives on specific screen rows
-      const segStart = startIdx + r * charsPerLine;
-      writeInputLineSegmentToBuffer(row, segStart, charsPerLine);
+    // baseRow: screen row that corresponds to logical index 0
+    const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+    const visibleRows = screenHeight; // you can clamp if input area is smaller
+    for (let r = 0; r < visibleRows; r++) {
+      const targetRow = baseRow + r;
+      const segStart = (inputScrollPos || 0) + r * charsPerLine;
+      writeInputSegmentToScreenRow(targetRow, segStart, charsPerLine);
     }
-    // update selection visuals (if selection present)
+    // selection visuals (if present)
     if (selectionStart !== -1 && selectionEnd !== -1) {
       updateSelectionVisuals(selectionStart, selectionEnd);
     }
-    // recalc cursor coords & display
+    // finally reposition cursor to match cursorPos
     syncCursorCoordsFromPos();
   }
-
+  
   // Process special keys
   if (k === "left") {
     if (shift) {
@@ -1129,66 +1129,102 @@ function triggerPaginationPause() {
   currentStyle.inverse = savedStyle.inverse;
 }
 
+// logical index = position within `line` (0-based)
+function logicalToScreen(index) {
+  const charsPerLine = screenWidth;
+  // baseRow = screen row where logical index 0 maps to
+  // derive from current cursor location and cursorPos:
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  const rowOffset = Math.floor(index / charsPerLine);
+  const col = index % charsPerLine;
+  const row = baseRow + rowOffset;
+  return { row: row, col: col };
+}
 
-// Compute screen coordinates (cursorX, cursorY) from cursorPos (logical index)
+// Recompute cursorX/cursorY from cursorPos using logicalToScreen
 function syncCursorCoordsFromPos() {
   const charsPerLine = screenWidth;
-  const row = Math.floor(cursorPos / charsPerLine);
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  const row = baseRow + Math.floor(cursorPos / charsPerLine);
   const col = cursorPos % charsPerLine;
   cursorX = Math.max(0, Math.min(screenWidth - 1, col));
   cursorY = Math.max(0, Math.min(screenHeight - 1, row));
-  // show cursor visually (our cursor() routine will call pokeCell)
-  if (cursorOn) cursor(0); // hide previous visual if any
-  cursor(1);               // show at new position (uses prevCursor save/restore)
+  // visually re-place cursor using existing cursor() routine
+  if (cursorOn) {
+    cursor(0); // hide previous visual
+  }
+  cursor(1);   // show at new coords
 }
 
-function writeInputLineSegmentToBuffer(row, startIdx, maxChars) {
-  if (!screenBuffer[row]) {
-    screenBuffer[row] = new Array(screenWidth).fill(' ');
+function writeInputSegmentToScreenRow(targetRow, startIdx, length) {
+  if (targetRow < 0 || targetRow >= screenHeight) return;
+  if (!screenBuffer[targetRow]) {
+    screenBuffer[targetRow] = new Array(screenWidth).fill('\u00A0');
   }
-  if (!styleBuffer[row]) {
-    styleBuffer[row] = new Array(screenWidth);
+  if (!styleBuffer[targetRow]) {
+    styleBuffer[targetRow] = new Array(screenWidth);
     for (let x = 0; x < screenWidth; x++) {
-      styleBuffer[row][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: false };
+      styleBuffer[targetRow][x] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: false,
+        inverse: false
+      };
     }
   }
-
-  for (let i = 0; i < maxChars; i++) {
-    const strIndex = startIdx + i;
-    const ch = (strIndex < line.length) ? line.charAt(strIndex) : '\u00A0'; // NBSP for empty cell
+  for (let i = 0; i < length; i++) {
+    const strIdx = startIdx + i;
+    const ch = (strIdx < line.length) ? line.charAt(strIdx) : '\u00A0'; // NBSP when beyond text
     const col = i;
-    // Only update buffer if changed to reduce pokeCell calls
-    if (screenBuffer[row][col] !== ch) {
-      screenBuffer[row][col] = ch;
-      // keep cell style as default input style (you can customize)
-      styleBuffer[row][col] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: false, inverse: false };
+    if (screenBuffer[targetRow][col] !== ch) {
+      screenBuffer[targetRow][col] = ch;
+      // default style for input text (tweak as you wish)
+      styleBuffer[targetRow][col] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: false,
+        inverse: false
+      };
+      pokeCell(col, targetRow);
+    }
+  }
+}
+
+// Update visual selection between selStart and selEnd (logical indices)
+function updateSelectionVisuals(selStart, selEnd) {
+  if (selStart === -1 || selEnd === -1) return;
+  if (selStart > selEnd) { const t = selStart; selStart = selEnd; selEnd = t; }
+  const charsPerLine = screenWidth;
+  for (let i = selStart; i < selEnd; i++) {
+    const { row, col } = logicalToScreen(i);
+    if (row < 0 || row >= screenHeight || col < 0 || col >= screenWidth) continue;
+    if (!styleBuffer[row]) continue;
+    if (!styleBuffer[row][col]) {
+      styleBuffer[row][col] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: false,
+        inverse: true
+      };
+      pokeCell(col, row);
+    } else if (!styleBuffer[row][col].inverse) {
+      styleBuffer[row][col].inverse = true;
       pokeCell(col, row);
     }
   }
-}
-
-// Apply selection visual state in the input area between selStart and selEnd (both logical indices)
-function updateSelectionVisuals(selStart, selEnd) {
-  // normalize
-  if (selStart === -1 || selEnd === -1) return;
-  if (selStart > selEnd) { const t = selStart; selStart = selEnd; selEnd = t; }
-
-  const charsPerLine = screenWidth;
-  const startRow = Math.floor(selStart / charsPerLine);
-  const startCol = selStart % charsPerLine;
-  const endRow = Math.floor((selEnd - 1) / charsPerLine);
-  const endCol = (selEnd - 1) % charsPerLine;
-
-  // We'll iterate rows from startRow..endRow, mark styleBuffer[x].inverse true/false appropriately
-  for (let r = startRow; r <= endRow; r++) {
+  // Clear inverse for cells outside selection in visible area (optional clean pass)
+  // (you can optimize this to only clear previously-selected region)
+  const totalVisible = Math.min(Math.ceil(Math.max(1, line.length) / charsPerLine), screenHeight);
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  for (let r = baseRow; r < baseRow + totalVisible; r++) {
     if (!styleBuffer[r]) continue;
-    const rowStartCol = (r === startRow) ? startCol : 0;
-    const rowEndCol = (r === endRow) ? endCol : (screenWidth - 1);
     for (let c = 0; c < screenWidth; c++) {
-      const shouldBeInverse = (c >= rowStartCol && c <= rowEndCol);
-      if (styleBuffer[r][c].inverse !== shouldBeInverse) {
-        styleBuffer[r][c].inverse = shouldBeInverse;
-        pokeCell(c, r);
+      const logicalIndex = (r - baseRow) * charsPerLine + c;
+      if (logicalIndex < selStart || logicalIndex >= selEnd) {
+        if (styleBuffer[r][c] && styleBuffer[r][c].inverse) {
+          styleBuffer[r][c].inverse = false;
+          pokeCell(c, r);
+        }
       }
     }
   }
