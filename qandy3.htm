@@ -2062,8 +2062,8 @@ function cursorMoveTo(nx, ny) {
   cursorY = Math.max(0, Math.min(screenHeight - 1, ny));
   if (cursorOn) {
     // restore old cell
-    if (_prevCursor.set && styleBuffer[old.y] && styleBuffer[old.y][old.x]) {
-      styleBuffer[old.y][old.x].inverse = _prevCursor.inverse;
+    if (prevCursor.set && styleBuffer[old.y] && styleBuffer[old.y][old.x]) {
+      styleBuffer[old.y][old.x].inverse = prevCursor.inverse;
       pokeCell(old.x, old.y);
     }
     // mark new one
@@ -2078,7 +2078,7 @@ function cursorMoveTo(nx, ny) {
         };
       }
     }
-    _prevCursor = { set: true, x: cursorX, y: cursorY, inverse: !!styleBuffer[cursorY][cursorX].inverse };
+    prevCursor = { set: true, x: cursorX, y: cursorY, inverse: !!styleBuffer[cursorY][cursorX].inverse };
     styleBuffer[cursorY][cursorX].inverse = true;
     pokeCell(old.x, old.y);
     pokeCell(cursorX, cursorY);
