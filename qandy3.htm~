@@ -614,6 +614,32 @@ function renderInputLine() {
             };
           }
           try { pokeCell(col, row, ch); } catch (e) { /* best-effort */ }
+
+          // advance logical input cursor (handle multi-char insertion if needed)
+          if (typeof cursorPos === 'undefined' || cursorPos === null) cursorPos = 0;
+          // cursorPos= cursorPos + 1; // or += finalChar.length if you inserted more than 1 char
+          
+          // compute new on-screen coords
+          const charsPerLine = window.screenWidth || 32;
+          const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor((cursorPos - 1) / charsPerLine)) : (0 - Math.floor((cursorPos - 1) / charsPerLine));
+          // (We use cursorPos-1 above because baseRow was computed relative to the previous cursorPos)
+          const newCol = cursorPos % charsPerLine;
+          const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
+          
+          // update logical/visual cursor using existing helper
+          try {
+            if (typeof cursorMoveTo === 'function') {
+              cursorMoveTo(newCol, newRow);
+            } else {
+              // fallback: set globals and ensure the cursor is shown
+              cursorX = newCol;
+              cursorY = newRow;
+              if (typeof cursor === 'function') cursor(1);
+              else try { pokeCell(cursorX, cursorY); } catch (e) {}
+            }
+          } catch (e) {
+            /* non-fatal */
+          }          
         }
 
       } else {
