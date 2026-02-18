@@ -2145,26 +2145,68 @@ function updateDisplay() {
     htmlContent += `<div class="row">&nbsp;</div>`;
   }
 
-  // Write to DOM in one shot
-  txtElement.innerHTML = htmlContent;
-
-  try {
-    // Remove previous cursor markers (if any)
-    const prev = document.querySelectorAll('.qandy-cursor');
-    for (let p = 0; p < prev.length; p++) prev[p].classList.remove('qandy-cursor');
-
-    // Add cursor marker to current cursor position (cursorX, cursorY are logical coords)
-    if (typeof cursorX === 'number' && typeof cursorY === 'number') {
-      const curEl = document.getElementById(`c${cursorY}_${cursorX}`);
-      if (curEl) {
-        curEl.classList.add('qandy-cursor');
+  // Render input line if keyon is true (user is in input mode)
+  if (keyon) {
+    let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
+    
+    // Calculate how many display lines we need
+    const charsPerLine = screenWidth;
+    const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine));
+    
+    // Helper function to escape HTML characters
+    const escapeHtml = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
+    
+    // Render input across multiple wrapped lines
+    for (let lineIndex = 0; lineIndex < numLines; lineIndex++) {
+      let lineStart = lineIndex * charsPerLine;
+      let lineEnd = Math.min(lineStart + charsPerLine, cleanInput.length);
+      let displayLine = cleanInput.substring(lineStart, lineEnd);
+      
+      let lineHtml = '';
+      
+      // Build this line character by character
+      for (let charIndex = 0; charIndex < charsPerLine; charIndex++) {
+        let charPos = lineStart + charIndex;
+        
+        if (charIndex < displayLine.length) {
+          // We have a character to display
+          let char = displayLine[charIndex];
+          
+          // Check if this character is selected
+          const isSelected = selectionStart !== -1 && 
+                             charPos >= Math.min(selectionStart, selectionEnd) && 
+                             charPos < Math.max(selectionStart, selectionEnd);
+          
+          if (charPos === cursorPos) {
+            // This is the cursor position - invert colors
+            lineHtml += '<span style="background-color: white; color: black;">' + 
+                        escapeHtml(char) + 
+                        '</span>';
+          } else if (isSelected) {
+            // Selected text - use selection colors
+            lineHtml += `<span style="background-color: ${selectionBgColor}; color: ${selectionFgColor};">` + 
+                        escapeHtml(char) + 
+                        '</span>';
+          } else {
+            // Normal character
+            lineHtml += escapeHtml(char);
+          }
+        } else if (charPos === cursorPos && charPos === cleanInput.length) {
+          // Cursor is at the end of input (after last character)
+          lineHtml += '<span style="background-color: white; color: black;">&nbsp;</span>';
+        } else {
+          // Empty space (input doesn't extend this far on this line)
+          lineHtml += '&nbsp;';
+        }
       }
+      
+      htmlContent += lineHtml + '<br>';
     }
-  } catch (e) {
-    // Non-fatal: best-effort only
-    console.warn('Failed to apply qandy cursor marker', e);
   }
 
+  // Write to DOM in one shot
+  txtElement.innerHTML = htmlContent;
+  txtElement.scrollTop = txtElement.scrollHeight;
 }
 
 // Update one cell from buffers (or update buffers then DOM)
