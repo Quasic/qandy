@@ -686,6 +686,7 @@ function button(b, event) {
           // echo/route line
           if (run) {
             txt = (typeof txt !== 'undefined' ? txt : "") + line + "<br>";
+            print("\n");
             try { input(line); } catch (e) { /* ignore */ }
             line = "";
             cursorPos = 0;
@@ -693,6 +694,7 @@ function button(b, event) {
             if (typeof updateDisplay === 'function') updateDisplay();
           } else {
             txt = (typeof txt !== 'undefined' ? txt : "") + line + "<br>";
+            print("\n");
             if (line.slice(-3) === ".js") {
               keyon = 0;
               var prg = document.createElement('script');
