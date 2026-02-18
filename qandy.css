@@ -105,10 +105,13 @@ body { background-color: #333 }
 }
 
 .qandy-cursor {
-  animation: qandy-blink 1s steps(1) infinite;
+  opacity: 1 !important;         /* override any animation that set opacity:0 */
+  animation: none !important;    /* stop inherited/previous blink animation */
   background-color: #fff !important;
   color: #000 !important;
-  font-weight: bold;
+  outline: 1px solid #000 !important;
+  z-index: 999 !important;       /* make sure it's above other inline content */
+  font-weight: 700 !important;
 }
 
 .ansi-inverse {

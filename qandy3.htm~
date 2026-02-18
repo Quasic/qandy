@@ -1202,8 +1202,10 @@ function button(b) {
  updateDisplay();
 }
 
+// Replace the existing function cursor(a) with this code:
+
 function cursor(a) {
-  // a === 1 to show cursor (set inverse), a === 0 to hide (restore)
+  // Ensure buffers exist
   if (!screenBuffer || !styleBuffer) {
     try { initScreen(); } catch (e) { /* best-effort */ }
   }
@@ -1212,20 +1214,31 @@ function cursor(a) {
   const cx = Math.max(0, Math.min(screenWidth - 1, cursorX || 0));
   const cy = Math.max(0, Math.min(screenHeight - 1, cursorY || 0));
 
+  // Ensure prevCursor object contains fields for restore
+  if (!prevCursor) prevCursor = { set: false, x: 0, y: 0, inverse: false, ch: ' ', style: null };
+
   if (a === 1) {
-    // Turning on: restore previous if on a different cell
-    if (prevCursor.set) {
-      // if we are re-enabling but at same cell, nothing to restore
-      if (!(prevCursor.x === cx && prevCursor.y === cy)) {
-        // restore previous inverse flag from saved value
-        if (styleBuffer[prevCursor.y] && styleBuffer[prevCursor.y][prevCursor.x]) {
-          styleBuffer[prevCursor.y][prevCursor.x].inverse = prevCursor.inverse;
-          pokeCell(prevCursor.x, prevCursor.y);
-        }
+    // Show cursor: if a previous cursor is set at a different position, restore it first
+    if (prevCursor.set && !(prevCursor.x === cx && prevCursor.y === cy)) {
+      // restore previous char & style
+      if (screenBuffer[prevCursor.y] && styleBuffer[prevCursor.y] && styleBuffer[prevCursor.y][prevCursor.x]) {
+        screenBuffer[prevCursor.y][prevCursor.x] = prevCursor.ch;
+        styleBuffer[prevCursor.y][prevCursor.x] = prevCursor.style || {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: prevCursor.inverse
+        };
+        pokeCell(prevCursor.x, prevCursor.y);
       }
+      prevCursor.set = false;
     }
 
-    // ensure target row exists
+    // Save the existing char and style at this new cursor cell
+    if (!screenBuffer[cy]) {
+      // ensure row exists
+      screenBuffer[cy] = new Array(screenWidth).fill(' ');
+    }
     if (!styleBuffer[cy]) {
       styleBuffer[cy] = [];
       for (let x = 0; x < screenWidth; x++) {
@@ -1238,27 +1251,64 @@ function cursor(a) {
       }
     }
 
-    // save previous inverse for the new cursor cell
-    const prevInv = !!styleBuffer[cy][cx].inverse;
-    prevCursor = { set: true, x: cx, y: cy, inverse: prevInv };
+    const existingChar = (screenBuffer[cy][cx] === undefined || screenBuffer[cy][cx] === null) ? ' ' : screenBuffer[cy][cx];
+    const existingStyle = styleBuffer[cy][cx] ? Object.assign({}, styleBuffer[cy][cx]) : {
+      color: currentStyle.color,
+      bgcolor: currentStyle.bgcolor,
+      bold: currentStyle.bold,
+      inverse: currentStyle.inverse
+    };
 
-    // set inverse on the new cursor cell (POKE)
-    styleBuffer[cy][cx].inverse = true;
+    // Save for restore
+    prevCursor = {
+      set: true,
+      x: cx,
+      y: cy,
+      inverse: !!existingStyle.inverse,
+      ch: existingChar,
+      style: existingStyle
+    };
 
-    // update only this cell in the DOM
+    // Write a full block into the buffer and set visually-contrasting style
+    // Choose colors so the block is visible (black block on white bg or white block on black bg)
+    // We'll set the glyph and invert colors: make foreground = existingStyle.bgcolor (if available)
+    // and bgcolor = existingStyle.color
+    screenBuffer[cy][cx] = '\u2588'; // full block glyph
+    styleBuffer[cy][cx] = {
+      color: existingStyle.bgcolor || 37,
+      bgcolor: existingStyle.color || 40,
+      bold: true,
+      inverse: false
+    };
+
+    // Update just this cell in the DOM
     pokeCell(cx, cy);
 
     cursorOn = 1;
+
   } else {
-    // Turning off: restore previously-saved inverse state
-    if (prevCursor.set) {
+    // Hide cursor: restore previous cell if we set one
+    if (prevCursor && prevCursor.set) {
       const px = prevCursor.x, py = prevCursor.y;
-      if (styleBuffer[py] && styleBuffer[py][px]) {
-        styleBuffer[py][px].inverse = prevCursor.inverse;
-        pokeCell(px, py);
+      // restore char and style into buffers
+      if (!screenBuffer[py]) {
+        screenBuffer[py] = new Array(screenWidth).fill(' ');
       }
+      screenBuffer[py][px] = prevCursor.ch;
+      if (!styleBuffer[py]) styleBuffer[py] = [];
+      styleBuffer[py][px] = prevCursor.style || {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: currentStyle.bold,
+        inverse: prevCursor.inverse
+      };
+
+      // update that cell
+      pokeCell(px, py);
+
       prevCursor.set = false;
     }
+
     cursorOn = 0;
   }
 }
@@ -1998,11 +2048,23 @@ function updateDisplay() {
   // Write to DOM in one shot
   txtElement.innerHTML = htmlContent;
 
-  // NOTE:
-  // - This function intentionally does NOT modify cursorX or cursorY.
-  // - It only reads them to position the visible cursor indicator.
-  // - Any code that currently mutates cursorY to force a redraw should be changed
-  //   to simply call updateDisplay() and NOT touch cursor variables.
+  try {
+    // Remove previous cursor markers (if any)
+    const prev = document.querySelectorAll('.qandy-cursor');
+    for (let p = 0; p < prev.length; p++) prev[p].classList.remove('qandy-cursor');
+
+    // Add cursor marker to current cursor position (cursorX, cursorY are logical coords)
+    if (typeof cursorX === 'number' && typeof cursorY === 'number') {
+      const curEl = document.getElementById(`c${cursorY}_${cursorX}`);
+      if (curEl) {
+        curEl.classList.add('qandy-cursor');
+      }
+    }
+  } catch (e) {
+    // Non-fatal: best-effort only
+    console.warn('Failed to apply qandy cursor marker', e);
+  }
+
 }
 
 // Update one cell from buffers (or update buffers then DOM)

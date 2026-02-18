@@ -104,6 +104,18 @@ body { background-color: #333 }
   50%, 100% { opacity: 0; }
 }
 
+.qandy-cursor {
+  animation: qandy-blink 1s steps(1) infinite;
+  background-color: #fff !important;
+  color: #000 !important;
+  font-weight: bold;
+}
+
+.ansi-inverse {
+  background-color: #fff;
+  color: #000;
+}
+
 .pop { position:absolute; top:260; left:190; z-index:250;
        font-family: arial; font-size: 14px; weight: bold;
        color: navy; background-color: #999; visibility:hidden;
