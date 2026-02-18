@@ -1091,7 +1091,7 @@ function button(b) {
       } else {
        // OS command mode
        inInputMode = true;  // Prevent pagination during command echo
-       print(line); print("\n");
+       print("\n");  // Just newline, input already displayed by renderInputLine()
        inInputMode = false;  // Re-enable pagination after command echo
        if (line.slice(-3) === ".js") {
         // Load external .js file
