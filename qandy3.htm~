@@ -1239,21 +1239,6 @@ function cursor(a) {
   }
 }
 
-
- 
- }
- if (a==1) {
-   // turn curosr on
- }
-}
-
-// Replacement executeCode() for qandy2.htm
-// Behavior:
-// - If the user enters a simple name or dotted path (e.g. `dos` or `obj.method`) that resolves to a function,
-//   the REPL will NOT print the function source. Instead it prints an error telling the user to call it with ().
-// - All other inputs are evaluated as before: expressions are eval()'d and their result is printed (if not undefined).
-// - Returns true on success, false on thrown errors (matches original executeCode() behavior).
-
 function executeCode(code) {
   try {
     var trimmed = String(code).trim();
