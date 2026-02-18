@@ -1507,246 +1507,45 @@ function updateSelectionVisuals(selStart, selEnd) {
   }
 }
 
-function print(inputString) {
-  if (!screenBuffer || !styleBuffer || !screenWidth || !screenHeight) { try { initScreen(); } catch (e) { /* best-effort */ } }
+function print(a) {
+  // Ensure a is a string
+  a = String(a || "");
 
-  // Ensure a style row exists and each cell has its own object
-  function ensureStyleRow(y) {
-    if (!styleBuffer[y]) {
-      styleBuffer[y] = [];
-      for (let x = 0; x < screenWidth; x++) {
-        styleBuffer[y][x] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-      }
-    }
-  }
+  // Append to the internal txt buffer
+  txt = (typeof txt !== 'undefined' && txt !== null) ? txt + a : a;
 
-  // Ensure a screen row exists
-  function ensureScreenRow(y) {
-    if (!screenBuffer[y]) {
-      screenBuffer[y] = new Array(screenWidth);
-      for (let x = 0; x < screenWidth; x++) screenBuffer[y][x] = ' ';
-      ensureStyleRow(y);
-    }
-  }
+  // When in input mode, we still want to show the in-progress input line after printed text,
+  // but we must not overwrite the printed argument.
+  var promptSuffix = (typeof keyon !== 'undefined' && keyon) ? (line || "") : "";
 
-  // Write a single character at the current cursor and advance the cursor.
-  function writeChar(ch) {
-    // If cursor off bottom, scroll
-    if (cursorY >= screenHeight) {
-      try { scrollScreenDown(); } catch (e) {
-        // fallback: clamp
-        cursorY = screenHeight - 1;
-      }
-      cursorY = Math.min(cursorY, screenHeight - 1);
-    }
+  // Render: printed text + live input (if any). Show cursor marker only in input mode.
+  var inner = "<p>" + txt + promptSuffix;
+  if (typeof keyon !== 'undefined' && keyon) inner += "<font id=cursor>&nbsp;</font>";
+  inner += "</p>";
 
-    ensureScreenRow(cursorY);
+  var el = document.getElementById("txt");
+  if (el) el.innerHTML = inner;
 
-    // Handle wrap before placing character
-    if (cursorX >= screenWidth) {
-      cursorX = 0;
-      cursorY++;
-      // If this moved us off bottom, scroll
-      if (cursorY >= screenHeight) {
-        try { scrollScreenDown(); } catch (e) { cursorY = screenHeight - 1; }
-        cursorY = screenHeight - 1;
-      }
-      ensureScreenRow(cursorY);
-    }
-
-    // Place character and style copy
-    if (screenBuffer[cursorY] && typeof screenBuffer[cursorY][cursorX] !== 'undefined') {
-      // copy current style into that cell (make a new object)
-      styleBuffer[cursorY][cursorX] = {
-        color: currentStyle.color,
-        bgcolor: currentStyle.bgcolor,
-        bold: currentStyle.bold,
-        inverse: currentStyle.inverse
-      };
-      try { pokeCell(cursorX, cursorY,ch); } catch (e) { /* best-effort */ }
-    } 
-
-    cursorX++;
-  }
-
-  // Basic CSI parser (handles sequences that end in a letter)
-  let i = 0;
-  while (i < inputString.length) {
-    const code = inputString.charCodeAt(i);
-    const ch = inputString.charAt(i);
-
-    // CSI sequence: ESC [
-    if (code === 27 && inputString.charAt(i + 1) === '[') {
-      let j = i + 2;
-      // gather parameters until a final byte (A-Za-z)
-      let params = '';
-      while (j < inputString.length && !/[A-Za-z]/.test(inputString.charAt(j))) {
-        params += inputString.charAt(j);
-        j++;
-      }
-      const cmd = inputString.charAt(j) || '';
-      const paramsArr = params.length ? params.split(';').map(s => (s === '' ? NaN : Number(s))) : [];
-
-      switch (cmd) {
-        case 'H':
-        case 'f': {
-          // Cursor position (1-based)
-          const row = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
-          const col = (paramsArr[1] && !isNaN(paramsArr[1])) ? paramsArr[1] : 1;
-          cursorY = Math.min(Math.max(0, row - 1), screenHeight - 1);
-          cursorX = Math.min(Math.max(0, col - 1), screenWidth - 1);
-          break;
-        }
-        case 'A': { // CUU - up
-          const n = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
-          cursorY = Math.max(0, cursorY - n);
-          break;
-        }
-        case 'B': { // CUD - down
-          const n = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
-          cursorY = Math.min(screenHeight - 1, cursorY + n);
-          break;
-        }
-        case 'C': { // CUF - forward
-          const n = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
-          cursorX = Math.min(screenWidth - 1, cursorX + n);
-          break;
-        }
-        case 'D': { // CUB - back
-          const n = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
-          cursorX = Math.max(0, cursorX - n);
-          break;
-        }
-        case 'K': { // Erase in line
-          const mode = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 0;
-          ensureScreenRow(cursorY);
-          if (mode === 0) { // clear from cursor to end of line
-            for (let x = cursorX; x < screenWidth; x++) {
-              screenBuffer[cursorY][x] = ' ';
-              styleBuffer[cursorY][x] = {
-                color: currentStyle.color,
-                bgcolor: currentStyle.bgcolor,
-                bold: currentStyle.bold,
-                inverse: currentStyle.inverse
-              };
-              try { pokeCell(x, cursorY); } catch (e) {}
-            }
-          } else if (mode === 1) { // clear from start to cursor
-            for (let x = 0; x <= cursorX; x++) {
-              screenBuffer[cursorY][x] = ' ';
-              styleBuffer[cursorY][x] = {
-                color: currentStyle.color,
-                bgcolor: currentStyle.bgcolor,
-                bold: currentStyle.bold,
-                inverse: currentStyle.inverse
-              };
-              try { pokeCell(x, cursorY); } catch (e) {}
-            }
-          } else if (mode === 2) { // clear whole line
-            for (let x = 0; x < screenWidth; x++) {
-              screenBuffer[cursorY][x] = ' ';
-              styleBuffer[cursorY][x] = {
-                color: currentStyle.color,
-                bgcolor: currentStyle.bgcolor,
-                bold: currentStyle.bold,
-                inverse: currentStyle.inverse
-              };
-              try { pokeCell(x, cursorY); } catch (e) {}
-            }
-            cursorX = 0;
-          }
-          break;
-        }
-        case 'm': { // SGR - set graphic rendition (we apply a minimal subset)
-          if (paramsArr.length === 0) {
-            // reset
-            currentStyle.color = 37;
-            currentStyle.bgcolor = 40;
-            currentStyle.bold = false;
-            currentStyle.inverse = false;
-          } else {
-            for (let p of paramsArr) {
-              if (isNaN(p)) continue;
-              if (p === 0) {
-                currentStyle.color = 37;
-                currentStyle.bgcolor = 40;
-                currentStyle.bold = false;
-                currentStyle.inverse = false;
-              } else if (p === 1) {
-                currentStyle.bold = true;
-              } else if (p >= 30 && p <= 37) {
-                currentStyle.color = p;
-              } else if (p >= 40 && p <= 47) {
-                currentStyle.bgcolor = p;
-              } else if (p === 7) {
-                currentStyle.inverse = true;
-              } else if (p === 27) {
-                currentStyle.inverse = false;
-              }
-            }
-          }
-          break;
-        }
-        // Add any other CSI commands you need here
-        default:
-          // Unknown CSI - ignore
-          break;
-      }
-
-      // advance i beyond the CSI
-      i = j;
-      i++; // move past final letter
-      continue;
-    }
-
-    // Control characters & normal printing
-    if (ch === '\n') {
-      cursorX = 0;
-      cursorY++;
-      if (cursorY >= screenHeight) {
-        try { scrollScreenDown(); } catch (e) { cursorY = screenHeight - 1; }
-        cursorY = Math.min(cursorY, screenHeight - 1);
-      }
-    } else if (ch === '\r') {
-      cursorX = 0;
-    } else if (ch === '\b') {
-      if (cursorX > 0) {
-        cursorX--;
-        ensureScreenRow(cursorY);
-        screenBuffer[cursorY][cursorX] = ' ';
-        styleBuffer[cursorY][cursorX] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-        try { pokeCell(cursorX, cursorY); } catch (e) {}
-      }
-    } else {
-      // Printable character
-      writeChar(ch);
-    }
-
-    i++;
-  }
-
-  // Final safety: clamp cursor positions into visible range
-  cursorX = Math.min(Math.max(0, cursorX), Math.max(0, screenWidth - 1));
-  cursorY = Math.min(Math.max(0, cursorY), Math.max(0, screenHeight - 1));
-
-  // Request a screen refresh. Use updateDisplay() if available, otherwise best-effort DOM update.
+  // positioning logic from the original implementation (keep existing math if needed)
   try {
-    if (typeof updateDisplay === 'function') updateDisplay();
-    else if (typeof draw === 'function') draw();
-    else { document.getElementById("txt").innerHTML = document.getElementById("txt").innerHTML; }
-  } catch (e) {
-    try { document.getElementById("txt").innerHTML = document.getElementById("txt").innerHTML; } catch (_) {}
-  }
+    if (mode === "gfx") {
+      up = 32 + (404 - (document.getElementById('txt').offsetHeight));
+      left = 32 + 22 + 300;
+      document.getElementById("txt").style.left = left + "px";
+      document.getElementById("txt").style.top = up + "px";
+    } else {
+      left = 32 + 22;
+      up = 32 + (402 - (document.getElementById('txt').offsetHeight));
+      document.getElementById("txt").style.left = "54px";
+      document.getElementById("txt").style.top = up + "px";
+    }
+  } catch (e) { /* non-fatal - keep best-effort */ }
+
+  // scroll to bottom
+  try {
+    const textElement = document.getElementById("txt");
+    if (textElement) textElement.scrollTop = textElement.scrollHeight;
+  } catch (e) {}
 }
 
 function draw(inputString) {
