@@ -443,7 +443,7 @@ document.addEventListener('paste', function (event) {
   if (pastedText) {
    line += pastedText;
    cursorPos = line.length; // Update cursor position to end
-   updateDisplay();
+   renderInputLine();
    // Scroll to bottom to show cursor
    const textElement = document.getElementById("txt");
    textElement.scrollTop = textElement.scrollHeight;
@@ -521,6 +521,107 @@ function pressup(event) {
   var k = String.fromCharCode(event.keyCode);
   keyup(k);
  }
+}
+
+// Helper function to render the input line to the screen buffer and update cursor position
+function renderInputLine() {
+ if (!keyon) return; // Only render input when input is enabled
+ 
+ // Clean the input (remove \r, \n for display purposes)
+ const cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
+ const charsPerLine = screenWidth;
+ 
+ // Calculate how many screen lines the input will take
+ const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine) || 1);
+ 
+ // Calculate cursor screen position from cursorPos
+ const cursorLine = Math.floor(cursorPos / charsPerLine);
+ const cursorColumn = cursorPos % charsPerLine;
+ 
+ // Determine the starting screen row for input display
+ // Input is displayed at cursorY, spanning multiple rows if needed
+ const inputStartY = cursorY - cursorLine;
+ 
+ // Clear the input area and render the input text
+ for (let lineIndex = 0; lineIndex < numLines; lineIndex++) {
+  const screenRow = inputStartY + lineIndex;
+  
+  // Skip if outside visible screen
+  if (screenRow < 0 || screenRow >= screenHeight) continue;
+  
+  // Ensure row exists
+  if (!screenBuffer[screenRow]) {
+   screenBuffer[screenRow] = new Array(screenWidth).fill(' ');
+  }
+  if (!styleBuffer[screenRow]) {
+   styleBuffer[screenRow] = new Array(screenWidth);
+   for (let x = 0; x < screenWidth; x++) {
+    styleBuffer[screenRow][x] = {
+     color: currentStyle.color,
+     bgcolor: currentStyle.bgcolor,
+     bold: currentStyle.bold,
+     inverse: currentStyle.inverse
+    };
+   }
+  }
+  
+  // Calculate the character range for this line
+  const lineStart = lineIndex * charsPerLine;
+  const lineEnd = Math.min(lineStart + charsPerLine, cleanInput.length);
+  
+  // Render characters for this line
+  for (let charIndex = 0; charIndex < charsPerLine; charIndex++) {
+   const charPos = lineStart + charIndex;
+   const screenX = charIndex;
+   
+   // Determine if this position is within selection
+   let isSelected = false;
+   if (selectionStart !== -1 && selectionEnd !== -1) {
+    const selStart = Math.min(selectionStart, selectionEnd);
+    const selEnd = Math.max(selectionStart, selectionEnd);
+    if (charPos >= selStart && charPos < selEnd) {
+     isSelected = true;
+    }
+   }
+   
+   // Get the character to display
+   let ch = ' ';
+   if (charPos < cleanInput.length) {
+    ch = cleanInput[charPos];
+   }
+   
+   // Write character to screen buffer
+   screenBuffer[screenRow][screenX] = ch;
+   
+   // Apply style - highlight selection or use current style
+   if (isSelected) {
+    styleBuffer[screenRow][screenX] = {
+     color: 30, // black text
+     bgcolor: 47, // white background
+     bold: false,
+     inverse: false
+    };
+   } else {
+    styleBuffer[screenRow][screenX] = {
+     color: currentStyle.color,
+     bgcolor: currentStyle.bgcolor,
+     bold: currentStyle.bold,
+     inverse: currentStyle.inverse
+    };
+   }
+  }
+ }
+ 
+ // Update cursorX and cursorY to match the cursor position in the input
+ cursorX = cursorColumn;
+ cursorY = inputStartY + cursorLine;
+ 
+ // Clamp cursor to screen bounds
+ cursorY = Math.max(0, Math.min(screenHeight - 1, cursorY));
+ cursorX = Math.max(0, Math.min(screenWidth - 1, cursorX));
+ 
+ // Update the display
+ updateDisplay();
 }
 
 function button(b) {
@@ -1042,7 +1143,7 @@ function button(b) {
       cursorPos = start;
       selectionStart = -1;
       selectionEnd = -1;
-      updateDisplay();
+      renderInputLine();
       print("\x1b[32mCut to clipboard!\x1b[0m\n");
      }).catch(err => {
       print("\x1b[31mCut failed\x1b[0m\n");
@@ -1197,7 +1298,7 @@ function button(b) {
  
  // Pass key to script's keydown() handler if script is running and key wasn't consumed
  if (run && k) { keydown(k); }
- updateDisplay();
+ renderInputLine();
 }
 
 // Replacement executeCode() for qandy2.htm
