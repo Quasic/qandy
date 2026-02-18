@@ -525,212 +525,271 @@ function pressup(event) {
  }
 }
 
-function button(b) {
-  // If pagination paused, resume (existing behavior)
-  if (typeof paginationPaused !== 'undefined' && paginationPaused) { 
-    if (typeof resumePagination === 'function') resumePagination(); 
-    return; 
+function button(b, event) {
+  // If pagination paused, resume
+  if (typeof paginationPaused !== 'undefined' && paginationPaused) {
+    if (typeof resumePagination === 'function') resumePagination();
+    return;
   }
 
-  // Map keycode to logical k and printable l
+  // Update physical shift state if event given
+  if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
+
+  // Hide cursor visually while we update state (use cursor() helper)
+  var hadCursor = !!cursorOn;
+  if (hadCursor) cursor(0);
+
   var k = "", l = "";
 
-  // Common navigation/control keys
+  // Map common control/navigation keys
   switch (b) {
+    case 16: // SHIFT - handle specially (do not insert control char)
+      if (typeof event !== 'undefined' && typeof event.shiftKey !== 'undefined') {
+        shift = !!event.shiftKey;
+      } else {
+        // virtual SHIFT toggle
+        shift = !shift;
+      }
+      // update any on-screen Shift key visual (if exists)
+      var sEl = document.getElementById("shift") || document.getElementById("kshift");
+      if (sEl) {
+        if (shift) { sEl.style.backgroundColor = "#fff"; sEl.style.color = "#000"; }
+        else { sEl.style.backgroundColor = "#222"; sEl.style.color = "#fff"; }
+      }
+      if (hadCursor) cursor(1);
+      return;
+    case 17: k = "ctrl"; break;
+    case 18: k = "alt"; break;
+    case 20: k = "caps"; break;
+    case 27: k = "esc"; break;
+    case 13: k = "enter"; break;
+    case 8:  k = "back"; break;
+    case 46: k = "delete"; break;
     case 37: k = "left"; break;
     case 38: k = "up"; break;
     case 39: k = "right"; break;
     case 40: k = "down"; break;
     case 36: k = "home"; break;
     case 35: k = "end"; break;
-    case 27: k = "esc"; break;
-    case 13: k = "enter"; break;
-    case 8:  k = "back"; break;
-    case 46: k = "delete"; break;
-    case 20: k = "caps"; break;
-    case 17: k = "ctrl"; break;
-    case 18: k = "alt"; break;
-    default:
-      // Fallback for printable characters.
-      try {
-        l = String.fromCharCode(b);
-        // respect shift/caps globals if available
-        if (typeof shift !== 'undefined' && shift) l = l.toUpperCase();
-        else if (typeof caps !== 'undefined' && caps) l = l.toUpperCase();
-        k = l;
-      } catch (e) {
-        k = ""; l = "";
+    // fallthrough to printable handling for others
+  }
+
+  // Letters A-Z
+  if (!k && b >= 65 && b <= 90) {
+    var base = String.fromCharCode(b);
+    var capsOn = !!caps;
+    var shiftOn = !!shift;
+    var makeUpper = (shiftOn && !capsOn) || (!shiftOn && capsOn);
+    l = makeUpper ? base.toUpperCase() : base.toLowerCase();
+    k = l;
+  }
+
+  // Non-letter printable mapping
+  var keyMap = {
+    48: ['0', ')'], 49: ['1', '!'], 50: ['2', '@'], 51: ['3', '#'],
+    52: ['4', '$'], 53: ['5', '%'], 54: ['6', '^'], 55: ['7', '&'],
+    56: ['8', '*'], 57: ['9', '('],
+    186: [';', ':'], 187: ['=', '+'], 188: [',', '<'], 189: ['-', '_'],
+    190: ['.', '>'], 191: ['/', '?'], 192: ['`', '~'],
+    219: ['[', '{'], 220: ['\\', '|'], 221: [']', '}'], 222: ["'", '"'],
+    32: [' ', ' ']
+  };
+
+  if (!k && keyMap[b]) {
+    l = shift ? keyMap[b][1] : keyMap[b][0];
+    k = l;
+  }
+
+  // Guard: don't turn control keycodes (<32) into characters
+  if (!k && b < 32) {
+    // nothing to insert (ignored control)
+    if (hadCursor) cursor(1);
+    return;
+  }
+
+  // Fallback: best-effort fromCharCode for remaining codes
+  if (!k) {
+    try {
+      l = String.fromCharCode(b);
+      // If it's a letter-like fallback, respect shift/caps XOR
+      if (/[A-Za-z]/.test(l)) {
+        var capsOn2 = !!caps;
+        var shiftOn2 = !!shift;
+        var makeUpper2 = (shiftOn2 && !capsOn2) || (!shiftOn2 && capsOn2);
+        l = makeUpper2 ? l.toUpperCase() : l.toLowerCase();
+      } else if (shift) {
+        l = l.toUpperCase();
       }
-  }
-
-  // Helper: make sure buffers/line exist
-  function ensureLine(y) {
-    if (!screenBuffer[y]) {
-      screenBuffer[y] = new Array(screenWidth);
-      for (var xi = 0; xi < screenWidth; xi++) screenBuffer[y][xi] = ' ';
-    }
-    if (!styleBuffer[y]) {
-      styleBuffer[y] = new Array(screenWidth);
-      for (var xi = 0; xi < screenWidth; xi++) {
-        styleBuffer[y][xi] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-      }
+      k = l;
+    } catch (e) {
+      k = ""; l = "";
     }
   }
 
-  // Navigation keys -> move cursor
-  if (k === "left") { cursorMoveTo(cursorX - 1, cursorY); return; }
-  if (k === "right") { cursorMoveTo(cursorX + 1, cursorY); return; }
-  if (k === "up") { cursorMoveTo(cursorX, cursorY - 1); return; }
-  if (k === "down") { cursorMoveTo(cursorX, cursorY + 1); return; }
-  if (k === "home") { cursorMoveTo(0, cursorY); return; }
-  if (k === "end") { cursorMoveTo(screenWidth - 1, cursorY); return; }
+  // Keep compatibility with existing code relying on globals k and l
+  window.k = k;
+  window.l = l;
 
-  // ENTER: move to next line (do not echo)
-  if (k === "enter") { cursorMoveTo(0, cursorY + 1); return; }
-
-  // BACKSPACE: erase previous char and move cursor backwards
-  if (k === "back") {
-    if (cursorX === 0 && cursorY > 0) {
-      cursorMoveTo(screenWidth - 1, cursorY - 1);
-    } else if (cursorX > 0) {
-      var tx = cursorX - 1, ty = cursorY;
-      ensureLine(ty);
-      screenBuffer[ty][tx] = ' ';
-      styleBuffer[ty][tx] = {
-        color: currentStyle.color,
-        bgcolor: currentStyle.bgcolor,
-        bold: currentStyle.bold,
-        inverse: false
-      };
-      pokeCell(tx, ty);
-      cursorMoveTo(tx, ty);
-    }
+  // Modifier keys: toggle visuals and don't insert
+  if (k === "ctrl") {
+    ctrl = !ctrl;
+    var el = document.getElementById("ctrl");
+    if (el) { el.style.backgroundColor = ctrl ? "#fff" : "#222"; el.style.color = ctrl ? "#000" : "#fff"; }
+    if (hadCursor) cursor(1);
     return;
   }
-
-  // DELETE: erase char at cursor
-  if (k === "delete") {
-    ensureLine(cursorY);
-    screenBuffer[cursorY][cursorX] = ' ';
-    styleBuffer[cursorY][cursorX] = {
-      color: currentStyle.color,
-      bgcolor: currentStyle.bgcolor,
-      bold: currentStyle.bold,
-      inverse: false
-    };
-    pokeCell(cursorX, cursorY);
+  if (k === "alt") {
+    alt = !alt;
+    var el2 = document.getElementById("alt");
+    if (el2) { el2.style.backgroundColor = alt ? "#fff" : "#222"; el2.style.color = alt ? "#000" : "#fff"; }
+    if (hadCursor) cursor(1);
     return;
   }
-
-  // Printable character: write into buffers, poke that cell, advance cursor
-  if (typeof l === 'string' && l.length === 1) {
-    ensureLine(cursorY);
-    screenBuffer[cursorY][cursorX] = l;
-    styleBuffer[cursorY][cursorX] = {
-      color: currentStyle.color,
-      bgcolor: currentStyle.bgcolor,
-      bold: currentStyle.bold,
-      inverse: currentStyle.inverse
-    };
-    pokeCell(cursorX, cursorY);
-
-    var nx = cursorX + 1;
-    var ny = cursorY;
-    if (nx >= screenWidth) { nx = 0; ny = cursorY + 1; }
-    cursorMoveTo(nx, ny);
-    return;
-  }
-
-  // Handle caps toggle
   if (k === "caps") {
-    if (typeof caps !== 'undefined') {
-      if (caps === 0) caps = 1; else if (caps === 1) caps = 0;
+    caps = !caps;
+    var capsEl = document.getElementById("kcaps") || document.getElementById("caps");
+    if (capsEl) {
+      if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
+      else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
     }
+    if (hadCursor) cursor(1);
     return;
   }
 
-  // Prepend modifier keys to k BEFORE passing to script (for keyon=0 mode)
-  // Use global modifier flags (ctrl/alt/shift) — do NOT rely on event here.
-  if (run && k && !keyon) {
-    var hasCtrl = !!ctrl;
-    var hasAlt = !!alt;
-    var hasShift = !!shift;
+  // Insert / route the key according to keyon/run state
+  if (keyon) {
+    if (run && typeof keydown !== 'undefined') {
+      try { keydown(k || l); } catch (e) { /* ignore script errors */ }
+    } else {
+      // Handle navigation/editing and printable insertion
+      if (k === "back") {
+        if (typeof cursorPos === 'undefined') cursorPos = line ? line.length : 0;
+        if (cursorPos > 0) {
+          line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
+          cursorPos--;
+        }
+      } else if (k === "left") {
+        if (typeof cursorPos === 'undefined') cursorPos = line ? line.length : 0;
+        if (cursorPos > 0) cursorPos--;
+      } else if (k === "right") {
+        if (typeof cursorPos === 'undefined') cursorPos = line ? line.length : 0;
+        if (cursorPos < (line ? line.length : 0)) cursorPos++;
+      } else if (k === "home") {
+        cursorPos = 0;
+      } else if (k === "end") {
+        cursorPos = line ? line.length : 0;
+      } else if (k === "up" || k === "down") {
+        // basic command history support if present
+        if (typeof commandHistory !== 'undefined' && keyon) {
+          if (k === "up") {
+            if (commandHistory && commandHistory.length > 0) {
+              if (typeof historyIndex === 'undefined' || historyIndex === -1) {
+                tempCommand = line;
+                historyIndex = commandHistory.length;
+              }
+              if (historyIndex > 0) {
+                historyIndex--;
+                line = commandHistory[historyIndex];
+                cursorPos = line.length;
+              }
+            }
+          } else {
+            if (typeof historyIndex !== 'undefined' && historyIndex !== -1) {
+              if (historyIndex < commandHistory.length - 1) {
+                historyIndex++;
+                line = commandHistory[historyIndex];
+                cursorPos = line.length;
+              } else {
+                historyIndex = -1;
+                line = tempCommand || "";
+                cursorPos = line.length;
+                tempCommand = "";
+              }
+            }
+          }
+        }
+      } else if (k === "enter") {
+        // submit line
+        if (line !== undefined) {
+          if (typeof commandHistory !== 'undefined' && line.trim().length > 0) {
+            if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== line) {
+              commandHistory.push(line);
+              if (typeof maxHistorySize !== 'undefined' && commandHistory.length > maxHistorySize) {
+                commandHistory.shift();
+              }
+            }
+          }
+          if (typeof historyIndex !== 'undefined') historyIndex = -1;
+          tempCommand = "";
 
-    var shiftableKeys = ["left", "right", "up", "down", "home", "end", "delete"];
-    var shouldAddShift = shiftableKeys.indexOf(k) !== -1 && hasShift;
-
-    if (hasCtrl || hasAlt || shouldAddShift) {
-      var modifiers = [];
-      if (hasShift && shouldAddShift) modifiers.push("shift");
-      if (hasCtrl) modifiers.push("ctrl");
-      if (hasAlt) modifiers.push("alt");
-      k = modifiers.join(" ") + " " + (l || k);
-
-      // Reset virtual keyboard modifier keys after use (visuals)
-      if (ctrl) {
-        ctrl = 0;
-        try { document.getElementById("ctrl").style.backgroundColor = "#222"; document.getElementById("ctrl").style.color = "#fff"; } catch (e) {}
+          if (run) {
+            txt = (typeof txt !== 'undefined' ? txt : "") + line + "<br>";
+            try { input(line); } catch (e) { /* ignore */ }
+            line = "";
+            cursorPos = 0;
+          } else {
+            txt = (typeof txt !== 'undefined' ? txt : "") + line + "<br>";
+            if (line.slice(-3) === ".js") {
+              keyon = 0;
+              var prg = document.createElement('script');
+              prg.src = line;
+              prg.onload = function() { keyon = 1; };
+              prg.onerror = function() { print("Error loading program\n"); keyon = 1; };
+              document.head.appendChild(prg);
+              line = "";
+              cursorPos = 0;
+            } else if (line.substr(0,3) === "cls") {
+              if (typeof initScreen === 'function') initScreen(); else txt = "";
+              line = "";
+              cursorPos = 0;
+            } else {
+              try { executeCode(line); } catch (e) { /* ignore */ }
+              line = "";
+              cursorPos = 0;
+            }
+          }
+        }
+      } else if (l) {
+        // Insert printable char(s)
+        if (typeof cursorPos === 'undefined') cursorPos = line ? line.length : 0;
+        var finalChar = l;
+        var hasCtrl = !!ctrl;
+        var hasAlt = !!alt;
+        if (hasCtrl || hasAlt) {
+          var modifiers = [];
+          if (hasCtrl) modifiers.push("ctrl");
+          if (hasAlt) modifiers.push("alt");
+          finalChar = modifiers.join(" ") + " " + l;
+          // consume virtual modifiers
+          if (hasCtrl) {
+            ctrl = 0; var ce = document.getElementById("ctrl"); if (ce) { ce.style.backgroundColor = "#222"; ce.style.color = "#fff"; }
+          }
+          if (hasAlt) {
+            alt = 0; var ae = document.getElementById("alt"); if (ae) { ae.style.backgroundColor = "#222"; ae.style.color = "#fff"; }
+          }
+        }
+        line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
+        cursorPos += finalChar.length;
+        if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
       }
-      if (alt) {
-        alt = 0;
-        try { document.getElementById("alt").style.backgroundColor = "#222"; document.getElementById("alt").style.color = "#fff"; } catch (e) {}
+
+      // refresh input display
+      try {
+        if (typeof updateDisplay === 'function') updateDisplay();
+        else print("");
+      } catch (e) {
+        try { print(""); } catch (_) {}
       }
+    }
+  } else {
+    // keyon === 0: route to running script if any
+    if (run && typeof keydown !== 'undefined') {
+      try { keydown(k || l); } catch (e) { /* ignore */ }
     }
   }
 
-  // Pass key to script's keydown() handler if script is running and key wasn't consumed
-  if (run && k && typeof keydown === 'function') { keydown(k); }
-
-  // Refresh display (pokeCell already updated single cells; this ensures overall UI updated)
-  try { updateDisplay(); } catch (e) { /* best-effort */ }
-
-  return;
-}
-
-
-
-
-
-
- // Prepend modifier keys to k BEFORE passing to script (for keyon=0 mode)
- // This ensures scripts get "alt m" instead of just "m" when ALT+M is pressed
- // Also prepend shift for navigation keys and other keys when needed
- if (run && k && !keyon) {
-   let hasCtrl = ctrl || (typeof event !== 'undefined' && event.ctrlKey);
-   let hasAlt = alt || (typeof event !== 'undefined' && event.altKey);
-   let hasShift = shift || (typeof event !== 'undefined' && event.shiftKey);
-   
-   // List of keys that should get shift prefix (navigation keys)
-   let shiftableKeys = ["left", "right", "up", "down", "home", "end", "delete"];
-   let shouldAddShift = shiftableKeys.indexOf(k) !== -1 && hasShift;
-   
-   if (hasCtrl || hasAlt || shouldAddShift) {
-     let modifiers = [];
-     if (hasShift && shouldAddShift) modifiers.push("shift");
-     if (hasCtrl) modifiers.push("ctrl");
-     if (hasAlt) modifiers.push("alt");
-     k = modifiers.join(" ") + " " + (l || k);
-     // Reset virtual keyboard modifier keys after use
-     if (ctrl) {
-       ctrl = 0;
-       document.getElementById("ctrl").style.backgroundColor = "#222";
-       document.getElementById("ctrl").style.color = "#fff";
-     }
-     if (alt) {
-       alt = 0;
-       document.getElementById("alt").style.backgroundColor = "#222";
-       document.getElementById("alt").style.color = "#fff";
-     }
-   }
- }
- // Pass key to script's keydown() handler if script is running and key wasn't consumed
- if (run && k) { keydown(k); }
- updateDisplay();
+  // restore cursor visual
+  if (hadCursor) cursor(1);
 }
 
 function cursor(a) {
