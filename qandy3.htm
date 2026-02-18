@@ -96,7 +96,7 @@ var screenBuffer = [];
 var cursorX = 0;
 var cursorY = 0;
 var cursorOn=0;
-var prevCursor = { set: false, x: 0, y: 0, inverse: false }; 
+var prevCursor = { set: false, x: 0, y: 0, inverse: false };
 var screenWidth = 32;
 var screenHeight = 25;
 
@@ -1202,20 +1202,30 @@ function button(b) {
  updateDisplay();
 }
 
-
-
-   
 function cursor(a) {
-  if (!screenBuffer || !styleBuffer) { try { initScreen(); } catch (e) {}}
-  const cx=Math.max(0, Math.min(screenWidth-1, cursorX || 0));
-  const cy=Math.max(0, Math.min(screenHeight-1, cursorY || 0));
-  if (prevCursor.set) {
-    const px = prevCursor.x, py = prevCursor.y;
-    if (styleBuffer[py] && styleBuffer[py][px]) { styleBuffer[py][px].inverse = prevCursor.inverse; }
-    prevCursor.set = false;
+  // a === 1 to show cursor (set inverse), a === 0 to hide (restore)
+  if (!screenBuffer || !styleBuffer) {
+    try { initScreen(); } catch (e) { /* best-effort */ }
   }
+
+  // clamp logical coords
+  const cx = Math.max(0, Math.min(screenWidth - 1, cursorX || 0));
+  const cy = Math.max(0, Math.min(screenHeight - 1, cursorY || 0));
+
   if (a === 1) {
-    cursorOn = 1;
+    // Turning on: restore previous if on a different cell
+    if (prevCursor.set) {
+      // if we are re-enabling but at same cell, nothing to restore
+      if (!(prevCursor.x === cx && prevCursor.y === cy)) {
+        // restore previous inverse flag from saved value
+        if (styleBuffer[prevCursor.y] && styleBuffer[prevCursor.y][prevCursor.x]) {
+          styleBuffer[prevCursor.y][prevCursor.x].inverse = prevCursor.inverse;
+          pokeCell(prevCursor.x, prevCursor.y);
+        }
+      }
+    }
+
+    // ensure target row exists
     if (!styleBuffer[cy]) {
       styleBuffer[cy] = [];
       for (let x = 0; x < screenWidth; x++) {
@@ -1227,15 +1237,29 @@ function cursor(a) {
         };
       }
     }
-    const prevInverse = styleBuffer[cy][cx] ? !!styleBuffer[cy][cx].inverse : false;
-    prevCursor = { set: true, x: cx, y: cy, inverse: prevInverse };
-    styleBuffer[cy][cx].inverse = true;
-    try { updateDisplay(); } catch (e) { /* best-effort */ }
 
+    // save previous inverse for the new cursor cell
+    const prevInv = !!styleBuffer[cy][cx].inverse;
+    prevCursor = { set: true, x: cx, y: cy, inverse: prevInv };
+
+    // set inverse on the new cursor cell (POKE)
+    styleBuffer[cy][cx].inverse = true;
+
+    // update only this cell in the DOM
+    pokeCell(cx, cy);
+
+    cursorOn = 1;
   } else {
+    // Turning off: restore previously-saved inverse state
+    if (prevCursor.set) {
+      const px = prevCursor.x, py = prevCursor.y;
+      if (styleBuffer[py] && styleBuffer[py][px]) {
+        styleBuffer[py][px].inverse = prevCursor.inverse;
+        pokeCell(px, py);
+      }
+      prevCursor.set = false;
+    }
     cursorOn = 0;
-    // Nothing to leave inverted; updateDisplay will reflect restored state
-    try { updateDisplay(); } catch (e) { /* best-effort */ }
   }
 }
 
@@ -1916,74 +1940,55 @@ function updateDisplay() {
   }
 
   for (let y = 0; y < rowsToRender; y++) {
-    // Ensure row arrays exist
-    if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
-    if (!styleBuffer[y]) {
-      styleBuffer[y] = new Array(screenWidth);
-      for (let x = 0; x < screenWidth; x++) {
-        styleBuffer[y][x] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-      }
-    }
-
-    let lineHtml = '';
-    let currentSpanStyle = null;
-
+  // ensure row arrays exist (same as before)
+  if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
+  if (!styleBuffer[y]) {
+    styleBuffer[y] = new Array(screenWidth);
     for (let x = 0; x < screenWidth; x++) {
-      const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
-      const style = styleBuffer[y][x] || {
+      styleBuffer[y][x] = {
         color: currentStyle.color,
         bgcolor: currentStyle.bgcolor,
         bold: currentStyle.bold,
         inverse: currentStyle.inverse
       };
-
-      // Build a simple style key for grouping spans
-      const styleKey = `${style.color}-${style.bgcolor}-${style.bold}-${style.inverse}`;
-
-      // When style changes, close previous span and open a new one
-      if (currentSpanStyle !== styleKey) {
-        if (currentSpanStyle !== null) {
-          lineHtml += '</span>';
-        }
-
-        // Build classes similar to the earlier approach so existing CSS stays usable
-        let classes = [];
-        if (style.inverse) {
-          classes.push(`ansi-${ANSI.bgColors[style.bgcolor] || style.bgcolor}`);
-          classes.push(`ansi-bg-${ANSI.colors[style.color] || style.color}`);
-        } else {
-          classes.push(`ansi-${ANSI.colors[style.color] || style.color}`);
-          classes.push(`ansi-bg-${ANSI.bgColors[style.bgcolor] || style.bgcolor}`);
-        }
-        if (style.bold) classes.push('ansi-bold');
-
-        lineHtml += `<span class="${classes.join(' ')}">`;
-        currentSpanStyle = styleKey;
-      }
-
-      // Render the character. If this is the logical cursor position and input is enabled,
-      // draw a cursor indicator by wrapping the char in a .cursor span (read-only).
-      const chEscaped = escapeChar(ch);
-      if (keyon && y === cursorY && x === cursorX) {
-        lineHtml += `<span class="cursor">${chEscaped}</span>`;
-      } else {
-        lineHtml += chEscaped;
-      }
     }
-
-    // Close any open span for the line
-    if (currentSpanStyle !== null) {
-      lineHtml += '</span>';
-    }
-
-    // Append the rendered line. Use a block element per line for easier CSS control.
-    htmlContent += `<div class="row">${lineHtml}</div>`;
   }
+
+  let lineHtml = '<span class="qandy-line">';
+
+  for (let x = 0; x < screenWidth; x++) {
+    const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
+    const style = styleBuffer[y][x] || {
+      color: currentStyle.color,
+      bgcolor: currentStyle.bgcolor,
+      bold: currentStyle.bold,
+      inverse: currentStyle.inverse
+    };
+
+    // Build the class list for the character (map your ANSI to classes)
+    const classes = [];
+    if (style.inverse) {
+      classes.push('ansi-inverse');
+    } else {
+      classes.push(`ansi-fg-${style.color}`);   // adjust names to match your CSS
+      classes.push(`ansi-bg-${style.bgcolor}`);
+    }
+    if (style.bold) classes.push('ansi-bold');
+
+    // Escape char for HTML; keep spaces as &nbsp;
+    const escapedChar = (ch === ' ') ? '&nbsp;' :
+                        (ch === '&') ? '&amp;' :
+                        (ch === '<') ? '&lt;' :
+                        (ch === '>') ? '&gt;' :
+                        ch;
+
+    // Give each cell an id so it can be updated independently later.
+    lineHtml += `<span id="c${y}_${x}" class="${classes.join(' ')}">${escapedChar}</span>`;
+  }
+
+  lineHtml += '</span><br>';
+  htmlContent += lineHtml;
+}
 
   // Fill remaining visible rows with blank lines if buffer is shorter than screenHeight
   for (let y = rowsToRender; y < screenHeight; y++) {
@@ -1999,6 +2004,58 @@ function updateDisplay() {
   // - Any code that currently mutates cursorY to force a redraw should be changed
   //   to simply call updateDisplay() and NOT touch cursor variables.
 }
+
+// Update one cell from buffers (or update buffers then DOM)
+function pokeCell(x, y) {
+  // bounds check
+  if (y < 0 || y >= screenHeight || x < 0 || x >= screenWidth) return;
+
+  // Ensure buffers exist
+  if (!screenBuffer[y] || !styleBuffer[y]) {
+    // if buffers aren't initialized, bail or init as you prefer
+    try { initScreen(); } catch (e) { return; }
+  }
+
+  // Get values from buffers
+  const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
+  const style = styleBuffer[y][x] || {
+    color: currentStyle.color,
+    bgcolor: currentStyle.bgcolor,
+    bold: currentStyle.bold,
+    inverse: currentStyle.inverse
+  };
+
+  // Find DOM element for that cell
+  const el = document.getElementById(`c${y}_${x}`);
+  if (!el) {
+    // If element not present (maybe updateDisplay hasn't been run),
+    // we won't create full DOM here -- caller can call updateDisplay() instead.
+    return;
+  }
+
+  // Update classes to reflect style
+  const classes = [];
+  if (style.inverse) {
+    classes.push('ansi-inverse');
+  } else {
+    classes.push(`ansi-fg-${style.color}`);
+    classes.push(`ansi-bg-${style.bgcolor}`);
+  }
+  if (style.bold) classes.push('ansi-bold');
+
+  el.className = classes.join(' ');
+
+  // Update content (escape as above)
+  const escaped = (ch === ' ') ? '\u00A0' : ch;
+  // Use textContent to avoid HTML injection; but use NBSP for spaces
+  if (ch === ' ') {
+    // innerHTML for &nbsp;
+    el.innerHTML = '&nbsp;';
+  } else {
+    el.textContent = ch;
+  }
+}
+
 
 function cls() { 
   screenBuffer = [];  // Reset global screenBuffer (removed 'var' to avoid shadowing)
