@@ -2649,6 +2649,6 @@ for (i=0;i<mySearch.length;i++) {
   SFiles=0;
  }
 }
-//if (SFiles) { showFiles(); }
+if (SFiles) { showFiles(); }
 
 </script></body></html>
