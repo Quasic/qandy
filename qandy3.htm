@@ -532,7 +532,7 @@ function renderInputLine() {
  const charsPerLine = screenWidth;
  
  // Calculate how many screen lines the input will take
- const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine) || 1);
+ const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine));
  
  // Calculate cursor screen position from cursorPos
  const cursorLine = Math.floor(cursorPos / charsPerLine);
