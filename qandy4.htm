@@ -614,9 +614,9 @@ function renderInputLine() {
             };
           }
           try { pokeCell(col, row, ch); } catch (e) { /* best-effort */ }
+
           // advance logical input cursor (handle multi-char insertion if needed)
           if (typeof cursorPos === 'undefined' || cursorPos === null) cursorPos = 0;
-          cursorPos = cursorPos + 1; // or += finalChar.length if you inserted more than 1 char
           
           // compute new on-screen coords
           const charsPerLine = 32;
