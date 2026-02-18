@@ -1667,175 +1667,33 @@ function updateSelectionVisuals(selStart, selEnd) {
 }
 
 function print(inputString) {
-  // Ensure buffers exist
-  if (!screenBuffer || !styleBuffer || !screenWidth || !screenHeight) {
-    try { initScreen(); } catch (e) { /* best-effort */ }
-  }
+  // Debug toggle: set false to silence console.debug traces
+  var PRINT_DEBUG = true;
 
-  // Helper to ensure a row exists in styleBuffer
-  function ensureStyleRow(y) {
-    if (!styleBuffer[y]) {
-      styleBuffer[y] = [];
-      for (let x = 0; x < screenWidth; x++) {
-        styleBuffer[y][x] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-      }
+  try {
+    if (typeof inputString !== 'string') inputString = (inputString === undefined || inputString === null) ? '' : String(inputString);
+    if (PRINT_DEBUG) console.debug("[print] called, len=", inputString.length);
+
+    // Basic sanity init for globals that print expects
+    if (typeof screenWidth !== 'number' || isNaN(screenWidth) || screenWidth <= 0) {
+      screenWidth = (typeof screenWidth === 'number') ? Math.max(1, Math.floor(screenWidth) || 80) : 80;
+      if (PRINT_DEBUG) console.debug("[print] screenWidth missing/invalid, using", screenWidth);
     }
-  }
-
-  // Simple ANSI CSI parsing loop and character writer.
-  // Supports: \n, \r, \b, CSI [ params ] H/f (cursor pos), A/B/C/D (moves), K (erase in line), m (SGR - stored minimally).
-  let i = 0;
-  while (i < inputString.length) {
-    const ch = inputString.charAt(i);
-
-    // ESC / CSI handling
-    if (inputString.charCodeAt(i) === 27 && inputString.charAt(i + 1) === '[') {
-      // parse params until a letter command
-      let j = i + 2;
-      let params = '';
-      while (j < inputString.length && !/[A-Za-z]/.test(inputString.charAt(j))) {
-        params += inputString.charAt(j);
-        j++;
-      }
-      const cmd = inputString.charAt(j) || '';
-      const paramsArr = params.length ? params.split(';').map(s => s === '' ? NaN : Number(s)) : [];
-
-      // Handle cursor / SGR / clearline / moves
-      switch (cmd) {
-        case 'H':
-        case 'f': {
-          // 1-based row;col
-          const row = paramsArr[0] ? paramsArr[0] : 1;
-          const col = paramsArr[1] ? paramsArr[1] : 1;
-          cursorY = Math.max(0, Math.min(screenHeight - 1, row - 1));
-          cursorX = Math.max(0, Math.min(screenWidth - 1, col - 1));
-          break;
-        }
-        case 'A': { // CUU - cursor up
-          const n = paramsArr[0] ? paramsArr[0] : 1;
-          cursorY = Math.max(0, cursorY - n);
-          break;
-        }
-        case 'B': { // CUD - cursor down
-          const n = paramsArr[0] ? paramsArr[0] : 1;
-          cursorY = Math.min(screenHeight - 1, cursorY + n);
-          break;
-        }
-        case 'C': { // CUF - cursor forward
-          const n = paramsArr[0] ? paramsArr[0] : 1;
-          cursorX = Math.min(screenWidth - 1, cursorX + n);
-          break;
-        }
-        case 'D': { // CUB - cursor backward
-          const n = paramsArr[0] ? paramsArr[0] : 1;
-          cursorX = Math.max(0, cursorX - n);
-          break;
-        }
-        case 'K': { // EL - erase in line
-          const mode = (paramsArr[0] === undefined || isNaN(paramsArr[0])) ? 0 : paramsArr[0];
-          ensureStyleRow(cursorY);
-          if (mode === 0) {
-            // clear from cursor to end
-            for (let x = cursorX; x < screenWidth; x++) {
-              screenBuffer[cursorY][x] = ' ';
-              styleBuffer[cursorY][x] = {
-                color: currentStyle.color,
-                bgcolor: currentStyle.bgcolor,
-                bold: currentStyle.bold,
-                inverse: currentStyle.inverse
-              };
-            }
-          } else if (mode === 1) {
-            // clear from start to cursor
-            for (let x = 0; x <= cursorX; x++) {
-              screenBuffer[cursorY][x] = ' ';
-              styleBuffer[cursorY][x] = {
-                color: currentStyle.color,
-                bgcolor: currentStyle.bgcolor,
-                bold: currentStyle.bold,
-                inverse: currentStyle.inverse
-              };
-            }
-          } else if (mode === 2) {
-            // clear entire line
-            for (let x = 0; x < screenWidth; x++) {
-              screenBuffer[cursorY][x] = ' ';
-              styleBuffer[cursorY][x] = {
-                color: currentStyle.color,
-                bgcolor: currentStyle.bgcolor,
-                bold: currentStyle.bold,
-                inverse: currentStyle.inverse
-              };
-            }
-          }
-          break;
-        }
-        case 'm': {
-          // Minimal SGR handling - update currentStyle for subsequent characters.
-          // We'll parse a few basics: 0 reset, 1 bold, 7 inverse, 30-37 foreground, 40-47 background
-          if (paramsArr.length === 0) paramsArr.push(0);
-          for (let p = 0; p < paramsArr.length; p++) {
-            const code = paramsArr[p];
-            if (isNaN(code)) continue;
-            if (code === 0) {
-              currentStyle.color = 37; currentStyle.bgcolor = 40; currentStyle.bold = false; currentStyle.inverse = false;
-            } else if (code === 1) {
-              currentStyle.bold = true;
-            } else if (code === 7) {
-              currentStyle.inverse = true;
-            } else if (code >= 30 && code <= 37) {
-              currentStyle.color = code - 30 + 30; // store raw-ish (keep existing mapping)
-            } else if (code >= 40 && code <= 47) {
-              currentStyle.bgcolor = code - 40 + 40;
-            } else if (code === 22) { // normal intensity
-              currentStyle.bold = false;
-            } else if (code === 27) { // inverse off
-              currentStyle.inverse = false;
-            }
-          }
-          break;
-        }
-        default:
-          // Unknown/unsupported CSI - ignore
-          break;
-      }
-
-      // advance i past the CSI sequence
-      i = j + 1;
-      continue;
+    if (typeof screenHeight !== 'number' || isNaN(screenHeight) || screenHeight <= 0) {
+      screenHeight = (typeof screenHeight === 'number') ? Math.max(1, Math.floor(screenHeight) || 25) : 25;
+      if (PRINT_DEBUG) console.debug("[print] screenHeight missing/invalid, using", screenHeight);
     }
+    if (typeof cursorX !== 'number' || isNaN(cursorX)) cursorX = 0;
+    if (typeof cursorY !== 'number' || isNaN(cursorY)) cursorY = 0;
+    if (!screenBuffer || !Array.isArray(screenBuffer)) screenBuffer = [];
+    if (!styleBuffer || !Array.isArray(styleBuffer)) styleBuffer = [];
+    if (!currentStyle || typeof currentStyle !== 'object') currentStyle = { color: 37, bgcolor: 40, bold: false, inverse: false };
 
-    // Printable / control characters
-    if (ch === '\n') {
-      cursorX = 0;
-      cursorY++;
-      if (cursorY >= screenHeight) {
-        // clamp at bottom (preserves current draw contract)
-        cursorY = screenHeight - 1;
-      }
-      i++;
-      continue;
-    }
-
-    if (ch === '\r') {
-      cursorX = 0;
-      i++;
-      continue;
-    }
-
-    if (ch === '\b') {
-      // backspace: move left and erase
-      if (cursorX > 0) {
-        cursorX--;
-        if (screenBuffer[cursorY]) {
-          screenBuffer[cursorY][cursorX] = ' ';
-          ensureStyleRow(cursorY);
-          styleBuffer[cursorY][cursorX] = {
+    function ensureStyleRow(y) {
+      if (!styleBuffer[y]) {
+        styleBuffer[y] = [];
+        for (let x = 0; x < screenWidth; x++) {
+          styleBuffer[y][x] = {
             color: currentStyle.color,
             bgcolor: currentStyle.bgcolor,
             bold: currentStyle.bold,
@@ -1843,67 +1701,229 @@ function print(inputString) {
           };
         }
       }
-      i++;
-      continue;
+    }
+    function ensureScreenRow(y) {
+      if (!screenBuffer[y]) {
+        screenBuffer[y] = new Array(screenWidth);
+        for (let x = 0; x < screenWidth; x++) screenBuffer[y][x] = ' ';
+        ensureStyleRow(y);
+      }
     }
 
-    // Regular character - write into buffer at cursor
-    // Ensure row exists
-    if (!screenBuffer[cursorY]) {
-      screenBuffer[cursorY] = [];
-      for (let x = 0; x < screenWidth; x++) screenBuffer[cursorY][x] = ' ';
-    }
-    ensureStyleRow(cursorY);
+    function writeChar(ch) {
+      if (cursorY >= screenHeight) {
+        // try to scroll if helper exists
+        if (typeof scrollScreenDown === 'function') {
+          if (PRINT_DEBUG) console.debug("[writeChar] cursorY >= screenHeight, calling scrollScreenDown()");
+          try { scrollScreenDown(); } catch (e) { if (PRINT_DEBUG) console.debug("[writeChar] scrollScreenDown() threw", e); }
+        }
+        cursorY = screenHeight - 1;
+      }
+      ensureScreenRow(cursorY);
 
-    // Write character if within visible bounds
-    if (cursorX >= 0 && cursorX < screenWidth && cursorY >= 0 && cursorY < screenHeight) {
-      screenBuffer[cursorY][cursorX] = ch;
-      styleBuffer[cursorY][cursorX] = {
-        color: currentStyle.color,
-        bgcolor: currentStyle.bgcolor,
-        bold: currentStyle.bold,
-        inverse: currentStyle.inverse
-      };
-      cursorX++;
       if (cursorX >= screenWidth) {
         cursorX = 0;
         cursorY++;
+        ensureScreenRow(cursorY);
         if (cursorY >= screenHeight) {
+          if (typeof scrollScreenDown === 'function') {
+            try { scrollScreenDown(); } catch (e) { if (PRINT_DEBUG) console.debug("[writeChar] scrollScreenDown() threw after wrap", e); }
+          }
           cursorY = screenHeight - 1;
         }
       }
-    } else {
-      // Cursor outside bounds horizontally: clamp and/or move to next line
-      if (cursorX >= screenWidth) {
+
+      if (cursorY >= 0 && cursorY < screenHeight && cursorX >= 0 && cursorX < screenWidth) {
+        screenBuffer[cursorY][cursorX] = ch;
+        // copy style
+        styleBuffer[cursorY][cursorX] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+        if (typeof pokeCell === 'function') {
+          try { pokeCell(cursorX, cursorY); } catch (e) { if (PRINT_DEBUG) console.debug("[writeChar] pokeCell() threw", e); }
+        }
+        if (PRINT_DEBUG) console.debug("[writeChar] wrote", JSON.stringify(ch), "at", cursorX, cursorY);
+      } else {
+        if (PRINT_DEBUG) console.debug("[writeChar] out-of-bounds write attempted at", cursorX, cursorY, "ch=", JSON.stringify(ch));
+      }
+
+      cursorX++;
+    }
+
+    // Main loop: simple CSI-aware parser
+    var i = 0;
+    var len = inputString.length;
+    while (i < len) {
+      var code = inputString.charCodeAt(i);
+      var ch = inputString.charAt(i);
+
+      // ESC + '[' CSI
+      if (code === 27 && inputString.charAt(i + 1) === '[') {
+        var j = i + 2;
+        var params = '';
+        while (j < len && !/[A-Za-z]/.test(inputString.charAt(j))) {
+          params += inputString.charAt(j);
+          j++;
+        }
+        var cmd = inputString.charAt(j) || '';
+        var paramsArr = params.length ? params.split(';').map(function(s){ return s === '' ? NaN : Number(s); }) : [];
+
+        if (PRINT_DEBUG) console.debug("[CSI] seq=", inputString.substring(i, Math.min(j+1, len)), "cmd=", cmd, "params=", paramsArr);
+
+        switch (cmd) {
+          case 'H':
+          case 'f': {
+            var row = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
+            var col = (paramsArr[1] && !isNaN(paramsArr[1])) ? paramsArr[1] : 1;
+            cursorY = Math.min(Math.max(0, row - 1), screenHeight - 1);
+            cursorX = Math.min(Math.max(0, col - 1), screenWidth - 1);
+            if (PRINT_DEBUG) console.debug("[CSI H/f] set cursor to", cursorX, cursorY);
+            break;
+          }
+          case 'A': {
+            var n = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
+            cursorY = Math.max(0, cursorY - n);
+            if (PRINT_DEBUG) console.debug("[CSI A] moved up", n, "->", cursorX, cursorY);
+            break;
+          }
+          case 'B': {
+            var n = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
+            cursorY = Math.min(screenHeight - 1, cursorY + n);
+            if (PRINT_DEBUG) console.debug("[CSI B] moved down", n, "->", cursorX, cursorY);
+            break;
+          }
+          case 'C': {
+            var n = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
+            cursorX = Math.min(screenWidth - 1, cursorX + n);
+            if (PRINT_DEBUG) console.debug("[CSI C] moved right", n, "->", cursorX, cursorY);
+            break;
+          }
+          case 'D': {
+            var n = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 1;
+            cursorX = Math.max(0, cursorX - n);
+            if (PRINT_DEBUG) console.debug("[CSI D] moved left", n, "->", cursorX, cursorY);
+            break;
+          }
+          case 'K': {
+            var mode = (paramsArr[0] && !isNaN(paramsArr[0])) ? paramsArr[0] : 0;
+            ensureScreenRow(cursorY);
+            if (mode === 0) {
+              for (var x = cursorX; x < screenWidth; x++) {
+                screenBuffer[cursorY][x] = ' ';
+                styleBuffer[cursorY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+                if (typeof pokeCell === 'function') try { pokeCell(x, cursorY); } catch (_) {}
+              }
+              if (PRINT_DEBUG) console.debug("[CSI K] cleared to end of line at", cursorY, "from", cursorX);
+            } else if (mode === 1) {
+              for (var x2 = 0; x2 <= cursorX; x2++) {
+                screenBuffer[cursorY][x2] = ' ';
+                styleBuffer[cursorY][x2] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+                if (typeof pokeCell === 'function') try { pokeCell(x2, cursorY); } catch (_) {}
+              }
+              if (PRINT_DEBUG) console.debug("[CSI K] cleared from start to cursor at", cursorY);
+            } else if (mode === 2) {
+              for (var x3 = 0; x3 < screenWidth; x3++) {
+                screenBuffer[cursorY][x3] = ' ';
+                styleBuffer[cursorY][x3] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+                if (typeof pokeCell === 'function') try { pokeCell(x3, cursorY); } catch (_) {}
+              }
+              cursorX = 0;
+              if (PRINT_DEBUG) console.debug("[CSI K] cleared entire line", cursorY);
+            }
+            break;
+          }
+          case 'm': {
+            if (paramsArr.length === 0) {
+              currentStyle.color = 37; currentStyle.bgcolor = 40; currentStyle.bold = false; currentStyle.inverse = false;
+            } else {
+              for (var pi = 0; pi < paramsArr.length; pi++) {
+                var p = paramsArr[pi];
+                if (isNaN(p)) continue;
+                if (p === 0) { currentStyle.color = 37; currentStyle.bgcolor = 40; currentStyle.bold = false; currentStyle.inverse = false; }
+                else if (p === 1) currentStyle.bold = true;
+                else if (p >= 30 && p <= 37) currentStyle.color = p;
+                else if (p >= 40 && p <= 47) currentStyle.bgcolor = p;
+                else if (p === 7) currentStyle.inverse = true;
+                else if (p === 27) currentStyle.inverse = false;
+              }
+            }
+            if (PRINT_DEBUG) console.debug("[CSI m] updated style", currentStyle);
+            break;
+          }
+          default:
+            if (PRINT_DEBUG) console.debug("[CSI] unsupported cmd", cmd);
+            break;
+        }
+        i = j + 1;
+        continue;
+      }
+
+      // Control characters
+      if (ch === '\n') {
         cursorX = 0;
         cursorY++;
-        if (cursorY >= screenHeight) cursorY = screenHeight - 1;
-      } else if (cursorX < 0) {
-        cursorX = 0;
+        if (cursorY >= screenHeight) {
+          if (typeof scrollScreenDown === 'function') try { scrollScreenDown(); } catch (_) {}
+          cursorY = screenHeight - 1;
+        }
+        if (PRINT_DEBUG) console.debug("[print] newline ->", cursorX, cursorY);
+        i++;
+        continue;
       }
+
+      if (ch === '\r') {
+        cursorX = 0;
+        if (PRINT_DEBUG) console.debug("[print] carriage return");
+        i++;
+        continue;
+      }
+
+      if (ch === '\b') {
+        if (cursorX > 0) {
+          cursorX--;
+          ensureScreenRow(cursorY);
+          screenBuffer[cursorY][cursorX] = ' ';
+          styleBuffer[cursorY][cursorX] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+          if (typeof pokeCell === 'function') try { pokeCell(cursorX, cursorY); } catch (_) {}
+          if (PRINT_DEBUG) console.debug("[print] backspace erased at", cursorX, cursorY);
+        }
+        i++;
+        continue;
+      }
+
+      // Regular printable character
+      writeChar(ch);
+      i++;
+    } // end while
+
+    // Clamp cursor to visible bounds
+    cursorX = Math.min(Math.max(0, cursorX), Math.max(0, screenWidth - 1));
+    cursorY = Math.min(Math.max(0, cursorY), Math.max(0, screenHeight - 1));
+    if (PRINT_DEBUG) console.debug("[print] final cursor", cursorX, cursorY);
+
+    // Refresh the visible display
+    try {
+      if (typeof updateDisplay === 'function') updateDisplay();
+      else if (typeof draw === 'function') draw();
+      else try { document.getElementById('txt').innerHTML = document.getElementById('txt').innerHTML; } catch (_) {}
+    } catch (e) {
+      if (PRINT_DEBUG) console.debug("[print] updateDisplay/draw fallback threw", e);
     }
 
-    i++;
-  } // end while chars
-
-  // Force display refresh so the new buffer contents are visible
-  try {
-    updateDisplay();
-  } catch (e) {
-    // best-effort fallback: touch the DOM manually if updateDisplay not available
-    try { document.getElementById('txt').innerHTML = document.getElementById('txt').innerHTML; } catch (_) {}
-  }
-
-  // Re-apply cursor visual at the new logical position
-  if (typeof cursor === 'function') {
-    if (typeof cursorOn !== 'undefined' && cursorOn === 1) {
-      cursor(1);
-    } else {
-      cursor(0);
+    // Re-apply cursor visual if the engine uses a cursor() helper
+    if (typeof cursor === 'function') {
+      try {
+        if (typeof cursorOn !== 'undefined' && cursorOn === 1) cursor(1); else cursor(0);
+      } catch (e) { if (PRINT_DEBUG) console.debug("[print] cursor() threw", e); }
     }
+  } catch (err) {
+    // Last-resort catch so print() never throws and breaks other logic
+    console.error("[print] unexpected exception:", err);
   }
 }
-
 function draw(inputString) {
   // Draw text at current cursor location with ANSI codes
   // Does NOT scroll, trigger pagination, or update txt variable
@@ -2145,68 +2165,26 @@ function updateDisplay() {
     htmlContent += `<div class="row">&nbsp;</div>`;
   }
 
-  // Render input line if keyon is true (user is in input mode)
-  if (keyon) {
-    let cleanInput = line.replace(/\n/g, '').replace(/\r/g, '');
-    
-    // Calculate how many display lines we need
-    const charsPerLine = screenWidth;
-    const numLines = Math.max(1, Math.ceil(cleanInput.length / charsPerLine));
-    
-    // Helper function to escape HTML characters
-    const escapeHtml = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
-    
-    // Render input across multiple wrapped lines
-    for (let lineIndex = 0; lineIndex < numLines; lineIndex++) {
-      let lineStart = lineIndex * charsPerLine;
-      let lineEnd = Math.min(lineStart + charsPerLine, cleanInput.length);
-      let displayLine = cleanInput.substring(lineStart, lineEnd);
-      
-      let lineHtml = '';
-      
-      // Build this line character by character
-      for (let charIndex = 0; charIndex < charsPerLine; charIndex++) {
-        let charPos = lineStart + charIndex;
-        
-        if (charIndex < displayLine.length) {
-          // We have a character to display
-          let char = displayLine[charIndex];
-          
-          // Check if this character is selected
-          const isSelected = selectionStart !== -1 && 
-                             charPos >= Math.min(selectionStart, selectionEnd) && 
-                             charPos < Math.max(selectionStart, selectionEnd);
-          
-          if (charPos === cursorPos) {
-            // This is the cursor position - invert colors
-            lineHtml += '<span style="background-color: white; color: black;">' + 
-                        escapeHtml(char) + 
-                        '</span>';
-          } else if (isSelected) {
-            // Selected text - use selection colors
-            lineHtml += `<span style="background-color: ${selectionBgColor}; color: ${selectionFgColor};">` + 
-                        escapeHtml(char) + 
-                        '</span>';
-          } else {
-            // Normal character
-            lineHtml += escapeHtml(char);
-          }
-        } else if (charPos === cursorPos && charPos === cleanInput.length) {
-          // Cursor is at the end of input (after last character)
-          lineHtml += '<span style="background-color: white; color: black;">&nbsp;</span>';
-        } else {
-          // Empty space (input doesn't extend this far on this line)
-          lineHtml += '&nbsp;';
-        }
-      }
-      
-      htmlContent += lineHtml + '<br>';
-    }
-  }
-
   // Write to DOM in one shot
   txtElement.innerHTML = htmlContent;
-  txtElement.scrollTop = txtElement.scrollHeight;
+
+  try {
+    // Remove previous cursor markers (if any)
+    const prev = document.querySelectorAll('.qandy-cursor');
+    for (let p = 0; p < prev.length; p++) prev[p].classList.remove('qandy-cursor');
+
+    // Add cursor marker to current cursor position (cursorX, cursorY are logical coords)
+    if (typeof cursorX === 'number' && typeof cursorY === 'number') {
+      const curEl = document.getElementById(`c${cursorY}_${cursorX}`);
+      if (curEl) {
+        curEl.classList.add('qandy-cursor');
+      }
+    }
+  } catch (e) {
+    // Non-fatal: best-effort only
+    console.warn('Failed to apply qandy cursor marker', e);
+  }
+
 }
 
 // Update one cell from buffers (or update buffers then DOM)
