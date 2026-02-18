@@ -78,7 +78,6 @@ var extendedChars = {
 };
 var line=""; // input text line
 var cursorPos=0; // cursor position in input line for editing
-var cursorOn=0; // cursor on/off 
 var inputScrollPos=0; // starting position of visible input window
 
 // Command history support (like Linux terminal)
@@ -96,6 +95,8 @@ var selectionFgColor = '#000000';   // Selection text color
 var screenBuffer = [];
 var cursorX = 0;
 var cursorY = 0;
+var cursorOn=0;
+var prevCursor = { set: false, x: 0, y: 0, inverse: false }; 
 var screenWidth = 32;
 var screenHeight = 25;
 
@@ -1199,6 +1200,51 @@ function button(b) {
  // Pass key to script's keydown() handler if script is running and key wasn't consumed
  if (run && k) { keydown(k); }
  updateDisplay();
+}
+
+
+
+   
+function cursor(a) {
+  if (!screenBuffer || !styleBuffer) { try { initScreen(); } catch (e) {}}
+  const cx=Math.max(0, Math.min(screenWidth-1, cursorX || 0));
+  const cy=Math.max(0, Math.min(screenHeight-1, cursorY || 0));
+  if (prevCursor.set) {
+    const px = prevCursor.x, py = prevCursor.y;
+    if (styleBuffer[py] && styleBuffer[py][px]) { styleBuffer[py][px].inverse = prevCursor.inverse; }
+    prevCursor.set = false;
+  }
+  if (a === 1) {
+    cursorOn = 1;
+    if (!styleBuffer[cy]) {
+      styleBuffer[cy] = [];
+      for (let x = 0; x < screenWidth; x++) {
+        styleBuffer[cy][x] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+      }
+    }
+    const prevInverse = styleBuffer[cy][cx] ? !!styleBuffer[cy][cx].inverse : false;
+    prevCursor = { set: true, x: cx, y: cy, inverse: prevInverse };
+    styleBuffer[cy][cx].inverse = true;
+    try { updateDisplay(); } catch (e) { /* best-effort */ }
+
+  } else {
+    cursorOn = 0;
+    // Nothing to leave inverted; updateDisplay will reflect restored state
+    try { updateDisplay(); } catch (e) { /* best-effort */ }
+  }
+}
+
+
+ 
+ }
+ if (a==1) {
+   // turn curosr on
+ }
 }
 
 // Replacement executeCode() for qandy2.htm
