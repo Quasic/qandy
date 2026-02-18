@@ -450,35 +450,18 @@ document.addEventListener('paste', function (event) {
 });
 function press(event) { 
  key=""; k=event.keyCode; shift=event.shiftKey;
- 
- // Prevent browser from handling ALT key - must be done before any conditionals
- if (event.keyCode === 18 || event.altKey) {
-  event.preventDefault(); // Prevent browser menu from opening
- }
- 
- // Prevent browser from handling ESC key - must be done before any conditionals
- if (event.keyCode === 27) {
-  event.preventDefault(); // Prevent browser from handling ESC
- }
- 
- // Handle physical CTRL key press (highlight while pressed)
+ if (event.keyCode === 18 || event.altKey) { event.preventDefault(); }
+ if (event.keyCode === 27) { event.preventDefault(); }
  if (event.keyCode === 17 && !ctrl) {
-  ctrl = 1;
-  ctrlPhysical = true;
+  ctrl=1; ctrlPhysical=true;
   document.getElementById("ctrl").style.backgroundColor = "#0a0";
   document.getElementById("ctrl").style.color = "#000";
   return;
  }
- 
- // Handle physical ALT key press (highlight while pressed)
  if (event.keyCode === 18 && !alt) {
-  alt = 1;
-  altPhysical = true;
-  document.getElementById("alt").style.backgroundColor = "#0a0";
+  alt = 1; altPhysical = true; document.getElementById("alt").style.backgroundColor = "#0a0";
   document.getElementById("alt").style.color = "#000";
-  // Don't return - let the key be passed to button() so apps can handle "alt"
  }
- 
  // Handle Ctrl+C for copy
  if (event.ctrlKey && event.key === 'c') {
   event.preventDefault();
@@ -502,12 +485,8 @@ function press(event) {
   return;
  }
  
- // Don't handle keydown if Ctrl is pressed (let paste event handle it)
  if (event.ctrlKey) { return; }
- 
- // Highlight the virtual key for visual feedback
  highlightKey(k);
- 
  button(k);
 }
 
