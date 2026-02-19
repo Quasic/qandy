@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GWBASIC PLAY Command Test - Qandy</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      max-width: 1000px;
+    }
+    h1 {
+      color: #0f0;
+      border-bottom: 2px solid #0f0;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #0ff;
+      margin-top: 30px;
+    }
+    #output {
+      white-space: pre-wrap;
+      border: 1px solid #333;
+      padding: 10px;
+      margin-top: 10px;
+      min-height: 200px;
+      background-color: #111;
+    }
+    button {
+      background-color: #333;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #0f0;
+      color: #000;
+    }
+    button.stop {
+      color: #f00;
+      border-color: #f00;
+    }
+    button.stop:hover {
+      background-color: #f00;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #444;
+      background-color: #0a0a0a;
+    }
+    .test-desc {
+      color: #aaa;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .code {
+      color: #ff0;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>GWBASIC PLAY Command Format Test</h1>
+  
+  <p>Testing the new playNotes() function that supports GWBASIC.COM "PLAY [string]" command format.</p>
+  
+  <h2>Basic Tests</h2>
+  
+  <div class="test-section">
+    <div class="test-desc">Basic melody: <span class="code">playNotes("C D E F G A B")</span></div>
+    <button onclick="testBasicMelody()">Basic Melody</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">With octave and length: <span class="code">playNotes("O3 L8 CDEFGAB")</span></div>
+    <button onclick="testOctaveLength()">Octave 3, Eighth Notes</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Complex with tempo: <span class="code">playNotes("T100 C#4 D8 F+16")</span></div>
+    <button onclick="testComplexTempo()">Tempo + Mixed Lengths</button>
+  </div>
+  
+  <h2>Sharps and Flats</h2>
+  
+  <div class="test-section">
+    <div class="test-desc">Sharp notes (#): <span class="code">playNotes("C# D# F# G# A#")</span></div>
+    <button onclick="testSharps()">Sharps Test</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Sharp notes (+): <span class="code">playNotes("C+ D+ F+ G+ A+")</span></div>
+    <button onclick="testPlusSharps()">Plus Sharps Test</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Flat notes (-): <span class="code">playNotes("D- E- G- A- B-")</span></div>
+    <button onclick="testFlats()">Flats Test</button>
+  </div>
+  
+  <h2>Tempo Tests</h2>
+  
+  <div class="test-section">
+    <div class="test-desc">Slow tempo: <span class="code">playNotes("T60 C D E F G")</span></div>
+    <button onclick="testSlowTempo()">Slow (T60)</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Fast tempo: <span class="code">playNotes("T200 C D E F G")</span></div>
+    <button onclick="testFastTempo()">Fast (T200)</button>
+  </div>
+  
+  <h2>Note Lengths</h2>
+  
+  <div class="test-section">
+    <div class="test-desc">Whole notes: <span class="code">playNotes("L1 C D E")</span></div>
+    <button onclick="testWholeNotes()">Whole Notes (L1)</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Half notes: <span class="code">playNotes("L2 C D E F")</span></div>
+    <button onclick="testHalfNotes()">Half Notes (L2)</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Quarter notes: <span class="code">playNotes("L4 C D E F G")</span></div>
+    <button onclick="testQuarterNotes()">Quarter Notes (L4)</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Eighth notes: <span class="code">playNotes("L8 C D E F G A B C")</span></div>
+    <button onclick="testEighthNotes()">Eighth Notes (L8)</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Mixed lengths: <span class="code">playNotes("C1 D2 E4 F8 G16")</span></div>
+    <button onclick="testMixedLengths()">Mixed Lengths</button>
+  </div>
+  
+  <h2>Octaves</h2>
+  
+  <div class="test-section">
+    <div class="test-desc">Low octave: <span class="code">playNotes("O2 C D E F G")</span></div>
+    <button onclick="testLowOctave()">Octave 2</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Middle octave: <span class="code">playNotes("O4 C D E F G")</span></div>
+    <button onclick="testMiddleOctave()">Octave 4</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">High octave: <span class="code">playNotes("O6 C D E F G")</span></div>
+    <button onclick="testHighOctave()">Octave 6</button>
+  </div>
+  
+  <h2>Pauses/Rests</h2>
+  
+  <div class="test-section">
+    <div class="test-desc">With rests: <span class="code">playNotes("C P4 E P4 G")</span></div>
+    <button onclick="testRests()">Notes with Rests</button>
+  </div>
+  
+  <h2>Background Playback & Looping</h2>
+  
+  <div class="test-section">
+    <div class="test-desc">Background loop: <span class="code">loopNotes("O4 L8 C E G E")</span></div>
+    <button onclick="testLoop()">Start Background Loop</button>
+    <button class="stop" onclick="stopTune()">Stop Loop</button>
+  </div>
+  
+  <h2>Musical Examples</h2>
+  
+  <div class="test-section">
+    <div class="test-desc">C Major Scale: <span class="code">playNotes("L8 C D E F G A B C")</span></div>
+    <button onclick="testScale()">C Major Scale</button>
+  </div>
+  
+  <div class="test-section">
+    <div class="test-desc">Simple song: <span class="code">playNotes("T120 L4 C C G G A A G2")</span></div>
+    <button onclick="testSimpleSong()">Twinkle Start</button>
+  </div>
+  
+  <div id="output"></div>
+  
+  <script>
+    var output = document.getElementById('output');
+    
+    function log(text) {
+      const timestamp = new Date().toLocaleTimeString();
+      output.innerHTML += `<span style="color:#888">[${timestamp}]</span> ${text}\n`;
+      output.scrollTop = output.scrollHeight;
+    }
+    
+    // Load sound.js
+    var script = document.createElement('script');
+    script.src = 'sound.js';
+    script.onload = function() {
+      log('<span style="color:#0f0">✓ sound.js loaded successfully</span>');
+      log('<span style="color:#0ff">Ready to test GWBASIC PLAY format</span>');
+    };
+    script.onerror = function() {
+      log('<span style="color:#f00">✗ Failed to load sound.js</span>');
+    };
+    document.head.appendChild(script);
+    
+    // Test functions
+    function testBasicMelody() {
+      log('Playing: <span class="code">playNotes("C D E F G A B")</span>');
+      playNotes("C D E F G A B");
+    }
+    
+    function testOctaveLength() {
+      log('Playing: <span class="code">playNotes("O3 L8 CDEFGAB")</span>');
+      playNotes("O3 L8 CDEFGAB");
+    }
+    
+    function testComplexTempo() {
+      log('Playing: <span class="code">playNotes("T100 C#4 D8 F+16")</span>');
+      playNotes("T100 C#4 D8 F+16");
+    }
+    
+    function testSharps() {
+      log('Playing: <span class="code">playNotes("C# D# F# G# A#")</span>');
+      playNotes("C# D# F# G# A#");
+    }
+    
+    function testPlusSharps() {
+      log('Playing: <span class="code">playNotes("C+ D+ F+ G+ A+")</span>');
+      playNotes("C+ D+ F+ G+ A+");
+    }
+    
+    function testFlats() {
+      log('Playing: <span class="code">playNotes("D- E- G- A- B-")</span>');
+      playNotes("D- E- G- A- B-");
+    }
+    
+    function testSlowTempo() {
+      log('Playing: <span class="code">playNotes("T60 C D E F G")</span>');
+      playNotes("T60 C D E F G");
+    }
+    
+    function testFastTempo() {
+      log('Playing: <span class="code">playNotes("T200 C D E F G")</span>');
+      playNotes("T200 C D E F G");
+    }
+    
+    function testWholeNotes() {
+      log('Playing: <span class="code">playNotes("L1 C D E")</span>');
+      playNotes("L1 C D E");
+    }
+    
+    function testHalfNotes() {
+      log('Playing: <span class="code">playNotes("L2 C D E F")</span>');
+      playNotes("L2 C D E F");
+    }
+    
+    function testQuarterNotes() {
+      log('Playing: <span class="code">playNotes("L4 C D E F G")</span>');
+      playNotes("L4 C D E F G");
+    }
+    
+    function testEighthNotes() {
+      log('Playing: <span class="code">playNotes("L8 C D E F G A B C")</span>');
+      playNotes("L8 C D E F G A B C");
+    }
+    
+    function testMixedLengths() {
+      log('Playing: <span class="code">playNotes("C1 D2 E4 F8 G16")</span>');
+      playNotes("C1 D2 E4 F8 G16");
+    }
+    
+    function testLowOctave() {
+      log('Playing: <span class="code">playNotes("O2 C D E F G")</span>');
+      playNotes("O2 C D E F G");
+    }
+    
+    function testMiddleOctave() {
+      log('Playing: <span class="code">playNotes("O4 C D E F G")</span>');
+      playNotes("O4 C D E F G");
+    }
+    
+    function testHighOctave() {
+      log('Playing: <span class="code">playNotes("O6 C D E F G")</span>');
+      playNotes("O6 C D E F G");
+    }
+    
+    function testRests() {
+      log('Playing: <span class="code">playNotes("C P4 E P4 G")</span>');
+      playNotes("C P4 E P4 G");
+    }
+    
+    function testLoop() {
+      log('Starting loop: <span class="code">loopNotes("O4 L8 C E G E")</span>');
+      log('<span style="color:#ff0">⟳ Background music playing (click Stop to end)</span>');
+      loopNotes("O4 L8 C E G E");
+    }
+    
+    function testScale() {
+      log('Playing: <span class="code">playNotes("L8 C D E F G A B C")</span>');
+      playNotes("L8 C D E F G A B C");
+    }
+    
+    function testSimpleSong() {
+      log('Playing: <span class="code">playNotes("T120 L4 C C G G A A G2")</span>');
+      playNotes("T120 L4 C C G G A A G2");
+    }
+  </script>
+</body>
+</html>
