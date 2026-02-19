@@ -1402,12 +1402,11 @@ function triggerPaginationPause() {
 // logical index = position within `line` (0-based)
 function logicalToScreen(index) {
   const charsPerLine = screenWidth;
-  // baseRow = screen row where logical index 0 maps to
-  // derive from current cursor location and cursorPos:
-  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
-  const rowOffset = Math.floor(index / charsPerLine);
-  const col = index % charsPerLine;
-  const row = baseRow + rowOffset;
+  // Calculate absolute column position accounting for where input started
+  const absCol = inputStartX + index;
+  const rowOffset = Math.floor(absCol / charsPerLine);
+  const col = absCol % charsPerLine;
+  const row = inputStartY + rowOffset;
   return { row: row, col: col };
 }
 
