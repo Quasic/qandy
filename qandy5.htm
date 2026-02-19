@@ -602,6 +602,7 @@ function button(b, event) {
             cursorY = sc.y;
             // reflect selection visually
             updateSelectionVisuals(selectionStart, selectionEnd);
+            renderInputLine();
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos--;
@@ -622,6 +623,7 @@ function button(b, event) {
             selectionEnd = cursorPos;
             setCursorToInputPos(cursorPos);
             updateSelectionVisuals(selectionStart, selectionEnd);
+            renderInputLine();
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos++;
