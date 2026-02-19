@@ -533,28 +533,25 @@ function button(b, event) {
         if (cursorPos > 0) {
          // const prevCursorPos = cursorPos;
          // const prevLineLen = (typeof line === 'string') ? line.length : 0;
-         cursor(0);
-         line = line.substring(0, cursorPos - 1)+line.substring(cursorPos);
-         pokeCell(cursorX, cursorY, ' ', {
+         cursor(0); pokeCell(cursorX, cursorY, ' ', {
           color: (currentStyle && currentStyle.color) || 37,
           bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
           bold: false,
           inverse: false
          });
-         cursorPos--; 
- 
+         line = line.substring(0, cursorPos-1)+line.substring(cursorPos);
+         cursorPos--; cursorX--;
+         
          // this line may need to be updated to handle
          // the BACK button being pressed when the cursor
          // is on 0 column and needs to be moved to the
          // last column of the row above it  
-         cursorX--;
-         
-         const charsPerLine = screenWidth || 32;
-         const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : 0 - Math.floor(cursorPos / charsPerLine);
-         const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
-         const newCol = cursorPos % charsPerLine;
-         cursorX = Math.max(0, Math.min((screenWidth||32)-1, newCol));
-         cursorY = Math.max(0, Math.min((screenHeight||25)-1, newRow));
+         //const charsPerLine = screenWidth || 32;
+         //const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : 0 - Math.floor(cursorPos / charsPerLine);
+         //const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
+         //const newCol = cursorPos % charsPerLine;
+         //cursorX = Math.max(0, Math.min((screenWidth||32)-1, newCol));
+         //cursorY = Math.max(0, Math.min((screenHeight||25)-1, newRow));
          renderInputLine();
         }
       } else if (k === "left") {
@@ -686,7 +683,7 @@ function button(b, event) {
         };
         pokeCell(cursorX, cursorY, finalChar, inputStyle);
         cursorPos += finalChar.length;
-        alert(cursorX); cursorX += finalChar.length; alert(cursorX); 
+        cursorX += finalChar.length; 
 
         // AI: these lines may need to advance both
         // the cursorX and cursor Y?
@@ -1055,82 +1052,21 @@ function keysoff() { keyon=0; cursor(0); }
 
 function cursor(a) {
   if (!screenBuffer || !styleBuffer) { try { initScreen(); } catch (e) { /* ignore */ }}
-
-  // clamp coordinates huh??
-  // const cx = Math.max(0, Math.min((typeof screenWidth === 'number' ? screenWidth : 80) - 1, cursorX || 0));
-  // const cy = Math.max(0, Math.min((typeof screenHeight === 'number' ? screenHeight : 25) - 1, cursorY || 0));
-  // Ensure prevCursor structure exists
-  // if (!prevCursor) prevCursor = { set: false, x: 0, y: 0, inverse: false, ch: ' ', style: null };
-  // Helper to ensure a row exists in buffers
-  // function ensureRow(y) {
-  //  if (!screenBuffer[y]) screenBuffer[y] = new Array(screenWidth).fill(' ');
-  //  if (!styleBuffer[y]) {
-  //    styleBuffer[y] = new Array(screenWidth);
-  //    for (let x = 0; x < screenWidth; x++) {
-  //      styleBuffer[y][x] = {
-  //        color: currentStyle && currentStyle.color ? currentStyle.color : 37,
-  //        bgcolor: currentStyle && currentStyle.bgcolor ? currentStyle.bgcolor : 40,
-  //        bold: currentStyle && currentStyle.bold ? currentStyle.bold : false,
-  //       inverse: currentStyle && currentStyle.inverse ? currentStyle.inverse : false
-  //      };
-  //    }
-  //  }
-  //}
-
   if (a === 1) {
-    //Show cursor
-    //If a previous cursor was set at a different cell, restore it first
-    //if (prevCursor.set && !(prevCursor.x === cx && prevCursor.y === cy)) {
-    //  const px = prevCursor.x, py = prevCursor.y;
-    //  // restore saved char & style into buffers and DOM
-    //  ensureRow(py);
-    //  screenBuffer[py][px] = prevCursor.ch;
-    //  styleBuffer[py][px] = prevCursor.style ? Object.assign({}, prevCursor.style) : {
-    //    color: currentStyle.color,
-    //    bgcolor: currentStyle.bgcolor,
-    //    bold: currentStyle.bold,
-    //    inverse: prevCursor.inverse
-    //  };
-    //const prevEl = document.getElementById(`c${py}_${px}`);
-    //if (prevEl) prevEl.classList.remove('qandy-cursor');
-    //pokeCell(px, py);
-    //prevCursor.set = false;
-    //}
-    // Save the existing char & style at the new cursor cell
-    //ensureRow(cy);
-    //const existingChar = (screenBuffer[cy][cx] === undefined || screenBuffer[cy][cx] === null) ? ' ' : screenBuffer[cy][cx];
-    
     const existingStyle = styleBuffer[cursorY][cursorX] ? Object.assign({}, styleBuffer[cursorY][cursorX]) : {
-      color: currentStyle.color,
-      bgcolor: currentStyle.bgcolor,
-      bold: currentStyle.bold,
-      inverse: currentStyle.inverse
+      color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse
     };
-
     styleBuffer[cursorY][cursorX] = Object.assign({}, existingStyle);
     styleBuffer[cursorY][cursorX].inverse = true;
     const el = document.getElementById(`c${cursorY}_${cursorX}`);
     if (el) { el.classList.add('qandy-cursor'); }
     cursorOn = 1;
-
   } else {
-    // Hide cursor: restore previous cell if we set one
-    //if (prevCursor && prevCursor.set) {
-    //  const px = prevCursor.x, py = prevCursor.y;
-    //  ensureRow(py); // helper present in cursor() — ensure buffer rows exist
-    // restore char and style into buffers
-    //screenBuffer[py][px] = prevCursor.ch;
-    // make an explicit copy of the saved style
-    //styleBuffer[py][px] = prevCursor.style ? Object.assign({}, prevCursor.style) : {
-    //  color: currentStyle.color,
-    //  bgcolor: currentStyle.bgcolor,
-    //  bold: currentStyle.bold,
-    //  inverse: prevCursor.inverse
-    //};
-    //pokeCell(px, py, screenBuffer[py][px], styleBuffer[py][px]);
-    //prevCursor.set = false;
-    //ensureRow(py);
-    
+    const existingStyle = styleBuffer[cursorY][cursorX] ? Object.assign({}, styleBuffer[cursorY][cursorX]) : {
+      color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse
+    };
+    styleBuffer[cursorY][cursorX] = Object.assign({}, existingStyle);
+    styleBuffer[cursorY][cursorX].inverse = false;
     const el = document.getElementById(`c${cursorY}_${cursorX}`);
     if (el) el.classList.remove('qandy-cursor');
     cursorOn = 0;  
