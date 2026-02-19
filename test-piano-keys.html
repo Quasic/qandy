@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Piano Keys Test - Qandy</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+    }
+    #output {
+      white-space: pre-wrap;
+      border: 1px solid #0f0;
+      padding: 10px;
+      margin-top: 10px;
+      min-height: 400px;
+    }
+    .status {
+      color: #ff0;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Piano Keyboard Input Test</h1>
+  
+  <div class="status" id="status">Loading...</div>
+  
+  <p>Instructions:</p>
+  <ul>
+    <li>Press keyboard keys A, S, D, F, G, H, J, K (white keys)</li>
+    <li>Press keyboard keys W, E, T, Y, U (black keys)</li>
+    <li>You should hear notes when you press these keys</li>
+  </ul>
+  
+  <div id="output"></div>
+  
+  <script>
+    // Minimal qandy environment for testing
+    var output = document.getElementById('output');
+    var status = document.getElementById('status');
+    var run = "";
+    
+    function print(text) {
+      // Simple ANSI to HTML converter for testing
+      text = text.replace(/\x1b\[1;31m/g, '<span style="color:#f00;font-weight:bold">');
+      text = text.replace(/\x1b\[1;32m/g, '<span style="color:#0f0;font-weight:bold">');
+      text = text.replace(/\x1b\[1;33m/g, '<span style="color:#ff0;font-weight:bold">');
+      text = text.replace(/\x1b\[1;34m/g, '<span style="color:#00f;font-weight:bold">');
+      text = text.replace(/\x1b\[1;35m/g, '<span style="color:#f0f;font-weight:bold">');
+      text = text.replace(/\x1b\[1;36m/g, '<span style="color:#0ff;font-weight:bold">');
+      text = text.replace(/\x1b\[1;37m/g, '<span style="color:#fff;font-weight:bold">');
+      text = text.replace(/\x1b\[32m/g, '<span style="color:#0a0">');
+      text = text.replace(/\x1b\[33m/g, '<span style="color:#aa0">');
+      text = text.replace(/\x1b\[36m/g, '<span style="color:#0aa">');
+      text = text.replace(/\x1b\[37m/g, '<span style="color:#aaa">');
+      text = text.replace(/\x1b\[40;37m/g, '<span style="background:#000;color:#fff">');
+      text = text.replace(/\x1b\[47;30m/g, '<span style="background:#fff;color:#000">');
+      text = text.replace(/\x1b\[0m/g, '</span>');
+      text = text.replace(/\n/g, '<br>');
+      output.innerHTML += text;
+    }
+    
+    function cls() {
+      output.innerHTML = '';
+    }
+    
+    // Load sound.js
+    var script1 = document.createElement('script');
+    script1.src = 'sound.js';
+    document.head.appendChild(script1);
+    
+    // After sound.js loads, load piano.js
+    script1.onload = function() {
+      print('<span style="color:#0f0">✓ sound.js loaded</span><br>');
+      status.textContent = 'sound.js loaded, loading piano.js...';
+      
+      var script2 = document.createElement('script');
+      script2.src = 'piano.js';
+      script2.onload = function() {
+        print('<span style="color:#0f0">✓ piano.js loaded</span><br>');
+        status.textContent = 'Ready! Press piano keys (A-K, W-U)';
+        print('<span style="color:#ff0">run variable is: "' + run + '"</span><br><br>');
+      };
+      document.head.appendChild(script2);
+    };
+    
+    // Simulate qandy's keyboard handling
+    document.addEventListener('keydown', function(event) {
+      var key = event.key.toLowerCase();
+      
+      // Call keydown function if it exists and run is set
+      if (run && typeof keydown !== 'undefined') {
+        // Prevent default for piano keys
+        if ('asdfghjkwetyu'.indexOf(key) !== -1) {
+          event.preventDefault();
+          keydown(key);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
