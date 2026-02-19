@@ -2053,7 +2053,8 @@ function updateDisplay() {
     return domUpdated;
   };
 
-
+ 
+ 
 function pokeCell(x, y, ch, styleObj) {
   // Defensive: ensure buffers and dimensions exist
   if (typeof screenWidth === 'undefined' || typeof screenHeight === 'undefined') return false;

@@ -674,7 +674,7 @@ function button(b, event) {
           }
         }
         line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
-        // GBT: what line of code to change cursorX/Y here?
+
         cursorPos += finalChar.length; cursorX++;
         const charsPerLine = screenWidth || 32;
         const logicalIndex = cursorPos - 1; // index of char just inserted
@@ -2030,19 +2030,19 @@ function updateDisplay() {
 
     // If prevCursor references this cell (cursor logic saved this cell previously),
     // update prevCursor.ch/style so the cursor hide/show logic won't later restore an old value.
-    //try {
-    //  if (window.prevCursor && window.prevCursor.set) {
-    //    if (window.prevCursor.x === x && window.prevCursor.y === y) {
-    //      window.prevCursor.ch = ch;
-    //      // clone style so later restore uses current style
-    //      var s = window.styleBuffer[y][x];
-    //      window.prevCursor.style = s ? Object.assign({}, s) : window.prevCursor.style;
-    //    }
-    //  }
-    //} catch (e) {
-    //  // non-fatal
-    //  console.warn('pokeCell: failed to update prevCursor:', e);
-    //}
+    try {
+      if (window.prevCursor && window.prevCursor.set) {
+        if (window.prevCursor.x === x && window.prevCursor.y === y) {
+          window.prevCursor.ch = ch;
+          // clone style so later restore uses current style
+          var s = window.styleBuffer[y][x];
+          window.prevCursor.style = s ? Object.assign({}, s) : window.prevCursor.style;
+        }
+      }
+    } catch (e) {
+      // non-fatal
+      console.warn('pokeCell: failed to update prevCursor:', e);
+    }
 
     // Update cell in DOM if it exists; otherwise attempt full redraw via updateDisplay()
     var domUpdated = updateDomCell(x, y);
@@ -2053,8 +2053,7 @@ function updateDisplay() {
     return domUpdated;
   };
 
- 
- 
+
 function pokeCell(x, y, ch, styleObj) {
   // Defensive: ensure buffers and dimensions exist
   if (typeof screenWidth === 'undefined' || typeof screenHeight === 'undefined') return false;
