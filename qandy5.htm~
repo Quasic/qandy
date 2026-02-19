@@ -904,10 +904,10 @@ function renderInputLine() {
 
   // position the logical draw cursor then call draw() to render visibleText
   
-  cursorX = writeCol;
-  cursorY = writeRow;
-@@
-  draw(visibleText);
+  // cursorX = writeCol;
+  // cursorY = writeRow;
+
+  draw(visibleText, writeRow, writeCol);
   // restore logical cursor location & show cursor
   // cursorX = savedCursorX;
   // cursorY = savedCursorY;
@@ -1518,147 +1518,64 @@ function print(inputString) {
   if (!window.screenBuffer || !window.styleBuffer || !window.screenHeight) {
     try { initScreen(); } catch (e) { /* best-effort */ }
   }
-
-  // Save whether input (and cursor) were enabled before we print.
   var wasKeyon = !!keyon;
-
-  // Hide cursor / disable input while we mutate buffers and DOM so
-  // writers can't corrupt prevCursor or the currently-visible cell.
-  try {
-    if (typeof keysoff === 'function') keysoff();
-    else cursor(0);
-  } catch (e) {
-    /* ignore if helpers not available yet */
-  }
-
-  // Perform printing/drawing. Always attempt to restore input/cursor in finally.
-  try {
-    // Write into buffers using draw() which handles ANSI codes, cursor movement, etc.
-    if (typeof draw === 'function') {
-      draw(inputString);
-    } else {
-      // Fallback: naive per-character write into buffers
-      for (let i = 0; i < inputString.length; i++) {
-        const ch = inputString[i];
-        if (ch === '\n') {
-          cursorX = 0;
-          cursorY++;
-        } else {
-          if (!screenBuffer[cursorY]) {
-            screenBuffer[cursorY] = new Array(screenWidth).fill(' ');
-            styleBuffer[cursorY] = new Array(screenWidth);
-            for (let x = 0; x < screenWidth; x++) {
-              styleBuffer[cursorY][x] = {
-                color: currentStyle.color,
-                bgcolor: currentStyle.bgcolor,
-                bold: currentStyle.bold,
-                inverse: currentStyle.inverse
-              };
-            }
-          }
-          // place char, update style for that cell
-          if (typeof screenBuffer[cursorY][cursorX] !== 'undefined') {
-            screenBuffer[cursorY][cursorX] = ch;
-            styleBuffer[cursorY][cursorX] = {
-              color: currentStyle.color,
-              bgcolor: currentStyle.bgcolor,
-              bold: currentStyle.bold,
-              inverse: currentStyle.inverse
-            };
-          }
-          cursorX++;
-          if (cursorX >= screenWidth) {
-            cursorX = 0;
-            cursorY++;
-            if (cursorY >= screenHeight) {
-              scrollScreenDown();
-              cursorY = screenHeight - 1;
-            }
-          }
-        }
-      }
-    }
-
-    // After updating buffers, refresh the visual DOM if available.
-    try {
-      if (typeof updateDisplay === 'function') updateDisplay();
-      else {
-        // best-effort fallback for very old path (if present)
-        try { document.getElementById("txt").innerHTML = document.getElementById("txt").innerHTML; } catch (_) {}
-      }
-    } catch (e) {
-      // ignore display refresh errors
-    }
-  } finally {
-    // Restore input/cursor only if it was previously enabled.
-    try {
-      if (wasKeyon) {
-        if (typeof keyson === 'function') keyson();
-        else cursor(1);
-      } else {
-        // leave keyon/cursor off if it was already off
-      }
-    } catch (e) {
-      /* best-effort restore; ignore errors */
-    }
-  }
+  keysoff();
+  cursor(0);
+  var end=draw(inputString, cursorX, cursorY);
+  cursorX = end.x;
+  cursorY = end.y;
+  if (wasKeyon) { keyson(); }
 }
 
-function draw(inputString, startX, startY, updateGlobals) {
-  // Ensure buffers initialized
+function draw(inputString, startX, startY, doFullUpdate) {
   if (!screenBuffer || screenBuffer.length === 0) initScreen();
 
-  // Determine whether caller provided explicit coordinates
-  var useExplicit = (typeof startX === 'number' && typeof startY === 'number');
+  // Use top-left when coords omitted (developer wants full-screen direct-write)
+  var locX = (typeof startX === 'number') ? startX : 0;
+  var locY = (typeof startY === 'number') ? startY : 0;
 
-  // If updateGlobals not specified, default is:
-  // - when explicit coords provided -> don't update globals (fast, non-invasive)
-  // - when not provided -> preserve old behavior and update globals
-  if (typeof updateGlobals === 'undefined') updateGlobals = !useExplicit;
+  // Changed cells list for targeted DOM updates
+  var changed = [];
 
-  // Local cursor used for drawing; do NOT touch global cursorX/cursorY while parsing/writing
-  var locCursorX = useExplicit ? startX : cursorX;
-  var locCursorY = useExplicit ? startY : cursorY;
-
-  // Parse tokens using the same parseANSIString as before
+  // Parse ANSI tokens
   const tokens = parseANSIString(inputString);
 
-  // Process tokens writing into screenBuffer/styleBuffer using locCursorX/locCursorY
   for (const token of tokens) {
     if (token.type === 'code') {
-      // Update current style (this still uses the shared currentStyle object)
       applyANSICode(token.codes);
       continue;
     }
 
     if (token.type === 'cursor') {
-      // CUP (cursor position) - tokens contain 0-based row/col already
-      locCursorY = Math.min(Math.max(0, token.row), screenHeight - 1);
-      locCursorX = Math.min(Math.max(0, token.col), screenWidth - 1);
+      // CUP token: move local cursor (0-based)
+      locY = Math.min(Math.max(0, token.row), screenHeight - 1);
+      locX = Math.min(Math.max(0, token.col), screenWidth - 1);
       continue;
     }
 
     if (token.type === 'clearline') {
-      // Ensure row exists
-      if (!screenBuffer[locCursorY]) {
-        screenBuffer[locCursorY] = new Array(screenWidth).fill(' ');
-        styleBuffer[locCursorY] = new Array(screenWidth);
-        for (let i = 0; i < screenWidth; i++) styleBuffer[locCursorY][i] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: false, inverse: false };
+      if (!screenBuffer[locY]) {
+        screenBuffer[locY] = new Array(screenWidth).fill(' ');
+        styleBuffer[locY] = new Array(screenWidth);
+        for (let i = 0; i < screenWidth; i++) styleBuffer[locY][i] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold:false, inverse:false };
       }
       if (token.mode === 0) {
-        for (let x = locCursorX; x < screenWidth; x++) {
-          screenBuffer[locCursorY][x] = ' ';
-          styleBuffer[locCursorY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+        for (let x = locX; x < screenWidth; x++) {
+          screenBuffer[locY][x] = ' ';
+          styleBuffer[locY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+          changed.push({x:x,y:locY});
         }
       } else if (token.mode === 1) {
-        for (let x = 0; x <= locCursorX; x++) {
-          screenBuffer[locCursorY][x] = ' ';
-          styleBuffer[locCursorY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+        for (let x = 0; x <= locX; x++) {
+          screenBuffer[locY][x] = ' ';
+          styleBuffer[locY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+          changed.push({x:x,y:locY});
         }
       } else if (token.mode === 2) {
         for (let x = 0; x < screenWidth; x++) {
-          screenBuffer[locCursorY][x] = ' ';
-          styleBuffer[locCursorY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+          screenBuffer[locY][x] = ' ';
+          styleBuffer[locY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+          changed.push({x:x,y:locY});
         }
       }
       continue;
@@ -1666,79 +1583,60 @@ function draw(inputString, startX, startY, updateGlobals) {
 
     // token.type === 'char'
     const ch = token.value;
-
-    // Handle newline
     if (ch === '\n') {
-      locCursorX = 0;
-      locCursorY++;
-      if (locCursorY >= screenHeight) {
-        // When drawing with explicit coords we do not scroll; clamp to bottom.
-        locCursorY = screenHeight - 1;
-        if (!useExplicit) {
-          // original behavior: if not explicit, preserve the old behavior (no scroll in draw())
-        }
-      }
+      locX = 0;
+      locY++;
+      if (locY >= screenHeight) { locY = screenHeight - 1; break; }
       continue;
     }
 
-    // Ensure target row exists
-    if (!screenBuffer[locCursorY]) {
-      screenBuffer[locCursorY] = new Array(screenWidth).fill(' ');
-      styleBuffer[locCursorY] = new Array(screenWidth);
-      for (let i = 0; i < screenWidth; i++) styleBuffer[locCursorY][i] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: false, inverse: false };
+    // Ensure row exists
+    if (!screenBuffer[locY]) {
+      screenBuffer[locY] = new Array(screenWidth).fill(' ');
+      styleBuffer[locY] = new Array(screenWidth);
+      for (let i = 0; i < screenWidth; i++) styleBuffer[locY][i] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold:false, inverse:false };
     }
 
-    // Only write if inside visible area
-    if (locCursorY >= 0 && locCursorY < screenHeight && locCursorX >= 0 && locCursorX < screenWidth) {
-      screenBuffer[locCursorY][locCursorX] = ch;
-      styleBuffer[locCursorY][locCursorX] = {
+    // Write into buffers if visible
+    if (locX >= 0 && locX < screenWidth && locY >= 0 && locY < screenHeight) {
+      screenBuffer[locY][locX] = ch;
+      styleBuffer[locY][locX] = {
         color: currentStyle.color,
         bgcolor: currentStyle.bgcolor,
         bold: currentStyle.bold,
         inverse: currentStyle.inverse
       };
-      locCursorX++;
-      if (locCursorX >= screenWidth) {
-        locCursorX = 0;
-        locCursorY++;
-        if (locCursorY >= screenHeight) {
-          locCursorY = screenHeight - 1;
-          break; // stop drawing past bottom
-        }
+      changed.push({x:locX,y:locY});
+      locX++;
+      if (locX >= screenWidth) {
+        locX = 0;
+        locY++;
+        if (locY >= screenHeight) { locY = screenHeight - 1; break; }
       }
     } else {
-      // If we're outside horizontal bounds, wrap to next line (like old code)
-      if (locCursorX < 0 || locCursorX >= screenWidth) {
-        locCursorX = 0;
-        locCursorY++;
-        if (locCursorY >= screenHeight) { locCursorY = screenHeight - 1; break; }
+      // horizontal wrap behavior
+      if (locX < 0 || locX >= screenWidth) {
+        locX = 0;
+        locY++;
+        if (locY >= screenHeight) { locY = screenHeight - 1; break; }
       }
     }
-  } // end token loop
+  } // end tokens loop
 
-  // Refresh the display so changes become visible.
-  // We must temporarily set global cursorX/cursorY so updateDisplay's cursor marker
-  // will be placed at the draw target. Then restore the original globals.
-  var _savedCursorX = cursorX, _savedCursorY = cursorY, _savedCursorOn = cursorOn;
-  try {
-    // set globals to the *loc* cursor used for drawing when update is requested
-    cursorX = locCursorX;
-    cursorY = locCursorY;
-    // updateDisplay uses global cursorX/Y to add qandy-cursor, so this ensures correct visual marker
-    updateDisplay();
-  } finally {
-    // restore original globals so draw() is non-invasive
-    cursorX = _savedCursorX;
-    cursorY = _savedCursorY;
-    // restore cursor visual state
-    if (_savedCursorOn) cursor(1); else cursor(0);
+  // DOM update: full vs per-cell
+  if (doFullUpdate) {
+    try { updateDisplay(); } catch (e) { /* best-effort */ }
+  } else {
+    var seen = {};
+    for (var i = 0; i < changed.length; i++) {
+      var cx = changed[i].x, cy = changed[i].y;
+      var key = cy + '_' + cx;
+      if (seen[key]) continue;
+      seen[key] = true;
+      try { updateDomCellInPlace(cx, cy); } catch (e) { /* ignore */ }
+    }
   }
-
-  // If caller asked for draw to update logical globals permanently, do so now.
-  if (updateGlobals) {
-    cursorX = locCursorX;
-    cursorY = locCursorY;
-  }
+  return { x: locX, y: locY };  
 }
 
 function resumePagination() {

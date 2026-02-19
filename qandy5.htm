@@ -1518,95 +1518,15 @@ function print(inputString) {
   if (!window.screenBuffer || !window.styleBuffer || !window.screenHeight) {
     try { initScreen(); } catch (e) { /* best-effort */ }
   }
-
-  // Save whether input (and cursor) were enabled before we print.
   var wasKeyon = !!keyon;
-
-  // Hide cursor / disable input while we mutate buffers and DOM so
-  // writers can't corrupt prevCursor or the currently-visible cell.
-  try {
-    if (typeof keysoff === 'function') keysoff();
-    else cursor(0);
-  } catch (e) {
-    /* ignore if helpers not available yet */
-  }
-
-  // Perform printing/drawing. Always attempt to restore input/cursor in finally.
-  try {
-    // Write into buffers using draw() which handles ANSI codes, cursor movement, etc.
-    if (typeof draw === 'function') {
-      draw(inputString);
-    } else {
-      // Fallback: naive per-character write into buffers
-      for (let i = 0; i < inputString.length; i++) {
-        const ch = inputString[i];
-        if (ch === '\n') {
-          cursorX = 0;
-          cursorY++;
-        } else {
-          if (!screenBuffer[cursorY]) {
-            screenBuffer[cursorY] = new Array(screenWidth).fill(' ');
-            styleBuffer[cursorY] = new Array(screenWidth);
-            for (let x = 0; x < screenWidth; x++) {
-              styleBuffer[cursorY][x] = {
-                color: currentStyle.color,
-                bgcolor: currentStyle.bgcolor,
-                bold: currentStyle.bold,
-                inverse: currentStyle.inverse
-              };
-            }
-          }
-          // place char, update style for that cell
-          if (typeof screenBuffer[cursorY][cursorX] !== 'undefined') {
-            screenBuffer[cursorY][cursorX] = ch;
-            styleBuffer[cursorY][cursorX] = {
-              color: currentStyle.color,
-              bgcolor: currentStyle.bgcolor,
-              bold: currentStyle.bold,
-              inverse: currentStyle.inverse
-            };
-          }
-          cursorX++;
-          if (cursorX >= screenWidth) {
-            cursorX = 0;
-            cursorY++;
-            if (cursorY >= screenHeight) {
-              scrollScreenDown();
-              cursorY = screenHeight - 1;
-            }
-          }
-        }
-      }
-    }
-
-    // After updating buffers, refresh the visual DOM if available.
-    try {
-      if (typeof updateDisplay === 'function') updateDisplay();
-      else {
-        // best-effort fallback for very old path (if present)
-        try { document.getElementById("txt").innerHTML = document.getElementById("txt").innerHTML; } catch (_) {}
-      }
-    } catch (e) {
-      // ignore display refresh errors
-    }
-  } finally {
-    // Restore input/cursor only if it was previously enabled.
-    try {
-      if (wasKeyon) {
-        if (typeof keyson === 'function') keyson();
-        else cursor(1);
-      } else {
-        // leave keyon/cursor off if it was already off
-      }
-    } catch (e) {
-      /* best-effort restore; ignore errors */
-    }
-  }
+  keysoff();
+  cursor(0);
+  var end=draw(inputString, cursorX, cursorY);
+  cursorX = end.x;
+  cursorY = end.y;
+  if (wasKeyon) { keyson(); }
 }
 
-// draw(inputString, startX, startY, doFullUpdate)
-// - startX/startY optional numeric start position; when omitted, draw uses (0,0) (top-left).
-// - doFullUpdate: if true, calls updateDisplay(); otherwise updates only changed cells.
 function draw(inputString, startX, startY, doFullUpdate) {
   if (!screenBuffer || screenBuffer.length === 0) initScreen();
 
@@ -1716,8 +1636,7 @@ function draw(inputString, startX, startY, doFullUpdate) {
       try { updateDomCellInPlace(cx, cy); } catch (e) { /* ignore */ }
     }
   }
-
-  // NOTE: draw() intentionally does NOT touch cursorX/cursorY/cursorOn/cursorPos.
+  return { x: locX, y: locY };  
 }
 
 function resumePagination() {
