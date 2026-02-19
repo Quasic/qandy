@@ -528,10 +528,9 @@ function button(b, event) {
       }
     } else {
       if (k === "back") {
-       alert(cursorX+" "+cursorY);
        cursor(0);
        if (cursorPos>0) {
-         pokeCell(cursorX, cursorY, ' ', {
+         pokeCell(cursorX-1, cursorY, ' ', {
           color: (currentStyle && currentStyle.color) || 37,
           bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
           bold: false,
@@ -541,7 +540,6 @@ function button(b, event) {
          cursorPos--; cursorX--;
          renderInputLine();
         }
-        alert(cursorX+" "+cursorY);
         cursor(1);
       } else if (k === "left") {
         if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
@@ -693,8 +691,8 @@ function button(b, event) {
 }
 
 function renderInputLine() {
-  var W = window.screenWidth || 32;
-  var H = window.screenHeight || 25;
+  var W = screenWidth;
+  var H = screenHeight;
   var L = line ? line.length : 0;
   var cp = (typeof cursorPos === 'number') ? cursorPos : (line ? line.length : 0);
 
