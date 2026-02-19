@@ -704,116 +704,101 @@ function button(b, event) {
 }
 
 function renderInputLine() {
-  var charsPerLine = 32;
-  var rows = window.screenHeight || 25;
-  var cp = typeof cursorPos === 'number' ? cursorPos : (line ? line.length : 0);
+  // Simplified input overlay: write `line` into the screen buffer using draw()
+  // anchored so that the logical cursorPos sits at (cursorX, cursorY).
+  var W = window.screenWidth || 32;
+  var H = window.screenHeight || 25;
+  var L = line ? line.length : 0;
+  var cp = (typeof cursorPos === 'number') ? cursorPos : (line ? line.length : 0);
 
-  // Compute baseRow same as the rest of the terminal (anchor for input)
-  var baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cp / charsPerLine)) : (0 - Math.floor(cp / charsPerLine));
-
-  // Backup storage on window so it's preserved across calls
-  if (!window._inputOverlayBackup) window._inputOverlayBackup = { cells: {} };
-  var backup = window._inputOverlayBackup.cells;
-
-  // Ensure buffers exist helper
-  function ensureRow(y) {
-    if (!window.screenBuffer[y]) {
-      window.screenBuffer[y] = new Array(charsPerLine);
-      for (var zi = 0; zi < charsPerLine; zi++) window.screenBuffer[y][zi] = '\u00A0';
-    }
-    if (!window.styleBuffer[y]) {
-      window.styleBuffer[y] = new Array(charsPerLine);
-      for (var zi2 = 0; zi2 < charsPerLine; zi2++) {
-        window.styleBuffer[y][zi2] = {
-          color: (window.currentStyle && window.currentStyle.color) || 37,
-          bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
-          bold: false,
-          inverse: false
-        };
-      }
-    }
+  // Nothing to draw
+  if (!line || L === 0) {
+    // draw should not access the cursor 
+    // if (cursorOn) cursor(1);  
+    return;
   }
 
-  for (var rOff = 0; rOff < rows; rOff++) {
-    var row = baseRow + rOff;
-    if (row < 0 || row >= rows) continue;
-    ensureRow(row);
+  // Calculate where the first character of `line` should appear.
+  // We want the `cp` character position (cursor position within `line`)
+  // to correspond to on-screen (cursorX,cursorY). So:
+  //  startRow = cursorY - floor(cp / W)
+  //  startCol = cursorX - (cp % W)  (wrapped into 0..W-1)
+  // wrap startCol into [0..W-1] and adjust startRow if we wrapped negatively across a row
+  // If startColRaw was negative enough to move one row up, account for that (rare)
 
-    for (var col = 0; col < charsPerLine; col++) {
-      var logicalIndex = rOff * charsPerLine + col;
-      var key = row + '_' + col;
+  var startRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cp / W)) : (-Math.floor(cp / W));
+  var startColRaw = (typeof cursorX === 'number') ? (cursorX - (cp % W)) : (0 - (cp % W));
+  var startCol = ((startColRaw % W) + W) % W; 
+  var rowAdjust = Math.floor(startColRaw / W);
+  startRow += rowAdjust;
 
-      if (line && logicalIndex < (line.length || 0)) {
-        // Input character overlays this cell
-        var ch = line.charAt(logicalIndex);
+  // again, draw should not access the cursor
+  // Save current cursor pos & visibility
+  // var savedCursorX = cursorX, savedCursorY = cursorY, savedCursorOn = cursorOn;
+  // Hide cursor while we update the buffers
+  // if (savedCursorOn) cursor(0);
 
-        // Back up original cell if we haven't already
-        if (typeof backup[key] === 'undefined') {
-          backup[key] = {
-            ch: window.screenBuffer[row][col],
-            style: window.styleBuffer && window.styleBuffer[row] && window.styleBuffer[row][col]
-              ? Object.assign({}, window.styleBuffer[row][col]) : null
-          };
-        }
+  // Write the line in row-sized chunks using draw()
+  var i = 0;
+  var row = startRow;
+  var col = startCol;
+  while (i < L && row < H) {
+    if (row >= 0) {
+      // how many characters fit on this row from `col` to W-1
+      var spaceThisRow = W - col;
+      var chunk = line.substring(i, i + spaceThisRow);
 
-        // Only write if changed
-        if (window.screenBuffer[row][col] !== ch) {
-          window.screenBuffer[row][col] = ch;
-          if (!window.styleBuffer[row][col]) {
-            window.styleBuffer[row][col] = {
-              color: (window.currentStyle && window.currentStyle.color) || 37,
-              bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
-              bold: window.currentStyle && window.currentStyle.bold,
-              inverse: window.currentStyle && window.currentStyle.inverse
-            };
-          }
-          try { pokeCell(col, row, ch); } catch (e) { /* best-effort */ }
-
-          // advance logical input cursor (handle multi-char insertion if needed)
-          if (typeof cursorPos === 'undefined' || cursorPos === null) cursorPos = 0;
-          
-          // compute new on-screen coords
-          const charsPerLine = 32;
-          const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor((cursorPos - 1) / charsPerLine)) : (0 - Math.floor((cursorPos - 1) / charsPerLine));
-          // (We use cursorPos-1 above because baseRow was computed relative to the previous cursorPos)
-          const newCol = cursorPos % charsPerLine;
-          const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
-          
-          // update logical/visual cursor using existing helper
-          try {
-            if (typeof cursorMoveTo === 'function') {
-              cursorMoveTo(newCol, newRow);
-            } else {
-              // fallback: set globals and ensure the cursor is shown
-              cursorX = newCol;
-              cursorY = newRow;
-              if (typeof cursor === 'function') cursor(1);
-              else try { pokeCell(cursorX, cursorY); } catch (e) {}
-            }
-          } catch (e) {
-            /* non-fatal */
-          }          
-        }
-
-      } else {
-        // No input char overlays this cell.
-        // If we have a backup (we previously overlaid here), restore it.
-        if (typeof backup[key] !== 'undefined') {
-          var orig = backup[key];
-          // If original is undefined or null, put a space (or NBSP) so DOM remains stable
-          var restoreCh = (typeof orig.ch === 'undefined' || orig.ch === null) ? '\u00A0' : orig.ch;
-          window.screenBuffer[row][col] = restoreCh;
-          if (orig.style) window.styleBuffer[row][col] = Object.assign({}, orig.style);
-          try { pokeCell(col, row); } catch (e) { /* best-effort */ }
-          delete backup[key];
+      // place draw() at the desired coords and write chunk
+      cursorX = col;
+      cursorY = row;
+      try {
+        if (typeof draw === 'function') {
+          draw(chunk);
         } else {
-          // Leave underlying content untouched (do not write NBSP)
+          // fallback: write directly into buffers if draw() not available
+          for (var k = 0; k < chunk.length; k++) {
+            var ch = chunk.charAt(k);
+            if (!screenBuffer[row]) {
+              screenBuffer[row] = new Array(W).fill(' ');
+            }
+            if (!styleBuffer[row]) {
+              styleBuffer[row] = new Array(W);
+              for (var zi = 0; zi < W; zi++) {
+                styleBuffer[row][zi] = {
+                  color: (currentStyle && currentStyle.color) || 37,
+                  bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
+                  bold: !!(currentStyle && currentStyle.bold),
+                  inverse: !!(currentStyle && currentStyle.inverse)
+                };
+              }
+            }
+            screenBuffer[row][col + k] = ch;
+            // ensure non-inverse for overlay text (caller chooses)
+            styleBuffer[row][col + k].inverse = false;
+          }
+          // best-effort DOM update for this row
+          if (typeof updateDisplay === 'function') {
+            // updateDisplay renders the full screen; keep it for fallback parity
+            updateDisplay();
+          }
         }
+      } catch (e) {
+        // non-fatal: continue
+        console.warn('renderInputLine: draw failed for chunk', chunk, e);
       }
     }
-  }
-}
 
+    // advance to next row
+    i += spaceThisRow;
+    row++;
+    col = 0; // subsequent rows start at column 0
+  }
+
+  // Restore logical cursor position & visibility
+  cursorX = savedCursorX;
+  cursorY = savedCursorY;
+  if (savedCursorOn) cursor(1);
+}
 
 
 

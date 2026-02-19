@@ -704,100 +704,79 @@ function button(b, event) {
 }
 
 function renderInputLine() {
-  // Simplified input overlay: write `line` into the screen buffer using draw()
-  // anchored so that the logical cursorPos sits at (cursorX, cursorY).
   var W = window.screenWidth || 32;
   var H = window.screenHeight || 25;
   var L = line ? line.length : 0;
   var cp = (typeof cursorPos === 'number') ? cursorPos : (line ? line.length : 0);
 
-  // Nothing to draw
+  // nothing to draw: ensure cursor state and return
   if (!line || L === 0) {
-    // Still ensure cursor is shown correctly
     if (cursorOn) cursor(1);
     return;
   }
 
-  // Calculate where the first character of `line` should appear.
-  // We want the `cp` character position (cursor position within `line`)
-  // to correspond to on-screen (cursorX,cursorY). So:
-  //  startRow = cursorY - floor(cp / W)
-  //  startCol = cursorX - (cp % W)  (wrapped into 0..W-1)
   var startRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cp / W)) : (-Math.floor(cp / W));
   var startColRaw = (typeof cursorX === 'number') ? (cursorX - (cp % W)) : (0 - (cp % W));
-  // wrap startCol into [0..W-1] and adjust startRow if we wrapped negatively across a row
   var startCol = ((startColRaw % W) + W) % W;
-  // If startColRaw was negative enough to move one row up, account for that (rare)
   var rowAdjust = Math.floor(startColRaw / W);
   startRow += rowAdjust;
 
-  // Save current cursor pos & visibility
-  var savedCursorX = cursorX, savedCursorY = cursorY, savedCursorOn = cursorOn;
-  // Hide cursor while we update the buffers
-  if (savedCursorOn) cursor(0);
-
-  // Write the line in row-sized chunks using draw()
-  var i = 0;
-  var row = startRow;
-  var col = startCol;
-  while (i < L && row < H) {
-    if (row >= 0) {
-      // how many characters fit on this row from `col` to W-1
-      var spaceThisRow = W - col;
-      var chunk = line.substring(i, i + spaceThisRow);
-
-      // place draw() at the desired coords and write chunk
-      cursorX = col;
-      cursorY = row;
-      try {
-        if (typeof draw === 'function') {
-          draw(chunk);
-        } else {
-          // fallback: write directly into buffers if draw() not available
-          for (var k = 0; k < chunk.length; k++) {
-            var ch = chunk.charAt(k);
-            if (!screenBuffer[row]) {
-              screenBuffer[row] = new Array(W).fill(' ');
-            }
-            if (!styleBuffer[row]) {
-              styleBuffer[row] = new Array(W);
-              for (var zi = 0; zi < W; zi++) {
-                styleBuffer[row][zi] = {
-                  color: (currentStyle && currentStyle.color) || 37,
-                  bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
-                  bold: !!(currentStyle && currentStyle.bold),
-                  inverse: !!(currentStyle && currentStyle.inverse)
-                };
-              }
-            }
-            screenBuffer[row][col + k] = ch;
-            // ensure non-inverse for overlay text (caller chooses)
-            styleBuffer[row][col + k].inverse = false;
-          }
-          // best-effort DOM update for this row
-          if (typeof updateDisplay === 'function') {
-            // updateDisplay renders the full screen; keep it for fallback parity
-            updateDisplay();
-          }
-        }
-      } catch (e) {
-        // non-fatal: continue
-        console.warn('renderInputLine: draw failed for chunk', chunk, e);
-      }
-    }
-
-    // advance to next row
-    i += spaceThisRow;
-    row++;
-    col = 0; // subsequent rows start at column 0
+  var visibleStart = 0;
+  if (startRow < 0) {
+    visibleStart = (-startRow) * W - startCol;
+    if (visibleStart < 0) visibleStart = 0;
+    if (visibleStart > L) visibleStart = L;
   }
 
-  // Restore logical cursor position & visibility
+  var pos = startCol + visibleStart;
+  var writeRow = startRow + Math.floor(pos / W);
+  var writeCol = pos % W;
+  if (writeRow < 0) { // nothing visible yet
+    // no visible portion
+    if (cursorOn) cursor(1);
+    return;
+  }
+
+  // compute max visible chars before hitting bottom of screen
+  var maxVisibleChars = (H - writeRow) * W - writeCol;
+  if (maxVisibleChars < 0) maxVisibleChars = 0;
+  var visibleText = line.substring(visibleStart, Math.min(L, visibleStart + maxVisibleChars));
+  if (!visibleText) {
+    if (cursorOn) cursor(1);
+    return;
+  }
+  cursor(0);
+
+  // OPTIONAL: clear overlay footprint to avoid leftover characters when input shrinks.
+  // Determine approximate rows touched and clear those cells to spaces.
+  var rowsNeeded = Math.ceil((visibleText.length + writeCol) / W);
+  for (var r = 0; r < rowsNeeded; r++) {
+    var rr = writeRow + r;
+    if (rr < 0 || rr >= H) continue;
+    var fromCol = (r === 0) ? writeCol : 0;
+    for (var c = fromCol; c < W; c++) {
+      if (!screenBuffer[rr]) screenBuffer[rr] = new Array(W).fill(' ');
+      if (!styleBuffer[rr]) {
+        styleBuffer[rr] = new Array(W);
+        for (var zi = 0; zi < W; zi++) styleBuffer[rr][zi] = { color:37, bgcolor:40, bold:false, inverse:false };
+      }
+      screenBuffer[rr][c] = ' ';
+      styleBuffer[rr][c].inverse = false;
+    }
+  }
+
+  // update DOM once (or rely on draw to update cells as it writes)
+  try { if (typeof updateDisplay === 'function') updateDisplay(); } catch (e) {}
+
+  // position the logical draw cursor then call draw() to render visibleText
+  cursorX = writeCol;
+  cursorY = writeRow;
+  draw(visibleText);
+  // restore logical cursor location & show cursor
   cursorX = savedCursorX;
   cursorY = savedCursorY;
   if (savedCursorOn) cursor(1);
 }
-
 
 
 
