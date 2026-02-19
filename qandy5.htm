@@ -1470,7 +1470,7 @@ function updateSelectionVisuals(selStart, selEnd) {
         bold: false,
         inverse: true
       };
-      pokeCell(col, row);
+      
     } else if (!styleBuffer[row][col].inverse) {
       styleBuffer[row][col].inverse = true;
       pokeCell(col, row);
