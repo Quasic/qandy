@@ -619,16 +619,20 @@ function button(b, event) {
         if (cursorPos < line.length) {
           if (shift) {
             if (selectionStart === -1) selectionStart = cursorPos;
-            cursorPos++;
+            cursorPos--;
             selectionEnd = cursorPos;
-            setCursorToInputPos(cursorPos);
+            // Update cursor screen coordinates from logical position
+            var sc = inputPosToScreen(cursorPos);
+            cursorX = sc.x;
+            cursorY = sc.y;
+            // reflect selection visually
             updateSelectionVisuals(selectionStart, selectionEnd);
-            renderInputLine();
+            updateDisplay();  // Just update the display, don't re-render input
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos++;
             setCursorToInputPos(cursorPos);
-            renderInputLine();
+            //renderInputLine();
           }
         }
         cursor(1);
