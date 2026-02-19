@@ -682,7 +682,6 @@ function button(b, event) {
           inverse: false
         };
         pokeCell(cursorX, cursorY, finalChar, inputStyle);
-
         
         // AI: these lines may need to advance both
         // the cursorX and cursor Y?
@@ -693,7 +692,8 @@ function button(b, event) {
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
       }
       // After any input mutation, re-render visible input
-      renderInputLine();
+      // don't think renderInputLine() is needed, remarking doesn't break anything
+      // renderInputLine();
       cursor(1);
     }
   } else {
