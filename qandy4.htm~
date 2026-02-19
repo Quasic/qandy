@@ -674,7 +674,7 @@ function button(b, event) {
           }
         }
         line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
-        // GBT: what line of code to change cursorX/Y here?
+
         cursorPos += finalChar.length; cursorX++;
         const charsPerLine = screenWidth || 32;
         const logicalIndex = cursorPos - 1; // index of char just inserted
@@ -1043,65 +1043,6 @@ function pressup(event) {
     }
     return domUpdated;
   };
-
-  // Backwards-compatible pokeCell: fourth arg optional styleObj
-  var _orig_pokeCell = window.pokeCell; // in case a previous wrapper exists
-  window.pokeCell = function (x, y, ch, styleObj) {
-    // If a previous pokeCell exists in global and was not our previous wrapper, delegate; but we reimplement anyway.
-    if (typeof x !== 'number' || typeof y !== 'number') {
-      throw new Error('pokeCell requires numeric x,y coordinates: pokeCell(x,y[,ch[,styleObj]])');
-    }
-    ensureBuffersAndRow(y);
-
-    if (typeof ch === 'undefined') {
-      return safeGet(window.screenBuffer, y, x);
-    }
-
-    // normalize char
-    if (typeof ch !== 'string' || ch.length === 0) ch = String(ch || ' ')[0] || ' ';
-
-    // write char
-    window.screenBuffer[y][x] = ch;
-
-    // ensure style exists
-    if (!window.styleBuffer[y][x]) {
-      window.styleBuffer[y][x] = {
-        color: (window.currentStyle && window.currentStyle.color) || 37,
-        bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
-        bold: !!(window.currentStyle && window.currentStyle.bold),
-        inverse: !!(window.currentStyle && window.currentStyle.inverse)
-      };
-    }
-
-    // apply styleObj if provided (partial update)
-    if (styleObj && typeof styleObj === 'object') {
-      if (typeof styleObj.color !== 'undefined') window.styleBuffer[y][x].color = styleObj.color;
-      if (typeof styleObj.bgcolor !== 'undefined') window.styleBuffer[y][x].bgcolor = styleObj.bgcolor;
-      if (typeof styleObj.bold !== 'undefined') window.styleBuffer[y][x].bold = !!styleObj.bold;
-      if (typeof styleObj.inverse !== 'undefined') window.styleBuffer[y][x].inverse = !!styleObj.inverse;
-    }
-
-    // update prevCursor if it pointed here (so cursor logic won't restore old char/style)
-    try {
-      if (window.prevCursor && window.prevCursor.set && window.prevCursor.x === x && window.prevCursor.y === y) {
-        window.prevCursor.ch = ch;
-        window.prevCursor.style = Object.assign({}, window.styleBuffer[y][x]);
-      }
-    } catch (e) { /* ignore */ }
-
-    // update DOM cell in-place if possible, otherwise fallback to updateDisplay()
-    var ok = updateDomCellInPlace(x, y);
-    if (!ok && typeof updateDisplay === 'function') {
-      try { updateDisplay(); ok = true; } catch (e) { /* ignore */ }
-    }
-
-    return ok;
-  };
-
-  window.setCellStyle = window.setCellStyle; // already set above
-  window.poke = function (x, y, ch, styleObj) { return window.pokeCell(x, y, ch, styleObj); };
-  window.peek = function (x, y) { return safeGet(window.screenBuffer, y, x); };
-
 
 function keyson() { keyon=1; cursor(1); }
 function keysoff() { keyon=0; cursor(0); }
@@ -1996,65 +1937,8 @@ function updateDisplay() {
     }
   }
 
-  // Main pokeCell implementation
-  window.pokeCell = function(x, y, ch) {
-    if (typeof x !== 'number' || typeof y !== 'number') {
-      throw new Error('pokeCell requires numeric x,y coordinates: pokeCell(x,y[,ch])');
-    }
 
-    // ensure buffers exist
-    ensureBuffersAndRow(y);
 
-    // Getter: return stored char
-    if (typeof ch === 'undefined') {
-      return safeGet(window.screenBuffer, y, x);
-    }
-
-    // Setter: normalize ch to single-character string
-    if (typeof ch !== 'string' || ch.length === 0) {
-      ch = String(ch || ' ')[0] || ' ';
-    }
-
-    // Write into screen buffer (row-major: screenBuffer[y][x])
-    window.screenBuffer[y][x] = ch;
-
-    // Ensure there is a style object for this cell
-    if (!window.styleBuffer[y][x]) {
-      window.styleBuffer[y][x] = {
-        color: (window.currentStyle && window.currentStyle.color) || 37,
-        bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
-        bold: false,
-        inverse: false
-      };
-    }
-
-    // If prevCursor references this cell (cursor logic saved this cell previously),
-    // update prevCursor.ch/style so the cursor hide/show logic won't later restore an old value.
-    //try {
-    //  if (window.prevCursor && window.prevCursor.set) {
-    //    if (window.prevCursor.x === x && window.prevCursor.y === y) {
-    //      window.prevCursor.ch = ch;
-    //      // clone style so later restore uses current style
-    //      var s = window.styleBuffer[y][x];
-    //      window.prevCursor.style = s ? Object.assign({}, s) : window.prevCursor.style;
-    //    }
-    //  }
-    //} catch (e) {
-    //  // non-fatal
-    //  console.warn('pokeCell: failed to update prevCursor:', e);
-    //}
-
-    // Update cell in DOM if it exists; otherwise attempt full redraw via updateDisplay()
-    var domUpdated = updateDomCell(x, y);
-    if (!domUpdated && typeof updateDisplay === 'function') {
-      try { updateDisplay(); domUpdated = true; } catch (e) { /* ignore */ }
-    }
-
-    return domUpdated;
-  };
-
- 
- 
 function pokeCell(x, y, ch, styleObj) {
   // Defensive: ensure buffers and dimensions exist
   if (typeof screenWidth === 'undefined' || typeof screenHeight === 'undefined') return false;
@@ -2279,6 +2163,7 @@ window.setCellStyle = function (x, y, styleObj) {
 
 // Backwards-compatible pokeCell: fourth arg optional styleObj
 var _orig_pokeCell = window.pokeCell; // in case a previous wrapper exists
+
 window.pokeCell = function (x, y, ch, styleObj) {
   // If a previous pokeCell exists in global and was not our previous wrapper, delegate; but we reimplement anyway.
   if (typeof x !== 'number' || typeof y !== 'number') {
