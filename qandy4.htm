@@ -673,8 +673,11 @@ function button(b, event) {
             var ael = document.getElementById("alt"); if (ael) { ael.style.backgroundColor = "#222"; ael.style.color = "#fff"; }
           }
         }
+        
         line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
 
+        const el = document.getElementById(`c${cursorY}_${cursorX}`);
+        if (el) { el.classList.remove('qandy-cursor'); } 
         const inputStyle = {
           color: (currentStyle && currentStyle.color) || 37,
           bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
@@ -682,11 +685,11 @@ function button(b, event) {
           inverse: false
         };
         pokeCell(cursorX, cursorY, finalChar, inputStyle);
-        
-        // AI: these lines may need to advance both
-        // the cursorX and cursor Y?
         cursorPos += finalChar.length;
         cursorX += finalChar.length;
+
+        // AI: these lines may need to advance both
+        // the cursorX and cursor Y?
         //cursor(1);
 
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
@@ -1051,33 +1054,28 @@ function keyson() { keyon=1; cursor(1); }
 function keysoff() { keyon=0; cursor(0); }
 
 function cursor(a) {
-  // Ensure buffers exist (best-effort)
-  if (!screenBuffer || !styleBuffer) {
-    try { initScreen(); } catch (e) { /* ignore */ }
-  }
+  if (!screenBuffer || !styleBuffer) { try { initScreen(); } catch (e) { /* ignore */ }}
 
-  // clamp coordinates
-  const cx = Math.max(0, Math.min((typeof screenWidth === 'number' ? screenWidth : 80) - 1, cursorX || 0));
-  const cy = Math.max(0, Math.min((typeof screenHeight === 'number' ? screenHeight : 25) - 1, cursorY || 0));
-
+  // clamp coordinates huh??
+  // const cx = Math.max(0, Math.min((typeof screenWidth === 'number' ? screenWidth : 80) - 1, cursorX || 0));
+  // const cy = Math.max(0, Math.min((typeof screenHeight === 'number' ? screenHeight : 25) - 1, cursorY || 0));
   // Ensure prevCursor structure exists
   // if (!prevCursor) prevCursor = { set: false, x: 0, y: 0, inverse: false, ch: ' ', style: null };
-
   // Helper to ensure a row exists in buffers
-  function ensureRow(y) {
-    if (!screenBuffer[y]) screenBuffer[y] = new Array(screenWidth).fill(' ');
-    if (!styleBuffer[y]) {
-      styleBuffer[y] = new Array(screenWidth);
-      for (let x = 0; x < screenWidth; x++) {
-        styleBuffer[y][x] = {
-          color: currentStyle && currentStyle.color ? currentStyle.color : 37,
-          bgcolor: currentStyle && currentStyle.bgcolor ? currentStyle.bgcolor : 40,
-          bold: currentStyle && currentStyle.bold ? currentStyle.bold : false,
-          inverse: currentStyle && currentStyle.inverse ? currentStyle.inverse : false
-        };
-      }
-    }
-  }
+  // function ensureRow(y) {
+  //  if (!screenBuffer[y]) screenBuffer[y] = new Array(screenWidth).fill(' ');
+  //  if (!styleBuffer[y]) {
+  //    styleBuffer[y] = new Array(screenWidth);
+  //    for (let x = 0; x < screenWidth; x++) {
+  //      styleBuffer[y][x] = {
+  //        color: currentStyle && currentStyle.color ? currentStyle.color : 37,
+  //        bgcolor: currentStyle && currentStyle.bgcolor ? currentStyle.bgcolor : 40,
+  //        bold: currentStyle && currentStyle.bold ? currentStyle.bold : false,
+  //       inverse: currentStyle && currentStyle.inverse ? currentStyle.inverse : false
+  //      };
+  //    }
+  //  }
+  //}
 
   if (a === 1) {
     //Show cursor
@@ -1093,65 +1091,51 @@ function cursor(a) {
     //    bold: currentStyle.bold,
     //    inverse: prevCursor.inverse
     //  };
-    // remove DOM marker if present
-    //
     //const prevEl = document.getElementById(`c${py}_${px}`);
     //if (prevEl) prevEl.classList.remove('qandy-cursor');
     //pokeCell(px, py);
     //prevCursor.set = false;
     //}
-
     // Save the existing char & style at the new cursor cell
-    ensureRow(cy);
-    const existingChar = (screenBuffer[cy][cx] === undefined || screenBuffer[cy][cx] === null) ? ' ' : screenBuffer[cy][cx];
-    const existingStyle = styleBuffer[cy][cx] ? Object.assign({}, styleBuffer[cy][cx]) : {
+    //ensureRow(cy);
+    //const existingChar = (screenBuffer[cy][cx] === undefined || screenBuffer[cy][cx] === null) ? ' ' : screenBuffer[cy][cx];
+    
+    const existingStyle = styleBuffer[cursorY][cursorX] ? Object.assign({}, styleBuffer[cursorY][cursorX]) : {
       color: currentStyle.color,
       bgcolor: currentStyle.bgcolor,
       bold: currentStyle.bold,
       inverse: currentStyle.inverse
     };
 
-    //prevCursor = {
-    //  set: true,
-    //  x: cx,
-    //  y: cy,
-    //  inverse: !!existingStyle.inverse,
-    //  ch: existingChar,
-    //  style: existingStyle
-    //};
-    // Mark the buffer to show the cursor (use inverse so logic elsewhere stays consistent)
-    styleBuffer[cy][cx] = Object.assign({}, existingStyle);
-    styleBuffer[cy][cx].inverse = true;
-    const el = document.getElementById(`c${cy}_${cx}`);
+    styleBuffer[cursorY][cursorX] = Object.assign({}, existingStyle);
+    styleBuffer[cursorY][cursorX].inverse = true;
+    const el = document.getElementById(`c${cursorY}_${cursorX}`);
     if (el) { el.classList.add('qandy-cursor'); }
-    pokeCell(cx, cy); cursorOn = 1;
+    cursorOn = 1;
 
   } else {
     // Hide cursor: restore previous cell if we set one
-
     //if (prevCursor && prevCursor.set) {
     //  const px = prevCursor.x, py = prevCursor.y;
     //  ensureRow(py); // helper present in cursor() — ensure buffer rows exist
-
-      // remove DOM marker if present
-      // const el = document.getElementById(`c${py}_${px}`);
-      //if (el) el.classList.remove('qandy-cursor');
-
-      // restore char and style into buffers
-      //screenBuffer[py][px] = prevCursor.ch;
-      // make an explicit copy of the saved style
-      //styleBuffer[py][px] = prevCursor.style ? Object.assign({}, prevCursor.style) : {
-      //  color: currentStyle.color,
-      //  bgcolor: currentStyle.bgcolor,
-      //  bold: currentStyle.bold,
-      //  inverse: prevCursor.inverse
-      //};
-
-      //pokeCell(px, py, screenBuffer[py][px], styleBuffer[py][px]);
-      //prevCursor.set = false;
-    }
-    cursorOn = 0;
+    // restore char and style into buffers
+    //screenBuffer[py][px] = prevCursor.ch;
+    // make an explicit copy of the saved style
+    //styleBuffer[py][px] = prevCursor.style ? Object.assign({}, prevCursor.style) : {
+    //  color: currentStyle.color,
+    //  bgcolor: currentStyle.bgcolor,
+    //  bold: currentStyle.bold,
+    //  inverse: prevCursor.inverse
+    //};
+    //pokeCell(px, py, screenBuffer[py][px], styleBuffer[py][px]);
+    //prevCursor.set = false;
+    //ensureRow(py);
+    
+    const el = document.getElementById(`c${cursorY}_${cursorX}`);
+    if (el) el.classList.remove('qandy-cursor');
+    cursorOn = 0;  
   }
+}
 
 function executeCode(code) {
   try {
@@ -1748,7 +1732,7 @@ function resumePagination() {
   keyson();  // Re-enable keyboard input
   
   // Clear the screen and reset cursor
-  initScreen();
+  cls();
   
   // Process queued print calls
   const bufferedText = paginationBuffer.slice();  // Copy array
@@ -2422,11 +2406,24 @@ function cursorMoveTo(nx, ny) {
 }
 
 function cls() { 
-  screenBuffer = [];  // Reset global screenBuffer (removed 'var' to avoid shadowing)
-  initScreen(); 
-  // Reset pagination state
-  paginationPaused = false;
-  paginationBuffer = [];
+  const defaultColor = (currentStyle && currentStyle.color) ? currentStyle.color : 37;
+  const defaultBg    = (currentStyle && currentStyle.bgcolor) ? currentStyle.bgcolor : 40;
+  for (let y = 0; y < screenHeight; y++) {
+    const rowChars = screenBuffer[y];
+    const rowStyles = styleBuffer[y];
+    // Fill row contents
+    for (let x = 0; x < screenWidth; x++) {
+      rowChars[x] = ' ';
+      // reuse the existing object slot but set fields to defaults to avoid extra allocations
+      rowStyles[x].color  = defaultColor;
+      rowStyles[x].bgcolor = defaultBg;
+      rowStyles[x].bold   = false;
+      rowStyles[x].inverse = false;
+    }
+  }
+  cursorX = 0;
+  cursorY = 0;
+  try { document.querySelectorAll('.qandy-cursor').forEach(el => el.classList.remove('qandy-cursor')); } catch (e) {}
 }
 
 function gfx(scr) { a=0; for (b=0; b<=mapy; b++) { for (c=0; c<=mapx; c++) { e=document.getElementById("T"+a).src="t/"+scr.charAt(a*2)+scr.charAt((a*2)+1)+".png"; a++; }}}
@@ -2590,28 +2587,30 @@ function ClickChar(Z) {
 
 // system ready
 
-initScreen();
-function initScreen() {
-  screenBuffer = [];
-  styleBuffer = [];
+initScreen(); function initScreen() {
+  screenWidth = (typeof screenWidth === 'number' && screenWidth > 0) ? screenWidth : 32;
+  screenHeight = (typeof screenHeight === 'number' && screenHeight > 0) ? screenHeight : 25;
+  screenBuffer = new Array(screenHeight);
+  styleBuffer  = new Array(screenHeight);
+  const defaultColor = (currentStyle && currentStyle.color) ? currentStyle.color : 37;
+  const defaultBg    = (currentStyle && currentStyle.bgcolor) ? currentStyle.bgcolor : 40;
+  const defaultStyleTemplate = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
+  for (let y = 0; y < screenHeight; y++) {
+    const rowChars = new Array(screenWidth);
+    const rowStyles = new Array(screenWidth);
+    for (let x = 0; x < screenWidth; x++) {
+      rowChars[x] = ' ';
+      rowStyles[x] = { color: defaultStyleTemplate.color, bgcolor: defaultStyleTemplate.bgcolor, bold: false, inverse: false };
+    }
+    screenBuffer[y] = rowChars;
+    styleBuffer[y]  = rowStyles;
+  }
   cursorX = 0;
   cursorY = 0;
-  
-  for (let i = 0; i < screenHeight; i++) {
-    screenBuffer[i] = [];
-    styleBuffer[i] = [];
-    for (let j = 0; j < screenWidth; j++) {
-      screenBuffer[i][j] = ' ';
-      styleBuffer[i][j] = {
-        color: currentStyle.color,
-        bgcolor: currentStyle.bgcolor,
-        bold: currentStyle.bold,
-        inverse: currentStyle.inverse
-      };
-    }
-  }
+  cursorOn = 0;
 }
 
+function clearScreen() { cls(); }
 
 window.ANSI=ANSI;
 print("\nQandy Pocket\nComputer v1.j\n\n");
