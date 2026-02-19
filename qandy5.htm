@@ -1334,12 +1334,6 @@ function triggerPaginationPause() {
   // Prevent re-entering pause state
   if (paginationPaused) return;
 
-  // Ensure draw() exists
-  if (typeof draw !== 'function') {
-    // fallback to previous approach if draw() not available
-    console.warn("draw() not found — falling back to buffer-write pause.");
-    // (Optionally call the robust buffer-writing variant here)
-  }
 
   // Ensure buffers initialized
   if (!screenBuffer || screenBuffer.length === 0) initScreen();
@@ -1636,6 +1630,7 @@ function draw(inputString, startX, startY, doFullUpdate) {
       try { updateDomCellInPlace(cx, cy); } catch (e) { /* ignore */ }
     }
   }
+  updateDisplay();
   return { x: locX, y: locY };  
 }
 
