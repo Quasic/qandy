@@ -440,6 +440,7 @@ resize(); function resize() {
 }
 
 // Helper: given a logical offset into `line`, return the screen {x,y}
+// slop
 function inputPosToScreen(offset) {
   var absCol = inputStartX + offset;
   var dy = Math.floor(absCol / screenWidth);
@@ -448,6 +449,7 @@ function inputPosToScreen(offset) {
 }
 
 // Helper: place cursor at logical input offset and update cursorX/cursorY/cursorPos
+// slop
 function setCursorToInputPos(offset) {
   var sc = inputPosToScreen(offset);
   cursorX = sc.x;
@@ -589,23 +591,28 @@ function button(b, event) {
         cursor(1);
 
       } else if (k === "left") {
-        // Move cursor left; extend selection if SHIFT held
         if (cursorPos > 0) {
           if (shift) {
             if (selectionStart === -1) selectionStart = cursorPos;
             cursorPos--;
             selectionEnd = cursorPos;
-            setCursorToInputPos(cursorPos);
+            // Update cursor screen coordinates from logical position
+            var sc = inputPosToScreen(cursorPos);
+            cursorX = sc.x;
+            cursorY = sc.y;
+            // reflect selection visually
             updateSelectionVisuals(selectionStart, selectionEnd);
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos--;
-            setCursorToInputPos(cursorPos);
-            renderInputLine();
+            if (cursorX==0) {
+              cursorY--; cursorX=screenWidth-1;
+            } else {
+              cursorX--;
+            }
           }
         }
-        cursor(1);
-
+        cursor(1);      
       } else if (k === "right") {
         // Move cursor right; extend selection if SHIFT held
         if (cursorPos < line.length) {
@@ -623,14 +630,19 @@ function button(b, event) {
           }
         }
         cursor(1);
-
       } else if (k === "home") {
         // Move cursor to start of input line
         selectionStart = -1; selectionEnd = -1;
-        setCursorToInputPos(0);
-        renderInputLine();
+        cursorPos = 0;
+        var absCol = inputStartX + cursorPos;
+        cursorY = inputStartY + Math.floor(absCol / screenWidth);
+        cursorX = absCol % screenWidth; //@@
+        // clamp to screen bounds just in case
+        if (cursorY < 0) cursorY = 0;
+        if (cursorY >= screenHeight) cursorY = screenHeight - 1;
+        if (cursorX < 0) cursorX = 0;
+        if (cursorX >= screenWidth) cursorX = screenWidth - 1;
         cursor(1);
-
       } else if (k === "end") {
         // Move cursor to end of input line
         selectionStart = -1; selectionEnd = -1;
@@ -788,6 +800,8 @@ function button(b, event) {
         if (hasAlt) {
           alt = 0;
           var ael = document.getElementById("alt");
+          var ael = document.getElementById("alt");
+          var ael = document.getElementById("alt");
           if (ael) { ael.style.backgroundColor = "#222"; ael.style.color = "#fff"; }
           // ALT combos: could be extended; for now fall through to insert
         }
@@ -889,9 +903,11 @@ function renderInputLine() {
   try { if (typeof updateDisplay === 'function') updateDisplay(); } catch (e) {}
 
   // position the logical draw cursor then call draw() to render visibleText
-  cursorX = writeCol;
-  cursorY = writeRow;
-  draw(visibleText);
+  
+  // cursorX = writeCol;
+  // cursorY = writeRow;
+
+  draw(visibleText, writeRow, writeCol);
   // restore logical cursor location & show cursor
   // cursorX = savedCursorX;
   // cursorY = savedCursorY;
@@ -1588,136 +1604,120 @@ function print(inputString) {
   }
 }
 
-function draw(inputString) {
-  // Draw text at current cursor location with ANSI codes
-  // Does NOT scroll, trigger pagination, or update txt variable
-  // Simply stops drawing when reaching screen boundaries
+// draw(inputString, startX, startY, doFullUpdate)
+// - startX/startY optional numeric start position; when omitted, draw uses (0,0) (top-left).
+// - doFullUpdate: if true, calls updateDisplay(); otherwise updates only changed cells.
+function draw(inputString, startX, startY, doFullUpdate) {
+  if (!screenBuffer || screenBuffer.length === 0) initScreen();
 
-  // Make sure buffers are initialized
-  if (!screenBuffer || screenBuffer.length === 0) {
-    initScreen();
-  }
+  // Use top-left when coords omitted (developer wants full-screen direct-write)
+  var locX = (typeof startX === 'number') ? startX : 0;
+  var locY = (typeof startY === 'number') ? startY : 0;
 
-  // Parse ANSI codes in input string
+  // Changed cells list for targeted DOM updates
+  var changed = [];
+
+  // Parse ANSI tokens
   const tokens = parseANSIString(inputString);
 
-  // Process each token
   for (const token of tokens) {
     if (token.type === 'code') {
-      // Update current style
       applyANSICode(token.codes);
+      continue;
+    }
 
-    } else if (token.type === 'cursor') {
-      // Cursor positioning (CUP) - move cursor to specified row/col (1-based from ANSI; parseANSIString should convert)
-      cursorY = Math.min(Math.max(0, token.row), screenHeight - 1);
-      cursorX = Math.min(Math.max(0, token.col), screenWidth - 1);
+    if (token.type === 'cursor') {
+      // CUP token: move local cursor (0-based)
+      locY = Math.min(Math.max(0, token.row), screenHeight - 1);
+      locX = Math.min(Math.max(0, token.col), screenWidth - 1);
+      continue;
+    }
 
-    } else if (token.type === 'clearline') {
-      // Clear line from cursor position
+    if (token.type === 'clearline') {
+      if (!screenBuffer[locY]) {
+        screenBuffer[locY] = new Array(screenWidth).fill(' ');
+        styleBuffer[locY] = new Array(screenWidth);
+        for (let i = 0; i < screenWidth; i++) styleBuffer[locY][i] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold:false, inverse:false };
+      }
       if (token.mode === 0) {
-        // Clear from cursor to end of line
-        for (let x = cursorX; x < screenWidth; x++) {
-          if (screenBuffer[cursorY]) {
-            screenBuffer[cursorY][x] = ' ';
-            styleBuffer[cursorY][x] = {
-              color: currentStyle.color,
-              bgcolor: currentStyle.bgcolor,
-              bold: currentStyle.bold,
-              inverse: currentStyle.inverse
-            };
-          }
+        for (let x = locX; x < screenWidth; x++) {
+          screenBuffer[locY][x] = ' ';
+          styleBuffer[locY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+          changed.push({x:x,y:locY});
         }
       } else if (token.mode === 1) {
-        // Clear from start of line to cursor
-        for (let x = 0; x <= cursorX; x++) {
-          if (screenBuffer[cursorY]) {
-            screenBuffer[cursorY][x] = ' ';
-            styleBuffer[cursorY][x] = {
-              color: currentStyle.color,
-              bgcolor: currentStyle.bgcolor,
-              bold: currentStyle.bold,
-              inverse: currentStyle.inverse
-            };
-          }
+        for (let x = 0; x <= locX; x++) {
+          screenBuffer[locY][x] = ' ';
+          styleBuffer[locY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+          changed.push({x:x,y:locY});
         }
       } else if (token.mode === 2) {
-        // Clear entire line
         for (let x = 0; x < screenWidth; x++) {
-          if (screenBuffer[cursorY]) {
-            screenBuffer[cursorY][x] = ' ';
-            styleBuffer[cursorY][x] = {
-              color: currentStyle.color,
-              bgcolor: currentStyle.bgcolor,
-              bold: currentStyle.bold,
-              inverse: currentStyle.inverse
-            };
-          }
+          screenBuffer[locY][x] = ' ';
+          styleBuffer[locY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
+          changed.push({x:x,y:locY});
         }
       }
+      continue;
+    }
 
-    } else if (token.type === 'char') {
-      // Write character to screenBuffer using currentStyle.
-      const ch = token.value;
+    // token.type === 'char'
+    const ch = token.value;
+    if (ch === '\n') {
+      locX = 0;
+      locY++;
+      if (locY >= screenHeight) { locY = screenHeight - 1; break; }
+      continue;
+    }
 
-      // Handle newline explicitly (draw() should not scroll; just stop at bottom)
-      if (ch === '\n') {
-        cursorX = 0;
-        cursorY++;
-        if (cursorY >= screenHeight) {
-          // stop drawing past bottom (preserve draw() contract of no scrolling)
-          cursorY = screenHeight - 1;
-          break;
-        }
-        continue;
+    // Ensure row exists
+    if (!screenBuffer[locY]) {
+      screenBuffer[locY] = new Array(screenWidth).fill(' ');
+      styleBuffer[locY] = new Array(screenWidth);
+      for (let i = 0; i < screenWidth; i++) styleBuffer[locY][i] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold:false, inverse:false };
+    }
+
+    // Write into buffers if visible
+    if (locX >= 0 && locX < screenWidth && locY >= 0 && locY < screenHeight) {
+      screenBuffer[locY][locX] = ch;
+      styleBuffer[locY][locX] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: currentStyle.bold,
+        inverse: currentStyle.inverse
+      };
+      changed.push({x:locX,y:locY});
+      locX++;
+      if (locX >= screenWidth) {
+        locX = 0;
+        locY++;
+        if (locY >= screenHeight) { locY = screenHeight - 1; break; }
       }
-
-      // Only write if cursor is inside the visible area
-      if (cursorY >= 0 && cursorY < screenHeight && cursorX >= 0 && cursorX < screenWidth) {
-        screenBuffer[cursorY][cursorX] = ch;
-        styleBuffer[cursorY][cursorX] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-        cursorX++;
-        if (cursorX >= screenWidth) {
-          // hard wrap to next line (still no scrolling)
-          cursorX = 0;
-          cursorY++;
-          if (cursorY >= screenHeight) {
-            cursorY = screenHeight - 1;
-            break;
-          }
-        }
-      } else {
-        // If cursor is outside horizontal bounds, stop writing
-        // If vertical beyond bottom, stop entirely
-        if (cursorY < 0 || cursorY >= screenHeight) break;
-        if (cursorX < 0 || cursorX >= screenWidth) {
-          // move to next line if beyond right edge
-          cursorX = 0;
-          cursorY++;
-          if (cursorY >= screenHeight) {
-            cursorY = screenHeight - 1;
-            break;
-          }
-        }
+    } else {
+      // horizontal wrap behavior
+      if (locX < 0 || locX >= screenWidth) {
+        locX = 0;
+        locY++;
+        if (locY >= screenHeight) { locY = screenHeight - 1; break; }
       }
+    }
+  } // end tokens loop
+
+  // DOM update: full vs per-cell
+  if (doFullUpdate) {
+    try { updateDisplay(); } catch (e) { /* best-effort */ }
+  } else {
+    var seen = {};
+    for (var i = 0; i < changed.length; i++) {
+      var cx = changed[i].x, cy = changed[i].y;
+      var key = cy + '_' + cx;
+      if (seen[key]) continue;
+      seen[key] = true;
+      try { updateDomCellInPlace(cx, cy); } catch (e) { /* ignore */ }
     }
   }
 
-  // Refresh the display so ANSI styles become visible
-  const _savedCursorY = cursorY;
-  try {
-    // Ensure updateDisplay renders all lines that may have been drawn to.
-    // Set cursorY to screenHeight to render the entire buffer.
-    cursorY = screenHeight;
-    updateDisplay();
-  } finally {
-    // Restore exact cursor position so visible cursor doesn't move
-    cursorY = _savedCursorY;
-  }
+  // NOTE: draw() intentionally does NOT touch cursorX/cursorY/cursorOn/cursorPos.
 }
 
 function resumePagination() {
