@@ -566,7 +566,7 @@ function button(b, event) {
       } else if (k === "home") {
         cursorPos=0; cursorX=0;
       } else if (k === "end") {
-        // GBT: what line code is neededhere to move cursorX?
+        // AI: what line code is neededhere to move cursorX?
         cursorPos = (line ? line.length : 0);
       } else if (k === "up" || k === "down") {
         // basic history nav if available
@@ -576,13 +576,13 @@ function button(b, event) {
               if (typeof historyIndex === 'undefined' || historyIndex === -1) {
                 tempCommand = line;
                 historyIndex = commandHistory.length;
-                // GBT: does cursorX/Y need to be changed here?
+                // AI: does cursorX/Y need to be changed here?
               }
               if (historyIndex > 0) {
                 historyIndex--;
                 line = commandHistory[historyIndex];
                 cursorPos = line.length; 
-                // GBT: what line of code is needed to set the cursorX/Y here?
+                // AI: what line of code is needed to set the cursorX/Y here?
               }
             }
           } else {
@@ -591,12 +591,12 @@ function button(b, event) {
                 historyIndex++;
                 line = commandHistory[historyIndex];
                 cursorPos = line.length;
-                // GBT: what line of code is needed to set the cursorX/Y here?
+                // AI: what line of code is needed to set the cursorX/Y here?
               } else {
                 historyIndex = -1;
                 line = tempCommand || "";
                 cursorPos = line.length;
-                // GBT: what line of code is needed to set the cursorX/Y here?
+                // AI: what line of code is needed to set the cursorX/Y here?
                 tempCommand = "";
               }
             }
@@ -675,23 +675,27 @@ function button(b, event) {
         }
         line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
 
-        cursorPos += finalChar.length; cursorX++;
-        const charsPerLine = screenWidth || 32;
-        const logicalIndex = cursorPos - 1; // index of char just inserted
-        const { row, col } = logicalToScreen(logicalIndex);
-        const ch = finalChar;
         const inputStyle = {
           color: (currentStyle && currentStyle.color) || 37,
           bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
           bold: false,
           inverse: false
         };
-        pokeCell(col, row, ch, inputStyle); }
+        pokeCell(cursorX, cursorY, finalChar, inputStyle);
+
+        
+        // AI: these lines may need to advance both
+        // the cursorX and cursor Y?
+        cursorPos += finalChar.length;
+        cursorX += finalChar.length;
+        cursor(1);
+
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
       }
       // After any input mutation, re-render visible input
       renderInputLine();
       cursor(1);
+    }
   } else {
     if (run) { keydown(k || l); } 
   }
