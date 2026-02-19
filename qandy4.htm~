@@ -534,14 +534,21 @@ function button(b, event) {
          // const prevCursorPos = cursorPos;
          // const prevLineLen = (typeof line === 'string') ? line.length : 0;
          cursor(0);
-         line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
-         pokeCell(cursorX, cursorY, '\u00A0', {
+         line = line.substring(0, cursorPos - 1)+line.substring(cursorPos);
+         pokeCell(cursorX, cursorY, ' ', {
           color: (currentStyle && currentStyle.color) || 37,
           bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
           bold: false,
           inverse: false
          });
-         cursorPos--;
+         cursorPos--; 
+ 
+         // this line may need to be updated to handle
+         // the BACK button being pressed when the cursor
+         // is on 0 column and needs to be moved to the
+         // last column of the row above it  
+         cursorX--;
+         
          const charsPerLine = screenWidth || 32;
          const baseRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cursorPos / charsPerLine)) : 0 - Math.floor(cursorPos / charsPerLine);
          const newRow = baseRow + Math.floor(cursorPos / charsPerLine);
@@ -552,13 +559,14 @@ function button(b, event) {
         }
       } else if (k === "left") {
         if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
-        if (cursorPos > 0) cursorPos--;
+        if (cursorPos > 0) { cursorPos--; cursorX--; }
       } else if (k === "right") {
-        if (typeof cursorPos === 'undefined') cursorPos = (line ? line.length : 0);
-        if (cursorPos < (line ? line.length : 0)) cursorPos++;
+        if (typeof cursorPos === 'undefined') { cursorPos = (line ? line.length : 0); } 
+        if (cursorPos < (line ? line.length : 0)) { cursorPos++; cursorX++; }
       } else if (k === "home") {
-        cursorPos = 0;
+        cursorPos=0; cursorX=0;
       } else if (k === "end") {
+        // GBT: what line code is neededhere to move cursorX?
         cursorPos = (line ? line.length : 0);
       } else if (k === "up" || k === "down") {
         // basic history nav if available
@@ -568,11 +576,13 @@ function button(b, event) {
               if (typeof historyIndex === 'undefined' || historyIndex === -1) {
                 tempCommand = line;
                 historyIndex = commandHistory.length;
+                // GBT: does cursorX/Y need to be changed here?
               }
               if (historyIndex > 0) {
                 historyIndex--;
                 line = commandHistory[historyIndex];
-                cursorPos = line.length;
+                cursorPos = line.length; 
+                // GBT: what line of code is needed to set the cursorX/Y here?
               }
             }
           } else {
@@ -581,10 +591,12 @@ function button(b, event) {
                 historyIndex++;
                 line = commandHistory[historyIndex];
                 cursorPos = line.length;
+                // GBT: what line of code is needed to set the cursorX/Y here?
               } else {
                 historyIndex = -1;
                 line = tempCommand || "";
                 cursorPos = line.length;
+                // GBT: what line of code is needed to set the cursorX/Y here?
                 tempCommand = "";
               }
             }
@@ -613,7 +625,7 @@ function button(b, event) {
             print("\n");
             try { input(line); } catch (e) { /* ignore */ }
             line = "";
-            cursorPos = 0;
+            cursorPos=0; cursorX=0; cursorY++;
             // redraw full screen after submission
             if (typeof updateDisplay === 'function') updateDisplay();
           } else {
@@ -627,15 +639,15 @@ function button(b, event) {
               prg.onerror = function() { print("Error loading program\n"); keyson(); };
               document.head.appendChild(prg);
               line = "";
-              cursorPos = 0;
+              cursorPos=0; cursorX=0; cursorY++;
             } else if (line.substr(0,3) === "cls") {
               if (typeof initScreen === 'function') initScreen(); else txt = "";
               line = "";
-              cursorPos = 0;
+              cursorPos=0; cursorX=0; cursorY++;
             } else {
               try { executeCode(line); } catch (e) { /* ignore */ }
               line = "";
-              cursorPos = 0;
+              cursorPos=0; cursorX=0; cursorY++;
             }
             if (typeof updateDisplay === 'function') updateDisplay();
           }
@@ -662,7 +674,8 @@ function button(b, event) {
           }
         }
         line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
-        cursorPos += finalChar.length;
+        // GBT: what line of code to change cursorX/Y here?
+        cursorPos += finalChar.length; cursorX++;
         const charsPerLine = screenWidth || 32;
         const logicalIndex = cursorPos - 1; // index of char just inserted
         const { row, col } = logicalToScreen(logicalIndex);
@@ -1555,10 +1568,7 @@ function updateSelectionVisuals(selStart, selEnd) {
 }
 
 function print(inputString) {
-  // Accept undefined/null safely
   inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
-
-  // Keep the textual history buffer for compatibility with other code
   txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
 
   // If pagination is paused, queue the text (keeps previous behavior)
@@ -1568,7 +1578,6 @@ function print(inputString) {
     return;
   }
 
-  // Ensure screen buffers exist
   if (!window.screenBuffer || !window.styleBuffer || !window.screenHeight) {
     try { initScreen(); } catch (e) { /* best-effort */ }
   }
