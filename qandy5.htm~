@@ -898,15 +898,6 @@ function renderInputLine() {
       styleBuffer[rr][c].inverse = false;
     }
   }
-
-  // update DOM once (or rely on draw to update cells as it writes)
-  try { if (typeof updateDisplay === 'function') updateDisplay(); } catch (e) {}
-
-  // position the logical draw cursor then call draw() to render visibleText
-  
-  // cursorX = writeCol;
-  // cursorY = writeRow;
-
   draw(visibleText, writeRow, writeCol);
   // restore logical cursor location & show cursor
   // cursorX = savedCursorX;
@@ -1521,7 +1512,7 @@ function print(inputString) {
   if (wasKeyon) { keyson(); }
 }
 
-function draw(inputString, startX, startY, doFullUpdate) {
+function draw(inputString, startX, startY) {
   if (!screenBuffer || screenBuffer.length === 0) initScreen();
 
   // Use top-left when coords omitted (developer wants full-screen direct-write)
@@ -1616,20 +1607,6 @@ function draw(inputString, startX, startY, doFullUpdate) {
       }
     }
   } // end tokens loop
-
-  // DOM update: full vs per-cell
-  if (doFullUpdate) {
-    try { updateDisplay(); } catch (e) { /* best-effort */ }
-  } else {
-    var seen = {};
-    for (var i = 0; i < changed.length; i++) {
-      var cx = changed[i].x, cy = changed[i].y;
-      var key = cy + '_' + cx;
-      if (seen[key]) continue;
-      seen[key] = true;
-      try { updateDomCellInPlace(cx, cy); } catch (e) { /* ignore */ }
-    }
-  }
   updateDisplay();
   return { x: locX, y: locY };  
 }
@@ -1668,8 +1645,6 @@ function resumePagination() {
 }
 
 function updateDisplay() {
-  if (!screenBuffer || screenBuffer.length === 0) { initScreen(); }
-  if (!styleBuffer) { styleBuffer = []; }
   const txtElement = document.getElementById("txt");
   let htmlContent = '';
   // Render the full visible screen (clamped to available buffer).
@@ -1746,22 +1721,22 @@ function updateDisplay() {
   // Write to DOM in one shot
   txtElement.innerHTML = htmlContent;
 
-  try {
-    // Remove previous cursor markers (if any)
-    const prev = document.querySelectorAll('.qandy-cursor');
-    for (let p = 0; p < prev.length; p++) prev[p].classList.remove('qandy-cursor');
+  //try {
+  //  // Remove previous cursor markers (if any)
+  //  const prev = document.querySelectorAll('.qandy-cursor');
+  //  for (let p = 0; p < prev.length; p++) prev[p].classList.remove('qandy-cursor');
 
-    // Add cursor marker to current cursor position (cursorX, cursorY are logical coords)
-    if (typeof cursorX === 'number' && typeof cursorY === 'number') {
-      const curEl = document.getElementById(`c${cursorY}_${cursorX}`);
-      if (curEl) {
-        curEl.classList.add('qandy-cursor');
-      }
-    }
-  } catch (e) {
-    // Non-fatal: best-effort only
-    console.warn('Failed to apply qandy cursor marker', e);
-  }
+  //  // Add cursor marker to current cursor position (cursorX, cursorY are logical coords)
+  //  if (typeof cursorX === 'number' && typeof cursorY === 'number') {
+  //    const curEl = document.getElementById(`c${cursorY}_${cursorX}`);
+  //    if (curEl) {
+  //      curEl.classList.add('qandy-cursor');
+  //    }
+  //  }
+  //} catch (e) {
+  //  // Non-fatal: best-effort only
+  //  console.warn('Failed to apply qandy cursor marker', e);
+  //}
 }
 
 
