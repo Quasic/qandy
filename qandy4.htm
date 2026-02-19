@@ -2030,19 +2030,19 @@ function updateDisplay() {
 
     // If prevCursor references this cell (cursor logic saved this cell previously),
     // update prevCursor.ch/style so the cursor hide/show logic won't later restore an old value.
-    try {
-      if (window.prevCursor && window.prevCursor.set) {
-        if (window.prevCursor.x === x && window.prevCursor.y === y) {
-          window.prevCursor.ch = ch;
-          // clone style so later restore uses current style
-          var s = window.styleBuffer[y][x];
-          window.prevCursor.style = s ? Object.assign({}, s) : window.prevCursor.style;
-        }
-      }
-    } catch (e) {
-      // non-fatal
-      console.warn('pokeCell: failed to update prevCursor:', e);
-    }
+    //try {
+    //  if (window.prevCursor && window.prevCursor.set) {
+    //    if (window.prevCursor.x === x && window.prevCursor.y === y) {
+    //      window.prevCursor.ch = ch;
+    //      // clone style so later restore uses current style
+    //      var s = window.styleBuffer[y][x];
+    //      window.prevCursor.style = s ? Object.assign({}, s) : window.prevCursor.style;
+    //    }
+    //  }
+    //} catch (e) {
+    //  // non-fatal
+    //  console.warn('pokeCell: failed to update prevCursor:', e);
+    //}
 
     // Update cell in DOM if it exists; otherwise attempt full redraw via updateDisplay()
     var domUpdated = updateDomCell(x, y);
