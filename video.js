@@ -1305,6 +1305,8 @@ const ANSI = {
   }
 };
 
+window.ANSI=ANSI;
+
 window.COLOR = {
   // Foreground colors (30-37)
   BLACK: 30,

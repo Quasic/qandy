@@ -771,31 +771,6 @@ function ensureBuffersAndRow(y) {
 
   // New: setCellStyle(x,y, styleObj) updates styleBuffer and DOM (no char change)
 
-function keyson() { keyon=1; cursor(1); }
-function keysoff() { keyon=0; cursor(0); }
-
-function cursor(a) {
-  if (a === 1) {
-    const existingStyle = styleBuffer[cursorY][cursorX] ? Object.assign({}, styleBuffer[cursorY][cursorX]) : {
-      color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse
-    };
-    styleBuffer[cursorY][cursorX] = Object.assign({}, existingStyle);
-    styleBuffer[cursorY][cursorX].inverse = true;
-    const el = document.getElementById(`c${cursorY}_${cursorX}`);
-    if (el) { el.classList.add('qandy-cursor'); }
-    cursorOn = 1;
-  } else {
-    const existingStyle = styleBuffer[cursorY][cursorX] ? Object.assign({}, styleBuffer[cursorY][cursorX]) : {
-      color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse
-    };
-    styleBuffer[cursorY][cursorX] = Object.assign({}, existingStyle);
-    styleBuffer[cursorY][cursorX].inverse = false;
-    const el = document.getElementById(`c${cursorY}_${cursorX}`);
-    if (el) el.classList.remove('qandy-cursor');
-    cursorOn = 0;  
-  }
-}
-
 function executeCode(code) {
   try {
     var trimmed = String(code).trim();
@@ -1900,7 +1875,6 @@ function cls() {
 
 function clearScreen() { cls(); }
 
-window.ANSI=ANSI;
 print("\nQandy Pocket\nComputer v1.j\n\n");
 cursor(1); 
 

@@ -4,6 +4,16 @@
 // alert(JSON.stringify(peekStyle(y, x)));
 //
 
+function cursor(a) {
+  if (a === 1) {
+    cursorOn = 1;
+    pokeInverse(cursorX, cursorY, true);
+  } else {
+    cursorOn = 0;
+    pokeInverse(cursorX, cursorY, false);  
+  }
+}
+
 function validateCoords(x, y) {
   return (typeof x === 'number' && typeof y === 'number' && 
           x >= 0 && y >= 0 && x < screenWidth && y < screenHeight);
@@ -1305,6 +1315,8 @@ const ANSI = {
   }
 };
 
+window.ANSI=ANSI;
+
 window.COLOR = {
   // Foreground colors (30-37)
   BLACK: 30,
@@ -1351,7 +1363,7 @@ window.COLOR = {
 window.C = window.COLOR;
 
 initScreen();
-function initScreen() {
+function initScreen(width, height, containerId) {
 
   window.W = 32; window.screenWidth = window.W;
   window.H = 25; window.screenHeight = window.H;
