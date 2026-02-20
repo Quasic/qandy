@@ -173,10 +173,8 @@ function updateKeyLabels() {
     if (!base || base.length === 0) return;
 
     var label = base;
-
-    if (altActive) {
       if (shiftActive && altShiftGraphics.hasOwnProperty(base)) {
-        label = altSham gettingiftGraphics[base];
+        label = altShiftGraphics[base];
       } else if (altGraphics.hasOwnProperty(base)) {
         label = altGraphics[base];
       } else if (shiftActive && shiftedKeys.hasOwnProperty(base)) {
