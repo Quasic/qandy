@@ -638,7 +638,9 @@ function button(b, event) {
         if (cursorPos < line.length) {
           if (shift) {
             if (selectionStart === -1) selectionStart = cursorPos;
-            cursorPos--;
+            cursorPos++;
+            if (cursorPos < 0) cursorPos = 0;
+            if (cursorPos > line.length) cursorPos = line.length;
             selectionEnd = cursorPos;
             // Update cursor screen coordinates from logical position
             var sc = inputPosToScreen(cursorPos);
@@ -646,7 +648,7 @@ function button(b, event) {
             cursorY = sc.y;
             // reflect selection visually
             updateSelectionVisuals(selectionStart, selectionEnd);
-            updateDisplay();  // Just update the display, don't re-render input
+            renderInputLine();
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos++;
@@ -976,61 +978,82 @@ document.addEventListener('paste', function (event) {
   }
  }
 });
+
 function press(event) { 
  key=""; k=event.keyCode; shift=event.shiftKey;
 
-// Handle physical CapsLock keypress (keyCode 20)
-if (event.keyCode === 20) {
-  // Determine the platform state if available
-  var platformState = (typeof event.getModifierState === 'function') ? !!event.getModifierState('CapsLock') : null;
+ // Handle physical CapsLock keypress (keyCode 20)
+ if (event.keyCode === 20) {
+   // Determine the platform state if available
+   var platformState = (typeof event.getModifierState === 'function') ? !!event.getModifierState('CapsLock') : null;
 
-  // Compute the new desired caps state:
-  // - If platformState is available, use it.
-  // - But some browsers report the previous state on keydown; if platformState equals current caps,
-  //   assume the toggle has not yet been applied and flip it.
-  var newCaps;
-  if (platformState === null) {
-    newCaps = !caps; // no platform info -> just toggle
-  } else {
-    newCaps = platformState;
-    if (platformState === caps) {
-      // likely timing issue -> flip to reflect the user action
-      newCaps = !caps;
-    }
-  }
+   // Compute the new desired caps state:
+   // - If platformState is available, use it.
+   // - But some browsers report the previous state on keydown; if platformState equals current caps,
+   //   assume the toggle has not yet been applied and flip it.
+   var newCaps;
+   if (platformState === null) {
+     newCaps = !caps; // no platform info -> just toggle
+   } else {
+     newCaps = platformState;
+     if (platformState === caps) {
+       // likely timing issue -> flip to reflect the user action
+       newCaps = !caps;
+     }
+   }
 
-  caps = !!newCaps;
+   caps = !!newCaps;
+   l = document.getElementById("kcaps") || document.getElementById("caps");
+   if (l) {
+     if (caps) { l.style.backgroundColor = "#fff"; l.style.color = "#000"; }
+     else { l.style.backgroundColor = "#222"; l.style.color = "#fff"; }
+   }
 
-  // Update CAPS button visual
-  // var capsEWhen the ALT key when pressed on the virtual keyboard, it should enable and disable ALT mode like the CAPS key does. And while the ALT key is pressed on a physical keyboard it should highlight on the virtial keyboard display and change the letters on the keys to match their graphic symbol. 
+   // Cancel any transient flash timeout for the CAPS element so it won't reapply a flash style
+   try {
+     if (keyTimeouts && keyTimeouts['caps']) { clearTimeout(keyTimeouts['caps']); delete keyTimeouts['caps']; }
+     // Also clear any stored flash marker on the element
+     if (l) l.dataset._flash = '';
+   } catch (e) { /* ignore */ }
 
-  l = document.getElementById("kcaps") || document.getElementById("caps");
-  if (l) {
-    if (caps) { l.style.backgroundColor = "#fff"; l.style.color = "#000"; }
-    else { l.style.backgroundColor = "#222"; l.style.color = "#fff"; }
-  }
+   // Ensure label updates
+   if (typeof updateKeyLabels === 'function') updateKeyLabels();
 
-  // Cancel any transient flash timeout for the CAPS element so it won't reapply a flash style
-  try {
-    if (keyTimeouts && keyTimeouts['caps']) { clearTimeout(keyTimeouts['caps']); delete keyTimeouts['caps']; }
-    // Also clear any stored flash marker on the element
-    if (l) l.dataset._flash = '';
-  } catch (e) { /* ignore */ }
-
-  // Ensure label updates
-  if (typeof updateKeyLabels === 'function') updateKeyLabels();
-
-  // If we just turned it off, explicitly unhighlight the element (clear inline styles)
-  if (!caps) {
-    unhighlightKey('caps');
-  } else {
-    // Ensure locked appearance
-    if (l) { l.style.backgroundColor = "#fff"; l.style.color = "#000"; }
-  }
+   // If we just turned it off, explicitly unhighlight the element (clear inline styles)
+   if (!caps) {
+     unhighlightKey('caps');
+   } else {
+     // Ensure locked appearance
+     if (l) { l.style.backgroundColor = "#fff"; l.style.color = "#000"; }
+   }
 
   // Prevent default browser handling side-effects and stop further processing for this key event
   event.preventDefault && event.preventDefault();
   return;
+}
+
+// in press(event) near the top, before "if (event.ctrlKey) { return; }"
+if (event.ctrlKey && (event.key === 'v' || event.key === 'V')) {
+  event.preventDefault(); // stop browser showing its paste/menu UI
+
+  // read from clipboard and insert using the same flow you use elsewhere
+  navigator.clipboard.readText().then(function(text) {
+    if (!text) return;
+    cursor(0);
+    if (selectionStart !== -1 && selectionEnd !== -1) deleteSelection();
+    selectionStart = -1; selectionEnd = -1;
+    line = (line || "").substring(0, cursorPos) + text + (line || "").substring(cursorPos);
+    cursorPos += text.length;
+    renderInputLine();         // keep visual update consistent
+    setCursorToInputPos(cursorPos);
+    cursor(1);
+    print("\x1b[32mPasted!\x1b[0m\n");
+  }).catch(function(err) {
+    // fallback / message on failure
+    print("\x1b[31mPaste failed\x1b[0m\n");
+  });
+
+  return; // consume the event so other handlers / browser don't run
 }
 
  if (event.keyCode === 18 || event.altKey) { event.preventDefault(); }
