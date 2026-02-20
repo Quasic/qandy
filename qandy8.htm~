@@ -9,10 +9,6 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
 <div id="pop" class="pop" onMouseOver='PopUpVis="visible";' onMouseOut='PopUpVis=PForce; PUV=setTimeout("document.getElementById(\"pop\").style.visibility=PopUpVis;",100);'></div>
 <div id="keyboard-container"></div>
 
-<script src="video.js"></script>
-<script src="keyboard.js"></script>
-<script src="dos.js"></script>
-
 <script>
 var devteam=1;  // developer mode
 
@@ -250,6 +246,24 @@ const ANSI = {
     pageBreak: '\f'  // Form Feed (ASCII 12, 0x0C) - explicit page break for pagination
   }
 };
+
+
+function loadInOrder(list) {
+  function loadNext(i) {
+    if (i >= list.length) return;
+    var s = document.createElement('script');
+    s.src = list[i];
+    s.onload = function() { loadNext(i+1); };
+    s.onerror = function() { console.error('Script load failed:', list[i]); loadNext(i+1); };
+    document.head.appendChild(s);
+  }
+  loadNext(0);
+})([
+  'video.js',
+  'keyboard.js',
+  'dos.js'
+]);
+</script>
 
 img=document.createElement('img');
 img.id="qpc"; img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAMklEQVRYhe3OMQEAMAjEwKei2wHxRQbLxUCu3u2fxc7mHAAAAAAAAAAAAAAAAAAAIEkGzIgCpxq6s7YAAAAASUVORK5CYII="; 
