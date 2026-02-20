@@ -1032,13 +1032,11 @@ function press(event) {
   return;
 }
 
-// in press(event) near the top, before "if (event.ctrlKey) { return; }"
-if (event.ctrlKey && (event.key === 'v' || event.key === 'V')) {
-  event.preventDefault(); // stop browser showing its paste/menu UI
-
-  // read from clipboard and insert using the same flow you use elsewhere
-  navigator.clipboard.readText().then(function(text) {
-    if (!text) return;
+  if (event.ctrlKey && (event.key === 'v' || event.key === 'V')) {
+    event.preventDefault(); // stop browser showing its paste/menu UI
+    // read from clipboard and insert using the same flow you use elsewhere
+   navigator.clipboard.readText().then(function(text) {
+     if (!text) return;
     cursor(0);
     if (selectionStart !== -1 && selectionEnd !== -1) deleteSelection();
     selectionStart = -1; selectionEnd = -1;
