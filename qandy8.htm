@@ -103,45 +103,6 @@ function bootAfterScripts() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', powerOn);
 else powerOn();
 
-function inputPosToScreen(offset) {
-  var absCol = inputStartX + offset;
-  var dy = Math.floor(absCol / screenWidth);
-  var dx = absCol % screenWidth;
-  return { x: dx, y: inputStartY + dy };
-}
-
-function setCursorToInputPos(offset) {
-  var sc = inputPosToScreen(offset);
-  cursorX = sc.x;
-  cursorY = sc.y;
-  cursorPos = offset;
-}
-
-// NEW VERSION - uses poke.js to clear visually:
-function deleteSelection() {
-  if (selectionStart === -1 || selectionEnd === -1) return;
-  
-  var s = Math.min(selectionStart, selectionEnd);
-  var e = Math.max(selectionStart, selectionEnd);
-  var deleteLength = e - s;
-  
-  // Delete from line string
-  line = line.substring(0, s) + line.substring(e);
-  cursorPos = s;
-  setCursorToInputPos(s);
-  
-  // Clear need to be checked to deleted region on screen using poke.js
-  var screenCoords = logicalToScreen(s);
-  pokeChar(screenCoords.col, screenCoords.row, ' ', deleteLength);
-  
-  // Clear selection state
-  selectionStart = -1; 
-  selectionEnd = -1;
-  
-  // Re-render the input line to show new content
-  renderInputLine();
-}
-
 function button(b, event) {
   // Resume pagination if paused
   if (typeof paginationPaused !== 'undefined' && paginationPaused) {
@@ -568,71 +529,6 @@ function button(b, event) {
     if (run) { keydown(k || l); }
   }
 }
-
-function renderInputLine() {
-  var W = screenWidth;
-  var H = screenHeight;
-  var L = line ? line.length : 0;
-  var cp = (typeof cursorPos === 'number') ? cursorPos : (line ? line.length : 0);
-
-  // nothing to draw: ensure cursor state and return
-  if (!line || L === 0) {
-    if (cursorOn) cursor(1);
-    return;
-  }
-
-  var startRow = (typeof cursorY === 'number') ? (cursorY - Math.floor(cp / W)) : (-Math.floor(cp / W));
-  var startColRaw = (typeof cursorX === 'number') ? (cursorX - (cp % W)) : (0 - (cp % W));
-  var startCol = ((startColRaw % W) + W) % W;
-  var rowAdjust = Math.floor(startColRaw / W);
-  startRow += rowAdjust;
-
-  var visibleStart = 0;
-  if (startRow < 0) {
-    visibleStart = (-startRow) * W - startCol;
-    if (visibleStart < 0) visibleStart = 0;
-    if (visibleStart > L) visibleStart = L;
-  }
-
-  var pos = startCol + visibleStart;
-  var writeRow = startRow + Math.floor(pos / W);
-  var writeCol = pos % W;
-  if (writeRow < 0) { // nothing visible yet
-    // no visible portion
-    if (cursorOn) cursor(1);
-    return;
-  }
-
-  // compute max visible chars before hitting bottom of screen
-  var maxVisibleChars = (H - writeRow) * W - writeCol;
-  if (maxVisibleChars < 0) maxVisibleChars = 0;
-  var visibleText = line.substring(visibleStart, Math.min(L, visibleStart + maxVisibleChars));
-  if (!visibleText) {
-    if (cursorOn) cursor(1);
-    return;
-  }
-
-  // OPTIONAL: clear overlay footprint to avoid leftover characters when input shrinks.
-  // Determine approximate rows touched and clear those cells to spaces.
-  var rowsNeeded = Math.ceil((visibleText.length + writeCol) / W);
-  for (var r = 0; r < rowsNeeded; r++) {
-    var rr = writeRow + r;
-    if (rr < 0 || rr >= H) continue;
-    var fromCol = (r === 0) ? writeCol : 0;
-    for (var c = fromCol; c < W; c++) {
-      if (!screenBuffer[rr]) screenBuffer[rr] = new Array(W).fill(' ');
-      if (!styleBuffer[rr]) {
-        styleBuffer[rr] = new Array(W);
-        for (var zi = 0; zi < W; zi++) styleBuffer[rr][zi] = { color:37, bgcolor:40, bold:false, inverse:false };
-      }
-      screenBuffer[rr][c] = ' ';
-      pokeInverse(c, rr, false);
-    }
-  }
-  drawInputLine(visibleText, writeCol, writeRow);
-}
-
-
 
 document.addEventListener('keydown', function (event) {
  if (event.keycode === 32) { event.preventDefault(); }
