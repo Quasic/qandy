@@ -1,5 +1,6 @@
-
 //
+// Qandy Video Graphics Adaptor
+// 
 // alert(JSON.stringify(peekStyle(y, x)));
 //
 
@@ -1301,10 +1302,10 @@ window.COLOR = {
       };
     }
     // apply provided fields (only update provided keys)
-    if (typeof styleObj.color !== 'undefined') row[x].color = styleObj.color;
-    if (typeof styleObj.bgcolor !== 'undefined') row[x].bgcolor = styleObj.bgcolor;
-    if (typeof styleObj.bold !== 'undefined') row[x].bold = !!styleObj.bold;
-    if (typeof styleObj.i thenverse !== 'undefined') row[x].inverse = !!styleObj.inverse;
+    // if (typeof styleObj.color !== 'undefined') row[x].color = styleObj.color;
+    // if (typeof styleObj.bgcolor !== 'undefined') row[x].bgcolor = styleObj.bgcolor;
+    // if (typeof styleObj.bold !== 'undefined') row[x].bold = !!styleObj.bold;
+    // if (typeof styleObj.i thenverse !== 'undefined') row[x].inverse = !!styleObj.inverse;
     
     return domUpdated;
   };

@@ -1,7 +1,12 @@
 
 //
-// alert(JSON.stringify(peekStyle(y, x)));
+// Qandy Video Graphics Adaptor
 //
+ 
+window.videoReady = new Promise(function(resolve) { window._resolveVideoReady = resolve;});
+
+// useful code
+// alert(JSON.stringify(peekStyle(y, x)));
 
 function initScreen(width, height, containerId) {
 
@@ -1301,15 +1306,18 @@ window.COLOR = {
       };
     }
     // apply provided fields (only update provided keys)
-    if (typeof styleObj.color !== 'undefined') row[x].color = styleObj.color;
-    if (typeof styleObj.bgcolor !== 'undefined') row[x].bgcolor = styleObj.bgcolor;
-    if (typeof styleObj.bold !== 'undefined') row[x].bold = !!styleObj.bold;
-    if (typeof styleObj.i thenverse !== 'undefined') row[x].inverse = !!styleObj.inverse;
+    // if (typeof styleObj.color !== 'undefined') row[x].color = styleObj.color;
+    // if (typeof styleObj.bgcolor !== 'undefined') row[x].bgcolor = styleObj.bgcolor;
+    // if (typeof styleObj.bold !== 'undefined') row[x].bold = !!styleObj.bold;
+    // if (typeof styleObj.i thenverse !== 'undefined') row[x].inverse = !!styleObj.inverse;
     
     return domUpdated;
   };
 
-
-// Shorter aliases
 window.C = window.COLOR;
 
+// video driver loaded
+if (typeof window._resolveVideoReady === 'function') {
+  window._resolveVideoReady();
+  try { delete window._resolveVideoReady; } catch (_) {}
+}

@@ -1287,6 +1287,29 @@ window.COLOR = {
   BG_BRIGHT_WHITE: 107
 };
 
+  window.setCellStyle = function (x, y, styleObj) {
+    if (typeof x !== 'number' || typeof y !== 'number') {
+      throw new Error('setCellStyle requires numeric x,y: setCellStyle(x,y, { color:.., bgcolor:.., bold:.., inverse:.. })');
+    }
+    var row = window.styleBuffer[y];
+    if (!row[x]) {
+      row[x] = {
+        color: (window.currentStyle && window.currentStyle.color) || 37,
+        bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
+        bold: false, 
+        inverse: false
+      };
+    }
+    // apply provided fields (only update provided keys)
+    // if (typeof styleObj.color !== 'undefined') row[x].color = styleObj.color;
+    // if (typeof styleObj.bgcolor !== 'undefined') row[x].bgcolor = styleObj.bgcolor;
+    // if (typeof styleObj.bold !== 'undefined') row[x].bold = !!styleObj.bold;
+    // if (typeof styleObj.i thenverse !== 'undefined') row[x].inverse = !!styleObj.inverse;
+    
+    return domUpdated;
+  };
+
+
 // Shorter aliases
 window.C = window.COLOR;
 
