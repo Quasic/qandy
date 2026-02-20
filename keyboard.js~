@@ -39,6 +39,7 @@ var altKeys = {
   '[': '«', ']': '»', '-': '─', '=': '═',
   '\\': ' ', '`': '°', '\'': '″'
 };
+var altKeys = {};
 
 var altShiftKeys = {
   "q": "╭", "w": "╌", "e": "╮", "r": "╞", "t": "╡",
@@ -52,6 +53,7 @@ var altShiftKeys = {
   "[": "‹", "]": "›", "-": "―", "=": "≡",
   "\\": " ", "`": "¬", "'": "′"
 };
+var altShiftKeys = {};
 
 var keyboardData = [
   // Row 0: ESC, BACKTICK, BACKSLASH, OPEN, CLOSE, DASH, EQUAL, BACK (y=446)
