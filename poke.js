@@ -1,26 +1,13 @@
-// ============================================================================
-// QANDY OPERATING SYSTEM - POKE ROUTINES v1.0
-// ============================================================================
-// High-performance character and style manipulation for retro computing
-// Designed to feel like a native 8-bit computer, not a web browser
-// 
-// ASSUMPTIONS:
-// - screenBuffer and styleBuffer are pre-initialized at startup
-// - All buffers have screenHeight rows and screenWidth columns
-// - Invalid coordinates are rejected (fail fast, no buffer creation)
-// ============================================================================
 
-// ============================================================================
-// INTERNAL HELPERS (not exposed to developers)
-// ============================================================================
+//
+// alert(JSON.stringify(peekStyle(y, x)));
+//
 
-// Fast coordinate validation
 function validateCoords(x, y) {
   return (typeof x === 'number' && typeof y === 'number' && 
           x >= 0 && y >= 0 && x < screenWidth && y < screenHeight);
 }
 
-// Safe get without buffer creation
 function safeGet(arr, y, x) {
   return (arr && arr[y]) ? arr[y][x] : undefined;
 }
@@ -198,16 +185,10 @@ window.peekStyle = function(x, y) {
 // Most common style operation for text selection and highlighting
 
 window.pokeInverse = function(x, y, state, count) {
-  if (typeof state === 'undefined') {
-    return validateCoords(x, y) ? styleBuffer[y][x].inverse : undefined;
-  }
-  
+  if (typeof state === 'undefined') { return validateCoords(x, y) ? styleBuffer[y][x].inverse : undefined; }
   // Validate starting position
   if (!validateCoords(x, y)) return false;
-  
   var inverseState = !!state;
-  
-  // Span mode: set inverse across multiple cells
   if (typeof count === 'number' && count > 1) {
     var endX = Math.min(x + count, screenWidth);
     for (var i = x; i < endX; i++) {
@@ -215,8 +196,7 @@ window.pokeInverse = function(x, y, state, count) {
       updateDomCellInPlace(i, y);
     }
     return endX - x;
-  }
-  
+  }  
   // Single cell update - direct property access (fastest)
   styleBuffer[y][x].inverse = inverseState;
   updateDomCellInPlace(x, y);
@@ -980,7 +960,7 @@ window.sprite = window.createSprite = function(data) {
 };
 
 // DRAW - Draw sprite at position
-window.draw = window.drawSprite = function(sprite, x, y, styleObj, transparent) {
+window.draw = function(sprite, x, y, styleObj, transparent) {
   if (!sprite || !sprite.data) return 0;
   
   var count = 0;
@@ -1010,6 +990,88 @@ window.draw = window.drawSprite = function(sprite, x, y, styleObj, transparent) 
   }
   
   return count;
+};
+
+window.drawInputLine = function(text, writeCol, writeRow) {
+  var W = screenWidth;
+  var H = screenHeight;
+  
+  // this line of code is wrong
+  if (writeRow < 0 || writeRow >= H || writeCol >= W) return 0;
+
+  var curStyle = (typeof currentStyle === 'object' && currentStyle) ? currentStyle : { color: 37, bgcolor: 40 };
+  var idx = 0;
+  var rowOffset = 0;
+  var updated = 0;
+
+  // Batch DOM updates so we only paint once at the end
+  try { beginBatch(); } catch (e) { /* beginBatch may exist as begin(); ignore if not */ try { begin(); } catch(_) {} }
+
+  while (idx < text.length && (writeRow + rowOffset) < H) {
+    var y = writeRow + rowOffset;
+    var rowStartCol = (rowOffset === 0) ? writeCol : 0;
+    var avail = W - rowStartCol;
+    if (avail <= 0) break;
+
+    // Ensure buffers exist for this row
+    if (!screenBuffer[y]) {
+      screenBuffer[y] = new Array(W);
+      styleBuffer[y]  = new Array(W);
+      for (var xi = 0; xi < W; xi++) {
+        screenBuffer[y][xi] = '\u00A0';
+        styleBuffer[y][xi]  = { color: curStyle.color, bgcolor: curStyle.bgcolor, bold: false, inverse: false };
+      }
+    }
+
+    // Number of characters to write into this row
+    var writeCount = Math.min(avail, text.length - idx);
+
+    // Write contiguous block for this row
+    for (var i = 0; i < writeCount; i++) {
+      var x = rowStartCol + i;
+      var ch = text.charAt(idx + i) || '\u00A0';
+
+      var prevCh = screenBuffer[y][x];
+      var prevStyle = styleBuffer[y][x];
+
+      // Defensive init if missing
+      if (!prevStyle) {
+        prevStyle = { color: curStyle.color, bgcolor: curStyle.bgcolor, bold: false, inverse: false };
+        styleBuffer[y][x] = prevStyle;
+        if (typeof prevCh === 'undefined') prevCh = '\u00A0';
+        screenBuffer[y][x] = prevCh;
+      }
+
+      // Preserve prevStyle.inverse; only update non-inverse style props and char
+      var needUpdate = false;
+      if (prevCh !== ch) needUpdate = true;
+      else if (prevStyle.color !== curStyle.color) needUpdate = true;
+      else if (prevStyle.bgcolor !== curStyle.bgcolor) needUpdate = true;
+      else if (prevStyle.bold !== false) needUpdate = true;
+
+      if (needUpdate) {
+        screenBuffer[y][x] = ch;
+        prevStyle.color = curStyle.color;
+        prevStyle.bgcolor = curStyle.bgcolor;
+        prevStyle.bold = false;
+        // DO NOT touch prevStyle.inverse - preserve selection/highlight
+
+        updated++;
+      }
+    }
+
+    idx += writeCount;
+    rowOffset++;
+  }
+
+  // If we still want to blank trailing visible columns on the first row (after text),
+  // but preserve inverse, you can optionally write NBSPs for the remainder. This is omitted
+  // for max speed unless you need to explicitly clear old characters.
+
+  // Flush DOM updates once
+  try { endBatch(); } catch (e) { /* endBatch may exist as end(); ignore if not */ try { end(); } catch(_) {} }
+
+  return updated;
 };
 
 // ============================================================================
@@ -1165,6 +1227,3 @@ window.COLOR = {
 // Shorter aliases
 window.C = window.COLOR;
 
-// ============================================================================
-// END OF POKE.JS
-// ============================================================================

@@ -475,14 +475,29 @@ function setCursorToInputPos(offset) {
   cursorPos = offset;
 }
 
+// NEW VERSION - uses poke.js to clear visually:
 function deleteSelection() {
   if (selectionStart === -1 || selectionEnd === -1) return;
+  
   var s = Math.min(selectionStart, selectionEnd);
   var e = Math.max(selectionStart, selectionEnd);
+  var deleteLength = e - s;
+  
+  // Delete from line string
   line = line.substring(0, s) + line.substring(e);
   cursorPos = s;
   setCursorToInputPos(s);
-  selectionStart = -1; selectionEnd = -1;
+  
+  // Clear need to be checked to deleted region on screen using poke.js
+  var screenCoords = logicalToScreen(s);
+  pokeChar(screenCoords.col, screenCoords.row, ' ', deleteLength);
+  
+  // Clear selection state
+  selectionStart = -1; 
+  selectionEnd = -1;
+  
+  // Re-render the input line to show new content
+  renderInputLine();
 }
 
 function button(b, event) {
@@ -616,7 +631,7 @@ function button(b, event) {
           }
         } else {
           if (selectionStart !== -1 && selectionEnd !== -1) {
-            deleteSelection();
+            deleteSelection();  // <-- deleteSelection() doesn't re-render!
           } else if (cursorPos < line.length) {
             line = line.substring(0, cursorPos) + line.substring(cursorPos + 1);
           }
@@ -631,13 +646,16 @@ function button(b, event) {
             if (selectionStart === -1) selectionStart = cursorPos;
             cursorPos--;
             selectionEnd = cursorPos;
-            // Update cursor screen coordinates from logical position
-            var sc = inputPosToScreen(cursorPos);
-            cursorX = sc.x;
-            cursorY = sc.y;
-            // reflect selection visually
-            renderInputLine();
-            updateSelectionVisuals(selectionStart, selectionEnd);
+            if (cursorX > 0) {
+              cursorX--;
+            } else {
+              if (cursorY > 0) {
+                cursorY--; cursorX = screenWidth - 1;
+              } else {
+                cursorX = 0; cursorPos = 0; selectionEnd = 0;
+              }
+            }
+            pokeInverse(cursorX, cursorY, true);
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos--;
@@ -760,6 +778,7 @@ function button(b, event) {
             cursorPos = 0;
             inputStartX = cursorX; inputStartY = cursorY;
             if (typeof updateDisplay === 'function') updateDisplay();
+            cursor(1);   // <-- RE-ENABLE CURSOR after processing input
           } else {
             print("\n");
             if (line.slice(-3) === ".js") {
@@ -782,6 +801,7 @@ function button(b, event) {
               line = "";
               cursorPos = 0;
               inputStartX = cursorX; inputStartY = cursorY;
+              cursor(1);
             }
             if (typeof updateDisplay === 'function') updateDisplay();
           }
@@ -949,7 +969,6 @@ function renderInputLine() {
     if (cursorOn) cursor(1);
     return;
   }
-  cursor(0);
 
   // OPTIONAL: clear overlay footprint to avoid leftover characters when input shrinks.
   // Determine approximate rows touched and clear those cells to spaces.
@@ -968,11 +987,7 @@ function renderInputLine() {
       pokeInverse(c, rr, false);
     }
   }
-  draw(visibleText, writeCol, writeRow); 
-  // restore logical cursor location & show cursor
-  // cursorX = savedCursorX;
-  // cursorY = savedCursorY;
-  // if (savedCursorOn) cursor(1);
+  drawInputLine(visibleText, writeCol, writeRow);
 }
 
 
@@ -1544,13 +1559,12 @@ function triggerPaginationPause() {
 
 // logical index = position within `line` (0-based)
 function logicalToScreen(index) {
-  // Map a logical character index (0-based into `line`) to screen row/column
-  // using the input start coordinates. This is robust when inputStartX != 0.
   const charsPerLine = screenWidth;
-  const absCol = inputStartX + index;                   // absolute column across screen rows
-  const row = inputStartY + Math.floor(absCol / charsPerLine);
-  const col = absCol % charsPerLine;
-  return { row: row, col: col };
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  const rowOffset = Math.floor(index / charsPerLine);
+  const col = index % charsPerLine;
+  const row = baseRow + rowOffset;
+  return { row: row, col: col };  // col doesn't use inputStartX!
 }
 
 function syncCursorCoordsFromPos() {
@@ -1605,35 +1619,47 @@ function writeInputSegmentToScreenRow(targetRow, startIdx, length) {
 }
 
 // Update visual selection between selStart and selEnd (logical indices)
+
+// Update visual selection between selStart and selEnd (logical indices)
 function updateSelectionVisuals(selStart, selEnd) {
   if (selStart === -1 || selEnd === -1) return;
   if (selStart > selEnd) { const t = selStart; selStart = selEnd; selEnd = t; }
-  
-  // Calculate visible portion (matches renderInputLine logic, adjusted for inputStartX)
-  var visibleStart = Math.max(0, cursorPos - screenWidth + 1);
-  var maxVisible = screenWidth - inputStartX;  // Max chars that fit starting at inputStartX
-  var visibleEnd = Math.min(line.length, visibleStart + maxVisible);
-  
-  // Clear inverse for all visible input cells
-  for (let i = visibleStart; i < visibleEnd; i++) {
-    var localIndex = i - visibleStart;
-    var x = localIndex + inputStartX;
-    var y = inputStartY;
-    pokeInverse(x, y, false);
+  const charsPerLine = screenWidth;
+  for (let i = selStart; i < selEnd; i++) {
+    const { row, col } = logicalToScreen(i);
+    if (row < 0 || row >= screenHeight || col < 0 || col >= screenWidth) continue;
+    if (!styleBuffer[row]) continue;
+    if (!styleBuffer[row][col]) {
+      styleBuffer[row][col] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: false,
+        inverse: true
+      };
+      pokeCell(col, row);
+    } else if (!styleBuffer[row][col].inverse) {
+      styleBuffer[row][col].inverse = true;
+      pokeCell(col, row);
+    }
   }
-  
-  // Set inverse for the visible part of the selection
-  if (selStart < visibleEnd && selEnd > visibleStart) {
-    var start = Math.max(selStart, visibleStart);
-    var end = Math.min(selEnd, visibleEnd);
-    for (let i = start; i < end; i++) {
-      var localIndex = i - visibleStart;
-      var x = localIndex + inputStartX;
-      var y = inputStartY;
-      pokeInverse(x, y, true);
+  // Clear inverse for cells outside selection in visible area (optional clean pass)
+  // (you can optimize this to only clear previously-selected region)
+  const totalVisible = Math.min(Math.ceil(Math.max(1, line.length) / charsPerLine), screenHeight);
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  for (let r = baseRow; r < baseRow + totalVisible; r++) {
+    if (!styleBuffer[r]) continue;
+    for (let c = 0; c < screenWidth; c++) {
+      const logicalIndex = (r - baseRow) * charsPerLine + c;
+      if (logicalIndex < selStart || logicalIndex >= selEnd) {
+        if (styleBuffer[r][c] && styleBuffer[r][c].inverse) {
+          styleBuffer[r][c].inverse = false;
+          pokeCell(c, r);
+        }
+      }
     }
   }
 }
+
 function print(inputString) {
   inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
   txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
