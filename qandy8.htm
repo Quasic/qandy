@@ -94,14 +94,12 @@ async function powerOn() {
   bootAfterScripts();
 }
 
-function bootAfterScripts() {
-  initScreen();
-  initKeyboard(); 
-}
-
 // Start after DOM ready:
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', powerOn);
 else powerOn();
+
+function bootAfterScripts() {
+  
 
 function button(b, event) {
   // Resume pagination if paused
@@ -1940,5 +1938,7 @@ for (i=0;i<mySearch.length;i++) {
 }
 
 // if (SFiles) { showFiles(); }
+
+}
 
 </script></body></html>

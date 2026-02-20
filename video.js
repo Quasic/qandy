@@ -4,6 +4,7 @@
 // alert(JSON.stringify(peekStyle(y, x)));
 //
 
+initScreen();
 function initScreen(width, height, containerId) {
 
   window.W = 32; window.screenWidth = window.W;

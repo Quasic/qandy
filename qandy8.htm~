@@ -96,7 +96,6 @@ async function powerOn() {
 
 function bootAfterScripts() {
   initScreen();
-  initKeyboard(); 
 }
 
 // Start after DOM ready:
