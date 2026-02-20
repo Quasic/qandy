@@ -412,10 +412,27 @@ function highlightKey(keyCode) {
 function unhighlightKey(elementId) {
   var element = document.getElementById(elementId);
   if (!element) return;
-  
-  // Restore original background by clearing inline style
-  // This allows CSS stylesheet rules to take effect again
+
+  // Keep locked appearance if key is logically locked
+  if (elementId === 'caps' && caps) {
+    element.style.backgroundColor = '#fff';
+    element.style.color = '#000';
+    return;
+  }
+  if (elementId === 'ctrl' && (ctrl || ctrlPhysical)) {
+    element.style.backgroundColor = ctrlPhysical ? '#0a0' : '#fff';
+    element.style.color = '#000';
+    return;
+  }
+  if (elementId === 'alt' && (alt || altPhysical)) {
+    element.style.backgroundColor = altPhysical ? '#0a0' : '#fff';
+    element.style.color = '#000';
+    return;
+  }
+
+  // Not locked -> clear inline styles
   element.style.backgroundColor = '';
+  element.style.color = '';
 }
 
 tiles(); function tiles() {
