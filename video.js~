@@ -1,12 +1,8 @@
-
 //
 // Qandy Video Graphics Adaptor
-//
- 
-window.videoReady = new Promise(function(resolve) { window._resolveVideoReady = resolve;});
-
-// useful code
+// 
 // alert(JSON.stringify(peekStyle(y, x)));
+//
 
 function initScreen(width, height, containerId) {
 
@@ -1314,10 +1310,7 @@ window.COLOR = {
     return domUpdated;
   };
 
+
+// Shorter aliases
 window.C = window.COLOR;
 
-// video driver loaded
-if (typeof window._resolveVideoReady === 'function') {
-  window._resolveVideoReady();
-  try { delete window._resolveVideoReady; } catch (_) {}
-}
