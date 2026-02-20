@@ -67,8 +67,37 @@ var shiftedKeys = {
   '\\': '|', '`': '~'
 };
 
-// Extended graphic character mapping for caps level 2
-// User can edit these to customize extended characters for ASCII/ANSI art
+// ALT graphics mapping (ALT alone)
+var altGraphics = {
+  'q': '┌', 'w': '┬', 'e': '┐', 'r': '─', 't': '═',
+  'a': '├', 's': '┼', 'd': '┤', 'f': '│', 'g': '╞',
+  'z': '└', 'x': '┴', 'c': '┘', 'v': '╙', 'b': '╝',
+  'y': '╦', 'u': '╗', 'i': '═', 'o': '╣', 'p': '●',
+  'h': '╬', 'j': '╩', 'k': '║', 'l': '▬',
+  'n': '▀', 'm': '▄',
+  '1': '↑', '2': '↓', '3': '←', '4': '→', '5': '↔',
+  '6': '■', '7': '□', '8': '◆', '9': '○', '0': '●',
+  '[': '╞', ']': '╡', ';': '♦', "'": '♣',
+  ',': '◄', '.': '►', '/': '÷', '=': '×', '-': '±',
+  '\\': '¦', '`': '·', ' ': '·'  // space as middot
+};
+
+// ALT+SHIFT graphics mapping
+var altShiftGraphics = {
+  'q': '╔', 'w': '╤', 'e': '╗', 'r': '═', 't': '╦',
+  'a': '╟', 's': '╫', 'd': '╢', 'f': '║', 'g': '╠',
+  'z': '╚', 'x': '╧', 'c': '╝', 'v': '╘', 'b': '╜',
+  'y': '╥', 'u': '╖', 'i': '═', 'o': '╡', 'p': '●',
+  'h': '╬', 'j': '╨', 'k': '║', 'l': '▐',
+  'n': '▔', 'm': '▁',
+  '1': '⇑', '2': '⇓', '3': '⇐', '4': '⇒', '5': '↕',
+  '6': '█', '7': '▓', '8': '▒', '9': '░', '0': '■',
+  '[': '▌', ']': '▐', ';': '★', "'": '☆',
+  ',': '◢', '.': '◣', '/': '÷', '=': '✚', '-': '‑',
+  '\\': '¦', '`': '°', ' ': ' '  // space stays space
+};
+
+// the extended mappings can be deleted now?
 var extendedChars = {
   'q': '┌', 'w': '┬', 'e': '┐', 'r': '─', 't': '╔',
   'a': '├', 's': '┼', 'd': '┤', 'f': '│', 'g': '╠',
@@ -357,21 +386,53 @@ updateKeyLabels();
 }
 
 function updateKeyLabels() {
+  // Decide current modifier priority:
+  // If ALT active (virtual or physical) -> show ALT labels (shifted if Shift also active)
+  var altActive = !!alt || !!altPhysical;
+  var shiftActive = !!shift;
+  var capsActive = !!caps;
+
   keyboardData.forEach(function(key) {
     var el = document.getElementById(key.id);
     if (!el) return;
-    var base = el.dataset.keyChar; // canonical base char or ''
-    if (!base || base.length === 0) return; // nothing to update (modifier keys etc.)
-    var label;
-    if (caps) {
-      // prefer explicit mapping from shiftedKeys, otherwise uppercase letters
-      if (shiftedKeys.hasOwnProperty(base)) label = shiftedKeys[base];
-      else label = base.toUpperCase();
+    var base = el.dataset.keyChar; // single-char canonical base
+    if (!base || base.length === 0) return;
+
+    var label = base;
+
+    if (altActive) {
+      if (shiftActive && altShiftGraphics.hasOwnProperty(base)) {
+        label = altShiftGraphics[base];
+      } else if (altGraphics.hasOwnProperty(base)) {
+        label = altGraphics[base];
+      } else if (shiftActive && shiftedKeys.hasOwnProperty(base)) {
+        label = shiftedKeys[base];
+      } else if (capsActive && shiftedKeys.hasOwnProperty(base)) {
+        label = shiftedKeys[base];
+      } else if (normalKeys.hasOwnProperty(base)) {
+        label = normalKeys[base];
+      } else {
+        label = base;
+      }
     } else {
-      // normalKeys mapping or lowercase fallback
-      if (normalKeys.hasOwnProperty(base)) label = normalKeys[base];
-      else label = base.toLowerCase();
+      // No ALT: existing CAPS/SHIFT logic
+      if (capsActive) {
+        // caps acts like shift for letters
+        if (shiftActive) {
+          // shift xor caps already handled elsewhere; keep original behavior:
+          // If both shift and caps, makeLower (shift xor caps) logic elsewhere will produce actual typed char.
+          // For labels: show shifted label if shiftedKeys has it
+          label = shiftedKeys.hasOwnProperty(base) ? shiftedKeys[base] : base.toUpperCase();
+        } else {
+          label = shiftedKeys.hasOwnProperty(base) ? shiftedKeys[base] : base.toUpperCase();
+        }
+      } else {
+        // no caps: show shifted if shift is pressed (transient)
+        if (shiftActive && shiftedKeys.hasOwnProperty(base)) label = shiftedKeys[base];
+        else label = normalKeys.hasOwnProperty(base) ? normalKeys[base] : base;
+      }
     }
+
     el.innerHTML = label;
   });
 }
@@ -576,6 +637,7 @@ function button(b, event) {
     alt = !alt;
     var el2 = document.getElementById("alt");
     if (el2) { el2.style.backgroundColor = alt ? "#fff" : "#222"; el2.style.color = alt ? "#000" : "#fff"; }
+    updateKeyLabels();
     cursor(1);
     return;
   }
@@ -783,8 +845,22 @@ function button(b, event) {
         var finalChar = l;
         var hasCtrl = !!ctrl;
         var hasAlt = !!alt;
+        var hasAltShift = hasAltFlag && !!shift;
 
-        // Handle Ctrl+key combos before treating as printable
+        //if (hasAltFlag) {
+        //  var baseLower = (typeof l === 'string' && l.length > 0) ? l.toLowerCase() : '';
+        //  if (hasAltShift && altShiftGraphics.hasOwnProperty(baseLower)) {
+        //    finalChar = altShiftGraphics[baseLower];
+        //  } else if (altGraphics.hasOwnProperty(baseLower)) {
+        //    finalChar = altGraphics[baseLower];
+        //  } else {
+        //    // fallback: if no alt mapping, allow normal shifted behavior (shift or caps)
+        //    if (shift && shiftedKeys.hasOwnProperty(baseLower)) finalChar = shiftedKeys[baseLower];
+        //    else if (caps && shiftedKeys.hasOwnProperty(baseLower)) finalChar = shiftedKeys[baseLower];
+        //    else finalChar = l;
+        //  }
+        //}
+        
         if (hasCtrl) {
           ctrl = 0;
           var cel = document.getElementById("ctrl");
@@ -1006,7 +1082,9 @@ if (event.keyCode === 20) {
   caps = !!newCaps;
 
   // Update CAPS button visual
-  var capsEl = document.getElementById("kcaps") || document.getElementById("caps");
+  // var capsEWhen the ALT key when pressed on the virtual keyboard, it should enable and disable ALT mode like the CAPS key does. And while the ALT key is pressed on a physical keyboard it should highlight on the virtial keyboard display and change the letters on the keys to match their graphic symbol. 
+
+  l = document.getElementById("kcaps") || document.getElementById("caps");
   if (capsEl) {
     if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
     else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
@@ -1047,6 +1125,7 @@ if (event.keyCode === 20) {
   alt = 1; altPhysical = true;
   document.getElementById("alt").style.backgroundColor = "#0a0";
   document.getElementById("alt").style.color = "#000";
+  updateKeyLabels();
  }
  // For Ctrl+key combos, pass specific ones through to button() (Ctrl+C, Ctrl+V, Ctrl+A)
  // button() now handles them internally when ctrl flag is set
@@ -1081,11 +1160,12 @@ function pressup(event) {
  
  // Handle physical ALT key release (unhighlight)
  if (event.keyCode === 18 && altPhysical) {
-  alt = 0;
-  altPhysical = false;
-  document.getElementById("alt").style.backgroundColor = "#222";
-  document.getElementById("alt").style.color = "#fff";
-  return;
+   alt = 0;
+   altPhysical = false;
+   document.getElementById("alt").style.backgroundColor = "#222";
+   document.getElementById("alt").style.color = "#fff";
+   updateKeyLabels();
+   return;
  }
  
  // Route keyup to active script if run is set
