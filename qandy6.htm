@@ -314,6 +314,11 @@ initKeyboard(); function initKeyboard() {
   btn.id = key.id;
   btn.innerHTML = key.label;
   
+  // inside initKeyboard() after btn.innerHTML = key.label;
+  if (key.label === 'SPACE') btn.dataset.keyChar = ' ';
+  else if (key.label && key.label.length === 1) btn.dataset.keyChar = key.label;
+  else btn.dataset.keyChar = '';  
+  
   // Assign appropriate CSS class based on width
   if (key.width === 28) {
    btn.className = 'k1';
@@ -341,21 +346,34 @@ initKeyboard(); function initKeyboard() {
   if (key.id === 'ctrl' || key.id === 'alt') {
    btn.style.fontSize = '9px';
   }
-  
-  // Position the button
   btn.style.left = key.x + 'px';
   btn.style.top = key.y + 'px';
-  
-  // Add click handler
   btn.onclick = function() { button(key.keyCode); };
-  
-  // Append to keyboard container
   document.getElementById('keyboard-container').appendChild(btn);
  });
- 
- // Position the QPC and other elements
  document.getElementById("qpc").style.top = "32px"; 
  document.getElementById("qpc").style.left = "32px";
+updateKeyLabels();
+}
+
+function updateKeyLabels() {
+  keyboardData.forEach(function(key) {
+    var el = document.getElementById(key.id);
+    if (!el) return;
+    var base = el.dataset.keyChar; // canonical base char or ''
+    if (!base || base.length === 0) return; // nothing to update (modifier keys etc.)
+    var label;
+    if (caps) {
+      // prefer explicit mapping from shiftedKeys, otherwise uppercase letters
+      if (shiftedKeys.hasOwnProperty(base)) label = shiftedKeys[base];
+      else label = base.toUpperCase();
+    } else {
+      // normalKeys mapping or lowercase fallback
+      if (normalKeys.hasOwnProperty(base)) label = normalKeys[base];
+      else label = base.toLowerCase();
+    }
+    el.innerHTML = label;
+  });
 }
 
 // Create a mapping from keyCode to element ID for quick lookup
@@ -394,10 +412,27 @@ function highlightKey(keyCode) {
 function unhighlightKey(elementId) {
   var element = document.getElementById(elementId);
   if (!element) return;
-  
-  // Restore original background by clearing inline style
-  // This allows CSS stylesheet rules to take effect again
+
+  // Keep locked appearance if key is logically locked
+  if (elementId === 'caps' && caps) {
+    element.style.backgroundColor = '#fff';
+    element.style.color = '#000';
+    return;
+  }
+  if (elementId === 'ctrl' && (ctrl || ctrlPhysical)) {
+    element.style.backgroundColor = ctrlPhysical ? '#0a0' : '#fff';
+    element.style.color = '#000';
+    return;
+  }
+  if (elementId === 'alt' && (alt || altPhysical)) {
+    element.style.backgroundColor = altPhysical ? '#0a0' : '#fff';
+    element.style.color = '#000';
+    return;
+  }
+
+  // Not locked -> clear inline styles
   element.style.backgroundColor = '';
+  element.style.color = '';
 }
 
 tiles(); function tiles() {
@@ -551,6 +586,8 @@ function button(b, event) {
       if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
       else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
     }
+    // Update on-screen labels for letter keys
+    updateKeyLabels();
     cursor(1);
     return;
   }
@@ -945,6 +982,22 @@ document.addEventListener('paste', function (event) {
 });
 function press(event) { 
  key=""; k=event.keyCode; shift=event.shiftKey;
+
+ if (event.keyCode === 20) { // physical CapsLock pressed
+   // Use getModifierState to read actual CapsLock state (true if locked)
+   var physicalCapsOn = !!(event.getModifierState && event.getModifierState('CapsLock'));
+   caps = physicalCapsOn;
+   var capsEl = document.getElementById("kcaps") || document.getElementById("caps");
+   if (capsEl) {
+     if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
+     else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
+   }
+   updateKeyLabels();
+   // keep normal flashing/highlight behavior too
+   highlightKey(20);
+   button(20, event); // let existing button() logic run for consistency
+   return;
+ }
  if (event.keyCode === 18 || event.altKey) { event.preventDefault(); }
  if (event.keyCode === 27) { event.preventDefault(); }
  if (event.keyCode === 17 && !ctrl) {
