@@ -95,7 +95,6 @@ async function powerOn() {
 }
 
 function bootAfterScripts() {
-  console.log('powerOn: all scripts loaded (or attempted)');
   initScreen();
   initKeyboard(); 
 }
@@ -2225,8 +2224,6 @@ function ClickTile(Z) {
 function ClickChar(Z) {
  if (run) { MenuChar(Z); }
 }
-
-initScreen();
 
 // system ready
 
