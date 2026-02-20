@@ -3,6 +3,45 @@
 // alert(JSON.stringify(peekStyle(y, x)));
 //
 
+function initScreen() {
+  // respect existing (possibly preconfigured) screen dimensions
+  screenWidth = (typeof screenWidth === 'number' && screenWidth > 0) ? screenWidth : 32;
+  screenHeight = (typeof screenHeight === 'number' && screenHeight > 0) ? screenHeight : 25;
+
+  // create buffers sized to screen dimensions
+  screenBuffer = new Array(screenHeight);
+  styleBuffer  = new Array(screenHeight);
+
+  // capture default style values once (use primitives only)
+  var defaultColor = (currentStyle && typeof currentStyle.color !== 'undefined') ? currentStyle.color : 37;
+  var defaultBg    = (currentStyle && typeof currentStyle.bgcolor !== 'undefined') ? currentStyle.bgcolor : 40;
+
+  for (var y = 0; y < screenHeight; y++) {
+    // allocate rows
+    var rowChars = new Array(screenWidth);
+    var rowStyles = new Array(screenWidth);
+
+    // populate each cell explicitly with its own style object
+    for (var x = 0; x < screenWidth; x++) {
+      rowChars[x] = ' ';
+      rowStyles[x] = {
+        color: defaultColor,
+        bgcolor: defaultBg,
+        bold: false,
+        inverse: false
+      };
+    }
+
+    screenBuffer[y] = rowChars;
+    styleBuffer[y]  = rowStyles;
+  }
+
+  // initialize cursor state
+  cursorX = 0;
+  cursorY = 0;
+  cursorOn = 0;
+}
+
 function validateCoords(x, y) {
   return (typeof x === 'number' && typeof y === 'number' && 
           x >= 0 && y >= 0 && x < screenWidth && y < screenHeight);
@@ -1224,6 +1263,99 @@ window.COLOR = {
   BG_BRIGHT_WHITE: 107
 };
 
+// Primitive peek helpers for style attributes (emulated qandy memory access)
+
+// Return foreground color code (number) or undefined if out-of-bounds
+window.peekFg = function(x, y) {
+  if (!validateCoords(x, y)) return undefined;
+  var s = styleBuffer[y][x];
+  return s ? s.color : undefined;
+};
+
+// Return background color code (number) or undefined
+window.peekBg = function(x, y) {
+  if (!validateCoords(x, y)) return undefined;
+  var s = styleBuffer[y][x];
+  return s ? s.bgcolor : undefined;
+};
+
+// Return boolean inverse flag (true/false) or undefined
+window.peekInverse = function(x, y) {
+  if (!validateCoords(x, y)) return undefined;
+  var s = styleBuffer[y][x];
+  return s ? !!s.inverse : undefined;
+};
+
+// Return boolean bold flag (true/false) or undefined
+window.peekBold = function(x, y) {
+  if (!validateCoords(x, y)) return undefined;
+  var s = styleBuffer[y][x];
+  return s ? !!s.bold : undefined;
+};
+
+// Return a JSON string representing the style object for easy console printing
+window.peekStyleRaw = function(x, y) {
+  if (!validateCoords(x, y)) return undefined;
+  var s = styleBuffer[y][x];
+  if (!s) return undefined;
+  // Only return primitives (no functions) and keep key order stable
+  return JSON.stringify({
+    color: s.color,
+    bgcolor: s.bgcolor,
+    bold: !!s.bold,
+    inverse: !!s.inverse
+  });
+};
+
 // Shorter aliases
 window.C = window.COLOR;
 
+function applyStyleToDom(el, styleObj) {
+  if (!el) return;
+  // remove old ANSI color classes
+  removeAnsiColorClasses(el);
+  // add new ones if provided
+  if (styleObj && typeof styleObj.color !== 'undefined') {
+    el.classList.add('ansi-fg-' + String(styleObj.color));
+  }
+  if (styleObj && typeof styleObj.bgcolor !== 'undefined') {
+    el.classList.add('ansi-bg-' + String(styleObj.bgcolor));
+  }
+  // bold -> inline weight (repo CSS also has ansi-bold, but use inline to be immediate)
+  if (styleObj && styleObj.bold) {
+    el.style.fontWeight = 'bold';
+    el.classList.add('ansi-bold');
+  } else {
+    el.style.fontWeight = '';
+    el.classList.remove('ansi-bold');
+  }
+  // inverse: add a class to hint repo code; also swap colors if you want
+  if (styleObj && styleObj.inverse) {
+    el.classList.add('ansi-inverse');
+    // leave actual fg/bg class names; repo drawing code interprets inverse sometimes.
+  } else {
+    el.classList.remove('ansi-inverse');
+  }
+}
+
+function updateDomCellInPlace(x, y) {
+  try {
+    var elId = 'c' + y + '_' + x; // repo convention: c{row}_{col}
+    var el = document.getElementById(elId);
+    var ch = safeGet(window.screenBuffer, y, x);
+    var styleObj = safeGet(window.styleBuffer, y, x);
+     if (!el) return false;
+     // write char (use &nbsp; for space)
+    if (typeof ch === 'string') {
+      if (ch === '\u00A0' || ch === ' ') el.innerHTML = '&nbsp;';
+      else el.textContent = ch;
+    } else {
+      el.innerHTML = '&nbsp;';
+    }
+     applyStyleToDom(el, styleObj);
+    return true;
+  } catch (e) {
+    console.error('updateDomCellInPlace error:', e);
+    return false;
+  }
+}
