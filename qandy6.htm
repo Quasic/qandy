@@ -983,16 +983,54 @@ document.addEventListener('paste', function (event) {
 function press(event) { 
  key=""; k=event.keyCode; shift=event.shiftKey;
 
-if (event.keyCode === 20) { // physical CapsLock pressed
-  var physicalCapsOn = !!(event.getModifierState && event.getModifierState('CapsLock'));
-  caps = physicalCapsOn;
+// Handle physical CapsLock keypress (keyCode 20)
+if (event.keyCode === 20) {
+  // Determine the platform state if available
+  var platformState = (typeof event.getModifierState === 'function') ? !!event.getModifierState('CapsLock') : null;
+
+  // Compute the new desired caps state:
+  // - If platformState is available, use it.
+  // - But some browsers report the previous state on keydown; if platformState equals current caps,
+  //   assume the toggle has not yet been applied and flip it.
+  var newCaps;
+  if (platformState === null) {
+    newCaps = !caps; // no platform info -> just toggle
+  } else {
+    newCaps = platformState;
+    if (platformState === caps) {
+      // likely timing issue -> flip to reflect the user action
+      newCaps = !caps;
+    }
+  }
+
+  caps = !!newCaps;
+
+  // Update CAPS button visual
   var capsEl = document.getElementById("kcaps") || document.getElementById("caps");
   if (capsEl) {
     if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
     else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
   }
+
+  // Cancel any transient flash timeout for the CAPS element so it won't reapply a flash style
+  try {
+    if (keyTimeouts && keyTimeouts['caps']) { clearTimeout(keyTimeouts['caps']); delete keyTimeouts['caps']; }
+    // Also clear any stored flash marker on the element
+    if (capsEl) capsEl.dataset._flash = '';
+  } catch (e) { /* ignore */ }
+
+  // Ensure label updates
   if (typeof updateKeyLabels === 'function') updateKeyLabels();
-  highlightKey(20);
+
+  // If we just turned it off, explicitly unhighlight the element (clear inline styles)
+  if (!caps) {
+    unhighlightKey('caps');
+  } else {
+    // Ensure locked appearance
+    if (capsEl) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
+  }
+
+  // Prevent default browser handling side-effects and stop further processing for this key event
   event.preventDefault && event.preventDefault();
   return;
 }

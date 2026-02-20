@@ -983,21 +983,20 @@ document.addEventListener('paste', function (event) {
 function press(event) { 
  key=""; k=event.keyCode; shift=event.shiftKey;
 
- if (event.keyCode === 20) { // physical CapsLock pressed
-   // Use getModifierState to read actual CapsLock state (true if locked)
-   var physicalCapsOn = !!(event.getModifierState && event.getModifierState('CapsLock'));
-   caps = physicalCapsOn;
-   var capsEl = document.getElementById("kcaps") || document.getElementById("caps");
-   if (capsEl) {
-     if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
-     else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
-   }
-   updateKeyLabels();
-   // keep normal flashing/highlight behavior too
-   highlightKey(20);
-   button(20, event); // let existing button() logic run for consistency
-   return;
- }
+if (event.keyCode === 20) { // physical CapsLock pressed
+  var physicalCapsOn = !!(event.getModifierState && event.getModifierState('CapsLock'));
+  caps = physicalCapsOn;
+  var capsEl = document.getElementById("kcaps") || document.getElementById("caps");
+  if (capsEl) {
+    if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
+    else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
+  }
+  if (typeof updateKeyLabels === 'function') updateKeyLabels();
+  highlightKey(20);
+  event.preventDefault && event.preventDefault();
+  return;
+}
+
  if (event.keyCode === 18 || event.altKey) { event.preventDefault(); }
  if (event.keyCode === 27) { event.preventDefault(); }
  if (event.keyCode === 17 && !ctrl) {
