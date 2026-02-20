@@ -4,68 +4,6 @@
 // alert(JSON.stringify(peekStyle(y, x)));
 //
 
-function initScreen(width, height, containerId) {
-
-  window.W = 32; window.screenWidth = window.W;
-  window.H = 25; window.screenHeight = window.H;
-
-  var defaultColor = (window.currentStyle && typeof window.currentStyle.color !== 'undefined') ? window.currentStyle.color : 37;
-  var defaultBg    = (window.currentStyle && typeof window.currentStyle.bgcolor !== 'undefined') ? window.currentStyle.bgcolor : 40;
-
-  // allocate buffers
-  window.screenBuffer = new Array(window.screenHeight);
-  window.styleBuffer  = new Array(window.screenHeight);
-  window.domCellRefs  = new Array(window.screenHeight);
-
-  // find container (create if missing)
-  var txtEl = document.getElementById(containerId || 'txt');
-  if (!txtEl) {
-    txtEl = document.createElement('div');
-    txtEl.id = containerId || 'txt';
-    document.body.appendChild(txtEl);
-  }
-
-  // Build DOM grid into a fragment to minimize layout thrash
-  txtEl.innerHTML = '';
-  var frag = document.createDocumentFragment();
-
-  for (var y = 0; y < window.screenHeight; y++) {
-    var rowChars = new Array(window.screenWidth);
-    var rowStyles = new Array(window.screenWidth);
-    var rowRefs   = new Array(window.screenWidth);
-
-    var rowDiv = document.createElement('div');
-    rowDiv.className = 'qandy-row';
-
-    for (var x = 0; x < window.screenWidth; x++) {
-      rowChars[x] = '\u00A0';
-      rowStyles[x] = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
-
-      var cell = document.createElement('span');
-      cell.id = 'c' + y + '_' + x;
-      // set class names for default colors so CSS can style them immediately
-      cell.className = 'qandy-cell ansi-fg-' + defaultColor + ' ansi-bg-' + defaultBg;
-      cell.textContent = '\u00A0';
-      // small snapshot to avoid costly classList scans in hot path
-      cell._qandyStyle = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
-
-      rowDiv.appendChild(cell);
-      rowRefs[x] = cell;
-    }
-
-    frag.appendChild(rowDiv);
-    window.screenBuffer[y] = rowChars;
-    window.styleBuffer[y]  = rowStyles;
-    window.domCellRefs[y]  = rowRefs;
-  }
-
-  txtEl.appendChild(frag);
-  // expose cursor state if other code expects it
-  window.cursorX = window.cursorX || 0;
-  window.cursorY = window.cursorY || 0;
-  window.cursorOn = window.cursorOn || 0;
-}
-
 function validateCoords(x, y) {
   return (typeof x === 'number' && typeof y === 'number' && 
           x >= 0 && y >= 0 && x < screenWidth && y < screenHeight);
@@ -1412,3 +1350,65 @@ window.COLOR = {
 // shorter aliases for color constants
 window.C = window.COLOR;
 
+initScreen();
+function initScreen() {
+
+  window.W = 32; window.screenWidth = window.W;
+  window.H = 25; window.screenHeight = window.H;
+
+  var defaultColor = (window.currentStyle && typeof window.currentStyle.color !== 'undefined') ? window.currentStyle.color : 37;
+  var defaultBg    = (window.currentStyle && typeof window.currentStyle.bgcolor !== 'undefined') ? window.currentStyle.bgcolor : 40;
+
+  // allocate buffers
+  window.screenBuffer = new Array(window.screenHeight);
+  window.styleBuffer  = new Array(window.screenHeight);
+  window.domCellRefs  = new Array(window.screenHeight);
+
+  // find container (create if missing)
+  var txtEl = document.getElementById(containerId || 'txt');
+  if (!txtEl) {
+    txtEl = document.createElement('div');
+    txtEl.id = containerId || 'txt';
+    document.body.appendChild(txtEl);
+  }
+
+  // Build DOM grid into a fragment to minimize layout thrash
+  txtEl.innerHTML = '';
+  var frag = document.createDocumentFragment();
+
+  for (var y = 0; y < window.screenHeight; y++) {
+    var rowChars = new Array(window.screenWidth);
+    var rowStyles = new Array(window.screenWidth);
+    var rowRefs   = new Array(window.screenWidth);
+
+    var rowDiv = document.createElement('div');
+    rowDiv.className = 'qandy-row';
+
+    for (var x = 0; x < window.screenWidth; x++) {
+      rowChars[x] = '\u00A0';
+      rowStyles[x] = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
+
+      var cell = document.createElement('span');
+      cell.id = 'c' + y + '_' + x;
+      // set class names for default colors so CSS can style them immediately
+      cell.className = 'qandy-cell ansi-fg-' + defaultColor + ' ansi-bg-' + defaultBg;
+      cell.textContent = '\u00A0';
+      // small snapshot to avoid costly classList scans in hot path
+      cell._qandyStyle = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
+
+      rowDiv.appendChild(cell);
+      rowRefs[x] = cell;
+    }
+
+    frag.appendChild(rowDiv);
+    window.screenBuffer[y] = rowChars;
+    window.styleBuffer[y]  = rowStyles;
+    window.domCellRefs[y]  = rowRefs;
+  }
+
+  txtEl.appendChild(frag);
+  // expose cursor state if other code expects it
+  window.cursorX = window.cursorX || 0;
+  window.cursorY = window.cursorY || 0;
+  window.cursorOn = window.cursorOn || 0;
+}
