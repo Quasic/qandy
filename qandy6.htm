@@ -575,6 +575,7 @@ function button(b, event) {
     case 16: // SHIFT
       if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
       else shift = !shift;
+      if ((alt || altPhysical) && typeof updateKeyLabels === 'function') updateKeyLabels();
       cursor(1);
       return;
     case 17: k = "ctrl"; break;
@@ -1080,16 +1081,16 @@ if (event.keyCode === 20) {
   // var capsEWhen the ALT key when pressed on the virtual keyboard, it should enable and disable ALT mode like the CAPS key does. And while the ALT key is pressed on a physical keyboard it should highlight on the virtial keyboard display and change the letters on the keys to match their graphic symbol. 
 
   l = document.getElementById("kcaps") || document.getElementById("caps");
-  if (capsEl) {
-    if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
-    else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
+  if (l) {
+    if (caps) { l.style.backgroundColor = "#fff"; l.style.color = "#000"; }
+    else { l.style.backgroundColor = "#222"; l.style.color = "#fff"; }
   }
 
   // Cancel any transient flash timeout for the CAPS element so it won't reapply a flash style
   try {
     if (keyTimeouts && keyTimeouts['caps']) { clearTimeout(keyTimeouts['caps']); delete keyTimeouts['caps']; }
     // Also clear any stored flash marker on the element
-    if (capsEl) capsEl.dataset._flash = '';
+    if (l) l.dataset._flash = '';
   } catch (e) { /* ignore */ }
 
   // Ensure label updates
@@ -1100,7 +1101,7 @@ if (event.keyCode === 20) {
     unhighlightKey('caps');
   } else {
     // Ensure locked appearance
-    if (capsEl) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
+    if (l) { l.style.backgroundColor = "#fff"; l.style.color = "#000"; }
   }
 
   // Prevent default browser handling side-effects and stop further processing for this key event
@@ -1117,6 +1118,7 @@ if (event.keyCode === 20) {
   return;
  }
  if (event.keyCode === 18 && !alt) {
+  highlightKey(k);
   alt = 1; altPhysical = true;
   document.getElementById("alt").style.backgroundColor = "#0a0";
   document.getElementById("alt").style.color = "#000";
