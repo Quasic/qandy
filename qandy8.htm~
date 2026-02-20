@@ -597,13 +597,29 @@ function button(b, event) {
         cursor(1);
 
       } else if (k === "delete") {
-        // DELETE: forward-delete char at cursor (or delete selection)
+        // DELETE: forward-delete; SHIFT+DELETE: cut (copy+delete)
         cursor(0);
-        if (selectionStart !== -1 && selectionEnd !== -1) {
-          deleteSelection();
-        } else if (cursorPos < line.length) {
-          line = line.substring(0, cursorPos) + line.substring(cursorPos + 1);
-          // cursorPos/cursorX/cursorY stay the same
+        if (shift) {
+          var cutStart, cutEnd;
+          if (selectionStart !== -1 && selectionEnd !== -1) {
+            cutStart = Math.min(selectionStart, selectionEnd);
+            cutEnd = Math.max(selectionStart, selectionEnd);
+          } else {
+            cutStart = cursorPos;
+            cutEnd = line.length;
+          }
+          if (cutStart < cutEnd) {
+            navigator.clipboard.writeText(line.substring(cutStart, cutEnd)).catch(function(e){ console.warn('clipboard write failed', e); });
+            line = line.substring(0, cutStart) + line.substring(cutEnd);
+            cursorPos = cutStart;
+            setCursorToInputPos(cutStart);
+          }
+        } else {
+          if (selectionStart !== -1 && selectionEnd !== -1) {
+            deleteSelection();
+          } else if (cursorPos < line.length) {
+            line = line.substring(0, cursorPos) + line.substring(cursorPos + 1);
+          }
         }
         selectionStart = -1; selectionEnd = -1;
         renderInputLine();
@@ -620,8 +636,8 @@ function button(b, event) {
             cursorX = sc.x;
             cursorY = sc.y;
             // reflect selection visually
-            updateSelectionVisuals(selectionStart, selectionEnd);
             renderInputLine();
+            updateSelectionVisuals(selectionStart, selectionEnd);
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos--;
@@ -647,8 +663,8 @@ function button(b, event) {
             cursorX = sc.x;
             cursorY = sc.y;
             // reflect selection visually
-            updateSelectionVisuals(selectionStart, selectionEnd);
             renderInputLine();
+            updateSelectionVisuals(selectionStart, selectionEnd);
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos++;
@@ -658,17 +674,28 @@ function button(b, event) {
         }
         cursor(1);
       } else if (k === "home") {
-        // Move cursor to start of input line
-        selectionStart = -1; selectionEnd = -1;
-        cursorPos = 0;
-        var absCol = inputStartX + cursorPos;
-        cursorY = inputStartY + Math.floor(absCol / screenWidth);
-        cursorX = absCol % screenWidth; //@@
-        // clamp to screen bounds just in case
-        if (cursorY < 0) cursorY = 0;
-        if (cursorY >= screenHeight) cursorY = screenHeight - 1;
-        if (cursorX < 0) cursorX = 0;
-        if (cursorX >= screenWidth) cursorX = screenWidth - 1;
+        if (shift && cursorPos > 0) {
+          // SHIFT+HOME: extend selection to start of line
+          if (selectionStart === -1) selectionStart = cursorPos;
+          cursorPos = 0;
+          selectionEnd = 0;
+          var sc = inputPosToScreen(0);
+          cursorX = sc.x; cursorY = sc.y;
+          renderInputLine();
+          updateSelectionVisuals(selectionStart, selectionEnd);
+        } else {
+          // Regular HOME: move cursor to start, clear selection
+          selectionStart = -1; selectionEnd = -1;
+          cursorPos = 0;
+          var absCol = inputStartX + cursorPos;
+          cursorY = inputStartY + Math.floor(absCol / screenWidth);
+          cursorX = absCol % screenWidth; //@@
+          // clamp to screen bounds just in case
+          if (cursorY < 0) cursorY = 0;
+          if (cursorY >= screenHeight) cursorY = screenHeight - 1;
+          if (cursorX < 0) cursorX = 0;
+          if (cursorX >= screenWidth) cursorX = screenWidth - 1;
+        }
         cursor(1);
       } else if (k === "end") {
         // Move cursor to end of input line
@@ -1033,32 +1060,16 @@ function press(event) {
 }
 
   if (event.ctrlKey && (event.key === 'v' || event.key === 'V')) {
-    event.preventDefault(); // stop browser showing its paste/menu UI
-    // read from clipboard and insert using the same flow you use elsewhere
-   navigator.clipboard.readText().then(function(text) {
-     if (!text) return;
-    cursor(0);
-    if (selectionStart !== -1 && selectionEnd !== -1) deleteSelection();
-    selectionStart = -1; selectionEnd = -1;
-    line = (line || "").substring(0, cursorPos) + text + (line || "").substring(cursorPos);
-    cursorPos += text.length;
-    renderInputLine();         // keep visual update consistent
-    setCursorToInputPos(cursorPos);
-    cursor(1);
-    print("\x1b[32mPasted!\x1b[0m\n");
-  }).catch(function(err) {
-    // fallback / message on failure
-    print("\x1b[31mPaste failed\x1b[0m\n");
-  });
-
-  return; // consume the event so other handlers / browser don't run
-}
+    // Let the browser fire the native paste event (handled by the paste listener)
+    return;
+  }
 
  if (event.keyCode === 18 || event.altKey) { event.preventDefault(); }
  if (event.keyCode === 27) { event.preventDefault(); }
  if (event.keyCode === 16) {
   var capsBtn = document.getElementById("caps");
   if (capsBtn) { capsBtn.style.backgroundColor = "#444"; capsBtn.style.color = "#fff"; }
+  updateKeyLabels();
  }
  if (event.keyCode === 17 && !ctrl) {
   ctrl=1; ctrlPhysical=true;
@@ -1073,11 +1084,11 @@ function press(event) {
   document.getElementById("alt").style.color = "#000";
   updateKeyLabels();
  }
- // For Ctrl+key combos, pass specific ones through to button() (Ctrl+C, Ctrl+V, Ctrl+A)
- // button() now handles them internally when ctrl flag is set
+ // For Ctrl+key combos, pass specific ones through to button() (Ctrl+C, Ctrl+A)
+ // Ctrl+V is handled via the native paste event listener instead
  if (event.ctrlKey) {
   var ctrlKey = event.key ? event.key.toLowerCase() : '';
-  if (ctrlKey === 'c' || ctrlKey === 'v' || ctrlKey === 'a') {
+  if (ctrlKey === 'c' || ctrlKey === 'a') {
    event.preventDefault();
    highlightKey(k);
    button(k, event);
@@ -1533,13 +1544,26 @@ function triggerPaginationPause() {
 
 // logical index = position within `line` (0-based)
 function logicalToScreen(index) {
+  // Map a logical character index (0-based into `line`) to screen row/column
+  // using the input start coordinates. This is robust when inputStartX != 0.
   const charsPerLine = screenWidth;
-  // Calculate absolute column position accounting for where input started
-  const absCol = inputStartX + index;
-  const rowOffset = Math.floor(absCol / charsPerLine);
+  const absCol = inputStartX + index;                   // absolute column across screen rows
+  const row = inputStartY + Math.floor(absCol / charsPerLine);
   const col = absCol % charsPerLine;
-  const row = inputStartY + rowOffset;
   return { row: row, col: col };
+}
+
+function syncCursorCoordsFromPos() {
+  // Recompute cursorX/cursorY from cursorPos using inputPosToScreen helper
+  const sc = inputPosToScreen(cursorPos);
+  cursorX = sc.x;
+  cursorY = sc.y;
+  cursorPos = cursorPos; // unchanged
+  // visually re-place cursor using existing cursor() routine
+  if (cursorOn) {
+    cursor(0); // hide previous visual
+  }
+  cursor(1);   // show at new coords
 }
 
 function writeInputSegmentToScreenRow(targetRow, startIdx, length) {
@@ -1584,40 +1608,32 @@ function writeInputSegmentToScreenRow(targetRow, startIdx, length) {
 function updateSelectionVisuals(selStart, selEnd) {
   if (selStart === -1 || selEnd === -1) return;
   if (selStart > selEnd) { const t = selStart; selStart = selEnd; selEnd = t; }
-  const charsPerLine = screenWidth;
-  for (let i = selStart; i < selEnd; i++) {
-    const { row, col } = logicalToScreen(i);
-    if (row < 0 || row >= screenHeight || col < 0 || col >= screenWidth) continue;
-    if (!styleBuffer[row]) continue;
-    if (!styleBuffer[row][col]) {
-      styleBuffer[row][col] = {
-        color: currentStyle.color,
-        bgcolor: currentStyle.bgcolor,
-        bold: false,
-        inverse: true
-      };
-      
-    } else if (!styleBuffer[row][col].inverse) {
-      pokeInverse(col, row, true);
-    }
+  
+  // Calculate visible portion (matches renderInputLine logic, adjusted for inputStartX)
+  var visibleStart = Math.max(0, cursorPos - screenWidth + 1);
+  var maxVisible = screenWidth - inputStartX;  // Max chars that fit starting at inputStartX
+  var visibleEnd = Math.min(line.length, visibleStart + maxVisible);
+  
+  // Clear inverse for all visible input cells
+  for (let i = visibleStart; i < visibleEnd; i++) {
+    var localIndex = i - visibleStart;
+    var x = localIndex + inputStartX;
+    var y = inputStartY;
+    pokeInverse(x, y, false);
   }
-  // Clear inverse for cells outside selection in visible area (optional clean pass)
-  // (you can optimize this to only clear previously-selected region)
-  const totalVisible = Math.min(Math.ceil(Math.max(1, line.length) / charsPerLine), screenHeight);
-  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
-  for (let r = baseRow; r < baseRow + totalVisible; r++) {
-    if (!styleBuffer[r]) continue;
-    for (let c = 0; c < screenWidth; c++) {
-      const logicalIndex = (r - baseRow) * charsPerLine + c;
-      if (logicalIndex < selStart || logicalIndex >= selEnd) {
-        if (styleBuffer[r][c] && styleBuffer[r][c].inverse) {
-          pokeInverse(c, r, false);
-        }
-      }
+  
+  // Set inverse for the visible part of the selection
+  if (selStart < visibleEnd && selEnd > visibleStart) {
+    var start = Math.max(selStart, visibleStart);
+    var end = Math.min(selEnd, visibleEnd);
+    for (let i = start; i < end; i++) {
+      var localIndex = i - visibleStart;
+      var x = localIndex + inputStartX;
+      var y = inputStartY;
+      pokeInverse(x, y, true);
     }
   }
 }
-
 function print(inputString) {
   inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
   txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;

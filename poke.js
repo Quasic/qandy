@@ -64,7 +64,7 @@ function updateDomCellInPlace(x, y) {
   }
 }
 
-// ============================================================================
+// ==============n updateDomCellInPlace==============================================================
 // PRIMARY POKE FUNCTIONS - Character, Color, and Style
 // ============================================================================
 
@@ -196,8 +196,8 @@ window.peekStyle = function(x, y) {
 
 // POKEINVERSE - Toggle inverse video (white on black <-> black on white)
 // Most common style operation for text selection and highlighting
+
 window.pokeInverse = function(x, y, state, count) {
-  // Getter mode
   if (typeof state === 'undefined') {
     return validateCoords(x, y) ? styleBuffer[y][x].inverse : undefined;
   }
@@ -1113,7 +1113,6 @@ window.profile = window.profilePoke = function(testName, iterations, testFunc) {
     (iterations / time * 1000).toFixed(0) + ' ops/sec)';
   
   print(result);
-  console.log(result);
   
   return time;
 };

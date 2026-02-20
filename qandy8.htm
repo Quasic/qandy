@@ -1608,29 +1608,32 @@ function writeInputSegmentToScreenRow(targetRow, startIdx, length) {
 function updateSelectionVisuals(selStart, selEnd) {
   if (selStart === -1 || selEnd === -1) return;
   if (selStart > selEnd) { const t = selStart; selStart = selEnd; selEnd = t; }
-  const charsPerLine = screenWidth;
-  const totalAbsCols = inputStartX + (line ? line.length : 0);
-  const totalVisibleRows = Math.max(1, Math.ceil(totalAbsCols / charsPerLine));
-
-  for (let r = inputStartY; r < inputStartY + totalVisibleRows; r++) {
-    if (!styleBuffer[r]) continue;
-    for (let c = 0; c < charsPerLine; c++) {
-      // Compute logical index corresponding to this (r,c)
-      const absCol = (r - inputStartY) * charsPerLine + c;
-      const logicalIndex = absCol - inputStartX;
-      if (logicalIndex >= selStart && logicalIndex < selEnd) {
-        // Inside selection: apply inverse highlight
-        if (styleBuffer[r][c] && !styleBuffer[r][c].inverse) {
-          pokeInverse(c, r, true);
-        }
-      } else if (styleBuffer[r][c] && styleBuffer[r][c].inverse) {
-        // Outside selection: clear inverse
-        pokeInverse(c, r, false);
-      }
+  
+  // Calculate visible portion (matches renderInputLine logic, adjusted for inputStartX)
+  var visibleStart = Math.max(0, cursorPos - screenWidth + 1);
+  var maxVisible = screenWidth - inputStartX;  // Max chars that fit starting at inputStartX
+  var visibleEnd = Math.min(line.length, visibleStart + maxVisible);
+  
+  // Clear inverse for all visible input cells
+  for (let i = visibleStart; i < visibleEnd; i++) {
+    var localIndex = i - visibleStart;
+    var x = localIndex + inputStartX;
+    var y = inputStartY;
+    pokeInverse(x, y, false);
+  }
+  
+  // Set inverse for the visible part of the selection
+  if (selStart < visibleEnd && selEnd > visibleStart) {
+    var start = Math.max(selStart, visibleStart);
+    var end = Math.min(selEnd, visibleEnd);
+    for (let i = start; i < end; i++) {
+      var localIndex = i - visibleStart;
+      var x = localIndex + inputStartX;
+      var y = inputStartY;
+      pokeInverse(x, y, true);
     }
   }
 }
-
 function print(inputString) {
   inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
   txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
