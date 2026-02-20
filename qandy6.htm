@@ -13,6 +13,7 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
 
 <script src="dos.js"></script>
 <script src="menus.js"></script>
+<script src="keyboard.js"></script>
 <script>
 var devteam=1;  // developer mode
 
@@ -35,83 +36,6 @@ var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
-// Normal character mapping for lowercase (caps level 0)
-// User can edit these to customize keyboard layout
-var normalKeys = {
-  '1': '1', '2': '2', '3': '3', '4': '4', '5': '5',
-  '6': '6', '7': '7', '8': '8', '9': '9', '0': '0',
-  'q': 'q', 'w': 'w', 'e': 'e', 'r': 'r', 't': 't',
-  'y': 'y', 'u': 'u', 'i': 'i', 'o': 'o', 'p': 'p',
-  'a': 'a', 's': 's', 'd': 'd', 'f': 'f', 'g': 'g',
-  'h': 'h', 'j': 'j', 'k': 'k', 'l': 'l',
-  'z': 'z', 'x': 'x', 'c': 'c', 'v': 'v', 'b': 'b',
-  'n': 'n', 'm': 'm',
-  '[': '[', ']': ']', ';': ';', '\'': '\'',
-  ',': ',', '.': '.', '/': '/', '=': '=', '-': '-',
-  '\\': '\\', '`': '`'
-};
-
-// Shifted character mapping for uppercase and symbols (caps level 1)
-// User can edit these to customize shifted key behavior
-var shiftedKeys = {
-  '1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
-  '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
-  'q': 'Q', 'w': 'W', 'e': 'E', 'r': 'R', 't': 'T',
-  'y': 'Y', 'u': 'U', 'i': 'I', 'o': 'O', 'p': 'P',
-  'a': 'A', 's': 'S', 'd': 'D', 'f': 'F', 'g': 'G',
-  'h': 'H', 'j': 'J', 'k': 'K', 'l': 'L',
-  'z': 'Z', 'x': 'X', 'c': 'C', 'v': 'V', 'b': 'B',
-  'n': 'N', 'm': 'M',
-  '[': '{', ']': '}', ';': ':', '\'': '"',
-  ',': '<', '.': '>', '/': '?', '=': '+', '-': '_',
-  '\\': '|', '`': '~'
-};
-
-// ALT graphics mapping (ALT alone)
-var altGraphics = {
-  'q': '┌', 'w': '┬', 'e': '┐', 'r': '─', 't': '═',
-  'a': '├', 's': '┼', 'd': '┤', 'f': '│', 'g': '╞',
-  'z': '└', 'x': '┴', 'c': '┘', 'v': '╙', 'b': '╝',
-  'y': '╦', 'u': '╗', 'i': '═', 'o': '╣', 'p': '●',
-  'h': '╬', 'j': '╩', 'k': '║', 'l': '▬',
-  'n': '▀', 'm': '▄',
-  '1': '↑', '2': '↓', '3': '←', '4': '→', '5': '↔',
-  '6': '■', '7': '□', '8': '◆', '9': '○', '0': '●',
-  '[': '╞', ']': '╡', ';': '♦', "'": '♣',
-  ',': '◄', '.': '►', '/': '÷', '=': '×', '-': '±',
-  '\\': '¦', '`': '·', ' ': '·'  // space as middot
-};
-
-// ALT+SHIFT graphics mapping
-var altShiftGraphics = {
-  'q': '╔', 'w': '╤', 'e': '╗', 'r': '═', 't': '╦',
-  'a': '╟', 's': '╫', 'd': '╢', 'f': '║', 'g': '╠',
-  'z': '╚', 'x': '╧', 'c': '╝', 'v': '╘', 'b': '╜',
-  'y': '╥', 'u': '╖', 'i': '═', 'o': '╡', 'p': '●',
-  'h': '╬', 'j': '╨', 'k': '║', 'l': '▐',
-  'n': '▔', 'm': '▁',
-  '1': '⇑', '2': '⇓', '3': '⇐', '4': '⇒', '5': '↕',
-  '6': '█', '7': '▓', '8': '▒', '9': '░', '0': '■',
-  '[': '▌', ']': '▐', ';': '★', "'": '☆',
-  ',': '◢', '.': '◣', '/': '÷', '=': '✚', '-': '‑',
-  '\\': '¦', '`': '°', ' ': ' '  // space stays space
-};
-
-// the extended mappings can be deleted now?
-var extendedChars = {
-  'q': '┌', 'w': '┬', 'e': '┐', 'r': '─', 't': '╔',
-  'a': '├', 's': '┼', 'd': '┤', 'f': '│', 'g': '╠',
-  'z': '└', 'x': '┴', 'c': '┘', 'v': '╚', 'b': '╝',
-  'y': '╦', 'u': '╗', 'i': '═', 'o': '╣',
-  'h': '╬', 'j': '╩', 'k': '║', 'l': '▬',
-  'n': '▀', 'm': '▄',
-  'p': '●', '1': '↑', '2': '↓', '3': '←', '4': '→',
-  '5': '■', '6': '□', '7': '◆', '8': '○',
-  '9': '★', '0': '☆', '[': '♠', ']': '♥',
-  ';': '♦', '\'': '♣', ',': '✓', '.': '✗',
-  '/': '÷', '=': '×', '-': '±', ' ': '·',
-  '\\': '¦', '`': '`'
-};
 var line=""; // input text line
 // Track where input line started on screen (set when input begins / after ENTER)
 var inputStartX = 0;
@@ -433,7 +357,7 @@ function updateKeyLabels() {
       }
     }
 
-    el.innerHTML = label;
+    el.innerHTML = (label === ' ' && base === ' ') ? 'SPACE' : label;
   });
 }
 
@@ -575,6 +499,7 @@ function button(b, event) {
     case 16: // SHIFT
       if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
       else shift = !shift;
+      if ((alt || altPhysical) && typeof updateKeyLabels === 'function') updateKeyLabels();
       cursor(1);
       return;
     case 17: k = "ctrl"; break;
@@ -1080,16 +1005,16 @@ if (event.keyCode === 20) {
   // var capsEWhen the ALT key when pressed on the virtual keyboard, it should enable and disable ALT mode like the CAPS key does. And while the ALT key is pressed on a physical keyboard it should highlight on the virtial keyboard display and change the letters on the keys to match their graphic symbol. 
 
   l = document.getElementById("kcaps") || document.getElementById("caps");
-  if (capsEl) {
-    if (caps) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
-    else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
+  if (l) {
+    if (caps) { l.style.backgroundColor = "#fff"; l.style.color = "#000"; }
+    else { l.style.backgroundColor = "#222"; l.style.color = "#fff"; }
   }
 
   // Cancel any transient flash timeout for the CAPS element so it won't reapply a flash style
   try {
     if (keyTimeouts && keyTimeouts['caps']) { clearTimeout(keyTimeouts['caps']); delete keyTimeouts['caps']; }
     // Also clear any stored flash marker on the element
-    if (capsEl) capsEl.dataset._flash = '';
+    if (l) l.dataset._flash = '';
   } catch (e) { /* ignore */ }
 
   // Ensure label updates
@@ -1100,7 +1025,7 @@ if (event.keyCode === 20) {
     unhighlightKey('caps');
   } else {
     // Ensure locked appearance
-    if (capsEl) { capsEl.style.backgroundColor = "#fff"; capsEl.style.color = "#000"; }
+    if (l) { l.style.backgroundColor = "#fff"; l.style.color = "#000"; }
   }
 
   // Prevent default browser handling side-effects and stop further processing for this key event
@@ -1110,6 +1035,10 @@ if (event.keyCode === 20) {
 
  if (event.keyCode === 18 || event.altKey) { event.preventDefault(); }
  if (event.keyCode === 27) { event.preventDefault(); }
+ if (event.keyCode === 16) {
+  var capsBtn = document.getElementById("caps");
+  if (capsBtn) { capsBtn.style.backgroundColor = "#444"; capsBtn.style.color = "#fff"; }
+ }
  if (event.keyCode === 17 && !ctrl) {
   ctrl=1; ctrlPhysical=true;
   document.getElementById("ctrl").style.backgroundColor = "#0a0";
@@ -1117,6 +1046,7 @@ if (event.keyCode === 20) {
   return;
  }
  if (event.keyCode === 18 && !alt) {
+  highlightKey(k);
   alt = 1; altPhysical = true;
   document.getElementById("alt").style.backgroundColor = "#0a0";
   document.getElementById("alt").style.color = "#000";
@@ -1152,7 +1082,15 @@ function pressup(event) {
   document.getElementById("ctrl").style.color = "#fff";
   return;
  }
- 
+
+ // Handle physical SHIFT key release (unhighlight CAPS unless caps mode is active)
+ if (event.keyCode === 16) {
+  shift = 0;
+  if (typeof updateKeyLabels === 'function') updateKeyLabels();
+  if (!caps) { unhighlightKey('caps'); }
+  return;
+ }
+
  // Handle physical ALT key release (unhighlight)
  if (event.keyCode === 18 && altPhysical) {
    alt = 0;
