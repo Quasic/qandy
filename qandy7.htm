@@ -936,7 +936,7 @@ function renderInputLine() {
         for (var zi = 0; zi < W; zi++) styleBuffer[rr][zi] = { color:37, bgcolor:40, bold:false, inverse:false };
       }
       screenBuffer[rr][c] = ' ';
-      styleBuffer[rr][c].inverse = false;
+      pokeInverse(c, rr, false);
     }
   }
   draw(visibleText, writeCol, writeRow); 
@@ -1577,8 +1577,7 @@ function updateSelectionVisuals(selStart, selEnd) {
       };
       
     } else if (!styleBuffer[row][col].inverse) {
-      styleBuffer[row][col].inverse = true;
-      pokeCell(col, row);
+      pokeInverse(col, row, true);
     }
   }
   // Clear inverse for cells outside selection in visible area (optional clean pass)
@@ -1591,8 +1590,7 @@ function updateSelectionVisuals(selStart, selEnd) {
       const logicalIndex = (r - baseRow) * charsPerLine + c;
       if (logicalIndex < selStart || logicalIndex >= selEnd) {
         if (styleBuffer[r][c] && styleBuffer[r][c].inverse) {
-          styleBuffer[r][c].inverse = false;
-          pokeCell(c, r);
+          pokeInverse(c, r, false);
         }
       }
     }
@@ -1629,9 +1627,6 @@ function draw(inputString, startX, startY) {
   var locX = (typeof startX === 'number') ? startX : 0;
   var locY = (typeof startY === 'number') ? startY : 0;
 
-  // Changed cells list for targeted DOM updates
-  var changed = [];
-
   // Parse ANSI tokens
   const tokens = parseANSIString(inputString);
 
@@ -1655,23 +1650,14 @@ function draw(inputString, startX, startY) {
         for (let i = 0; i < screenWidth; i++) styleBuffer[locY][i] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold:false, inverse:false };
       }
       if (token.mode === 0) {
-        for (let x = locX; x < screenWidth; x++) {
-          screenBuffer[locY][x] = ' ';
-          styleBuffer[locY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
-          changed.push({x:x,y:locY});
-        }
+        pokeChar(locX, locY, ' ', screenWidth - locX);
+        pokeStyle(locX, locY, currentStyle, screenWidth - locX);
       } else if (token.mode === 1) {
-        for (let x = 0; x <= locX; x++) {
-          screenBuffer[locY][x] = ' ';
-          styleBuffer[locY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
-          changed.push({x:x,y:locY});
-        }
+        pokeChar(0, locY, ' ', locX + 1);
+        pokeStyle(0, locY, currentStyle, locX + 1);
       } else if (token.mode === 2) {
-        for (let x = 0; x < screenWidth; x++) {
-          screenBuffer[locY][x] = ' ';
-          styleBuffer[locY][x] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold: currentStyle.bold, inverse: currentStyle.inverse };
-          changed.push({x:x,y:locY});
-        }
+        pokeChar(0, locY, ' ', screenWidth);
+        pokeStyle(0, locY, currentStyle, screenWidth);
       }
       continue;
     }
@@ -1694,14 +1680,7 @@ function draw(inputString, startX, startY) {
 
     // Write into buffers if visible
     if (locX >= 0 && locX < screenWidth && locY >= 0 && locY < screenHeight) {
-      screenBuffer[locY][locX] = ch;
-      styleBuffer[locY][locX] = {
-        color: currentStyle.color,
-        bgcolor: currentStyle.bgcolor,
-        bold: currentStyle.bold,
-        inverse: currentStyle.inverse
-      };
-      changed.push({x:locX,y:locY});
+      pokeCell(locX, locY, ch, currentStyle);
       locX++;
       if (locX >= screenWidth) {
         locX = 0;
@@ -2491,9 +2470,8 @@ function cursorMoveTo(nx, ny) {
       }
     }
     // prevCursor = { set: true, x: cursorX, y: cursorY, inverse: !!styleBuffer[cursorY][cursorX].inverse };
-    styleBuffer[cursorY][cursorX].inverse = true;
-    pokeCell(old.x, old.y);
-    pokeCell(cursorX, cursorY);
+    pokeInverse(old.x, old.y, false);
+    pokeInverse(cursorX, cursorY, true);
   } else {
     // cursor isn't shown — just update logical coords
   }
@@ -2502,18 +2480,10 @@ function cursorMoveTo(nx, ny) {
 function cls() { 
   const defaultColor = (currentStyle && currentStyle.color) ? currentStyle.color : 37;
   const defaultBg    = (currentStyle && currentStyle.bgcolor) ? currentStyle.bgcolor : 40;
+  const clearStyle   = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
   for (let y = 0; y < screenHeight; y++) {
-    const rowChars = screenBuffer[y];
-    const rowStyles = styleBuffer[y];
-    // Fill row contents
-    for (let x = 0; x < screenWidth; x++) {
-      rowChars[x] = ' ';
-      // reuse the existing object slot but set fields to defaults to avoid extra allocations
-      rowStyles[x].color  = defaultColor;
-      rowStyles[x].bgcolor = defaultBg;
-      rowStyles[x].bold   = false;
-      rowStyles[x].inverse = false;
-    }
+    pokeChar(0, y, ' ', screenWidth);
+    pokeStyle(0, y, clearStyle, screenWidth);
   }
   cursorX = 0;
   cursorY = 0;
