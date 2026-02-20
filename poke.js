@@ -4,8 +4,9 @@
 //
 
 function initScreen(width, height, containerId) {
-  window.screenWidth = (typeof width === 'number' && width > 0) ? width : window.screenWidth;
-  window.screenHeight = (typeof height === 'number' && height > 0) ? height : window.screenHeight;
+
+  window.W = 32; window.screenWidth = window.W;
+  window.H = 25; window.screenHeight = window.H;
 
   var defaultColor = (window.currentStyle && typeof window.currentStyle.color !== 'undefined') ? window.currentStyle.color : 37;
   var defaultBg    = (window.currentStyle && typeof window.currentStyle.bgcolor !== 'undefined') ? window.currentStyle.bgcolor : 40;

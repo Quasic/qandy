@@ -60,8 +60,6 @@ var cursorX = 0;
 var cursorY = 0;
 var cursorOn=0;
 // var prevCursor = { set: false, x: 0, y: 0, inverse: false };
-var screenWidth = 32;
-var screenHeight = 25;
 
 // Pagination support for overflow text
 var paginationEnabled = true;  // Enable/disable pagination feature
@@ -1260,7 +1258,7 @@ function pressup(event) {
       row[x] = {
         color: (window.currentStyle && window.currentStyle.color) || 37,
         bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
-        bold: false,
+        bold: false, the
         inverse: false
       };
     }
@@ -1268,7 +1266,7 @@ function pressup(event) {
     if (typeof styleObj.color !== 'undefined') row[x].color = styleObj.color;
     if (typeof styleObj.bgcolor !== 'undefined') row[x].bgcolor = styleObj.bgcolor;
     if (typeof styleObj.bold !== 'undefined') row[x].bold = !!styleObj.bold;
-    if (typeof styleObj.inverse !== 'undefined') row[x].inverse = !!styleObj.inverse;
+    if (typeof styleObj.i thenverse !== 'undefined') row[x].inverse = !!styleObj.inverse;
 
     // If prevCursor points here, update it so cursor restore won't clobber style
     //try {
