@@ -247,23 +247,30 @@ const ANSI = {
   }
 };
 
-
-function loadInOrder(list) {
-  function loadNext(i) {
-    if (i >= list.length) return;
+powerOn(); function powerOn() {
+  startup=["video.js", "keyboard.js", "dos.js"]
+  for (i=0; i<startup.length; i++) {
     var s = document.createElement('script');
     s.src = list[i];
     s.onload = function() { loadNext(i+1); };
     s.onerror = function() { console.error('Script load failed:', list[i]); loadNext(i+1); };
     document.head.appendChild(s);
   }
-  loadNext(0);
-})([
-  'video.js',
-  'keyboard.js',
-  'dos.js'
-]);
-</script>
+}
+
+var s = document.createElement('script');
+s.src = "keyboad.js";
+s.onload = function() { loadNext(i+1); };
+s.onerror = function() { console.error('Script load failed:', list[i]); loadNext(i+1); };
+document.head.appendChild(s);
+
+var s = document.createElement('script');
+s.src = "dos.js";
+s.onload = function() { loadNext(i+1); };
+s.onerror = function() { console.error('Script load failed:', list[i]); loadNext(i+1); };
+document.head.appendChild(s);
+
+
 
 img=document.createElement('img');
 img.id="qpc"; img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAMklEQVRYhe3OMQEAMAjEwKei2wHxRQbLxUCu3u2fxc7mHAAAAAAAAAAAAAAAAAAAIEkGzIgCpxq6s7YAAAAASUVORK5CYII="; 
