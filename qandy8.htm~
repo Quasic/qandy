@@ -80,63 +80,29 @@ var mapx=7;
 var mapy=11;
 var map="";
 
-function powerOn() {
+async function powerOn() {
   const startup = ['video.js', 'keyboard.js', 'dos.js'];
-  let i = 0;
-
-  function loadNext() {
-    if (i >= startup.length) {
-      bootAfterScripts();
-      return;
-    }
-    const src = startup[i++];
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = function () {
-      console.log('Loaded', src);
-      loadNext();
-    };
-    s.onerror = function (e) {
-      console.error('Script load failed:', src, e);
-      // continue to next script (best-effort)
-      loadNext();
-    };
-    document.head.appendChild(s);
+  for (const src of startup) {
+    await new Promise(resolve => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload  = () => { console.log('Loaded', src); resolve(); };
+      s.onerror = (e) => { console.error('Failed', src, e); resolve(); }; // continue despite failure
+      document.head.appendChild(s);
+    });
   }
-
-  loadNext();
+  bootAfterScripts();
 }
 
 function bootAfterScripts() {
   console.log('powerOn: all scripts loaded (or attempted)');
-  // Safe initialization that depends on those scripts:
-  if (typeof initScreen === 'function') {
-    try { initScreen(window.screenWidth || 32, window.screenHeight || 25, 'txt'); }
-    catch (e) { console.warn('initScreen failed', e); }
-  }
-  if (typeof initKeyboard === 'function') {
-    try { initKeyboard(); }
-    catch (e) { console.warn('initKeyboard failed', e); }
-  }
-  // add other inits as needed
+  initScreen();
+  initKeyboard(); 
 }
 
 // Start after DOM ready:
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', powerOn);
 else powerOn();
-
-var s = document.createElement('script');
-s.src = "keyboad.js";
-s.onload = function() { loadNext(i+1); };
-s.onerror = function() { console.error('Script load failed:', list[i]); loadNext(i+1); };
-document.head.appendChild(s);
-
-var s = document.createElement('script');
-s.src = "dos.js";
-s.onload = function() { loadNext(i+1); };
-s.onerror = function() { console.error('Script load failed:', list[i]); loadNext(i+1); };
-document.head.appendChild(s);
-
 
 
 img=document.createElement('img');
