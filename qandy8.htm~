@@ -1035,23 +1035,24 @@ function press(event) {
   if (event.ctrlKey && (event.key === 'v' || event.key === 'V')) {
     event.preventDefault(); // stop browser showing its paste/menu UI
     // read from clipboard and insert using the same flow you use elsewhere
-    navigator.clipboard.readText().then(function(text) {
-      if (!text) return;
-      cursor(0);
-      if (selectionStart !== -1 && selectionEnd !== -1) deleteSelection();
-      selectionStart = -1; selectionEnd = -1;
-      line = (line || "").substring(0, cursorPos) + text + (line || "").substring(cursorPos);
-      cursorPos += text.length;
-      renderInputLine();         // keep visual update consistent
-      setCursorToInputPos(cursorPos);
-      cursor(1);
-      print("\x1b[32mPasted!\x1b[0m\n");
-    }).catch(function(err) {
-      // fallback / message on failure
-      print("\x1b[31mPaste failed\x1b[0m\n");
-    });
-    return; // consume the event so other handlers / browser don't run
-  }
+   navigator.clipboard.readText().then(function(text) {
+     if (!text) return;
+    cursor(0);
+    if (selectionStart !== -1 && selectionEnd !== -1) deleteSelection();
+    selectionStart = -1; selectionEnd = -1;
+    line = (line || "").substring(0, cursorPos) + text + (line || "").substring(cursorPos);
+    cursorPos += text.length;
+    renderInputLine();         // keep visual update consistent
+    setCursorToInputPos(cursorPos);
+    cursor(1);
+    print("\x1b[32mPasted!\x1b[0m\n");
+  }).catch(function(err) {
+    // fallback / message on failure
+    print("\x1b[31mPaste failed\x1b[0m\n");
+  });
+
+  return; // consume the event so other handlers / browser don't run
+}
 
  if (event.keyCode === 18 || event.altKey) { event.preventDefault(); }
  if (event.keyCode === 27) { event.preventDefault(); }
@@ -1532,26 +1533,13 @@ function triggerPaginationPause() {
 
 // logical index = position within `line` (0-based)
 function logicalToScreen(index) {
-  // Map a logical character index (0-based into `line`) to screen row/column
-  // using the input start coordinates. This is robust when inputStartX != 0.
   const charsPerLine = screenWidth;
-  const absCol = inputStartX + index;                   // absolute column across screen rows
-  const row = inputStartY + Math.floor(absCol / charsPerLine);
+  // Calculate absolute column position accounting for where input started
+  const absCol = inputStartX + index;
+  const rowOffset = Math.floor(absCol / charsPerLine);
   const col = absCol % charsPerLine;
+  const row = inputStartY + rowOffset;
   return { row: row, col: col };
-}
-
-function syncCursorCoordsFromPos() {
-  // Recompute cursorX/cursorY from cursorPos using inputPosToScreen helper
-  const sc = inputPosToScreen(cursorPos);
-  cursorX = sc.x;
-  cursorY = sc.y;
-  cursorPos = cursorPos; // unchanged
-  // visually re-place cursor using existing cursor() routine
-  if (cursorOn) {
-    cursor(0); // hide previous visual
-  }
-  cursor(1);   // show at new coords
 }
 
 function writeInputSegmentToScreenRow(targetRow, startIdx, length) {
@@ -1597,21 +1585,20 @@ function updateSelectionVisuals(selStart, selEnd) {
   if (selStart === -1 || selEnd === -1) return;
   if (selStart > selEnd) { const t = selStart; selStart = selEnd; selEnd = t; }
   const charsPerLine = screenWidth;
-  const totalAbsCols = inputStartX + (line ? line.length : 0);
-  const totalVisibleRows = Math.max(1, Math.ceil(totalAbsCols / charsPerLine));
-
-  for (let r = inputStartY; r < inputStartY + totalVisibleRows; r++) {
-    if (!styleBuffer[r]) continue;
-    for (let c = 0; c < charsPerLine; c++) {
-      // Compute logical index corresponding to this (r,c)
-      const absCol = (r - inputStartY) * charsPerLine + c;
-      const logicalIndex = absCol - inputStartX;
-      if (logicalIndex < selStart || logicalIndex >= selEnd) {
-        if (styleBuffer[r][c] && styleBuffer[r][c].inverse) {
-          styleBuffer[r][c].inverse = false;
-          pokeCell(c, r);
-        }
-      }
+  for (let i = selStart; i < selEnd; i++) {
+    const { row, col } = logicalToScreen(i);
+    if (row < 0 || row >= screenHeight || col < 0 || col >= screenWidth) continue;
+    if (!styleBuffer[row]) continue;
+    if (!styleBuffer[row][col]) {
+      styleBuffer[row][col] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: false,
+        inverse: true
+      };
+      
+    } else if (!styleBuffer[row][col].inverse) {
+      pokeInverse(col, row, true);
     }
   }
   // Clear inverse for cells outside selection in visible area (optional clean pass)
