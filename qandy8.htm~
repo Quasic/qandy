@@ -1682,86 +1682,6 @@ function print(inputString) {
   if (wasKeyon) { keyson(); }
 }
 
-function draw(inputString, startX, startY) {
-  if (!screenBuffer || screenBuffer.length === 0) initScreen();
-
-  // Use top-left when coords omitted (developer wants full-screen direct-write)
-  var locX = (typeof startX === 'number') ? startX : 0;
-  var locY = (typeof startY === 'number') ? startY : 0;
-
-  // Parse ANSI tokens
-  const tokens = parseANSIString(inputString);
-
-  for (const token of tokens) {
-    if (token.type === 'code') {
-      applyANSICode(token.codes);
-      continue;
-    }
-
-    if (token.type === 'cursor') {
-      // CUP token: move local cursor (0-based)
-      locY = Math.min(Math.max(0, token.row), screenHeight - 1);
-      locX = Math.min(Math.max(0, token.col), screenWidth - 1);
-      continue;
-    }
-
-    if (token.type === 'clearline') {
-      if (!screenBuffer[locY]) {
-        screenBuffer[locY] = new Array(screenWidth).fill(' ');
-        styleBuffer[locY] = new Array(screenWidth);
-        for (let i = 0; i < screenWidth; i++) styleBuffer[locY][i] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold:false, inverse:false };
-      }
-      if (token.mode === 0) {
-        pokeChar(locX, locY, ' ', screenWidth - locX);
-        pokeStyle(locX, locY, currentStyle, screenWidth - locX);
-      } else if (token.mode === 1) {
-        pokeChar(0, locY, ' ', locX + 1);
-        pokeStyle(0, locY, currentStyle, locX + 1);
-      } else if (token.mode === 2) {
-        pokeChar(0, locY, ' ', screenWidth);
-        pokeStyle(0, locY, currentStyle, screenWidth);
-      }
-      continue;
-    }
-
-    // token.type === 'char'
-    const ch = token.value;
-    if (ch === '\n') {
-      locX = 0;
-      locY++;
-      if (locY >= screenHeight) { locY = screenHeight - 1; break; }
-      continue;
-    }
-
-    // Ensure row exists
-    if (!screenBuffer[locY]) {
-      screenBuffer[locY] = new Array(screenWidth).fill(' ');
-      styleBuffer[locY] = new Array(screenWidth);
-      for (let i = 0; i < screenWidth; i++) styleBuffer[locY][i] = { color: currentStyle.color, bgcolor: currentStyle.bgcolor, bold:false, inverse:false };
-    }
-
-    // Write into buffers if visible
-    if (locX >= 0 && locX < screenWidth && locY >= 0 && locY < screenHeight) {
-      pokeCell(locX, locY, ch, currentStyle);
-      locX++;
-      if (locX >= screenWidth) {
-        locX = 0;
-        locY++;
-        if (locY >= screenHeight) { locY = screenHeight - 1; break; }
-      }
-    } else {
-      // horizontal wrap behavior
-      if (locX < 0 || locX >= screenWidth) {
-        locX = 0;
-        locY++;
-        if (locY >= screenHeight) { locY = screenHeight - 1; break; }
-      }
-    }
-  } // end tokens loop
-  updateDisplay();
-  return { x: locX, y: locY };  
-}
-
 function resumePagination() {
   // Clear the pause message by removing last few lines
   if (screenBuffer.length > 0) {
@@ -2659,9 +2579,10 @@ function ClickChar(Z) {
  if (run) { MenuChar(Z); }
 }
 
+initScreen();
+
 // system ready
 
-initScreen(); 
 function clearScreen() { cls(); }
 
 window.ANSI=ANSI;
