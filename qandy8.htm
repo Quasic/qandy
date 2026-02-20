@@ -9,6 +9,10 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
 <div id="pop" class="pop" onMouseOver='PopUpVis="visible";' onMouseOut='PopUpVis=PForce; PUV=setTimeout("document.getElementById(\"pop\").style.visibility=PopUpVis;",100);'></div>
 <div id="keyboard-container"></div>
 
+<script src="video.js" defer></script>
+<script src="keyboard.js" defer></script>
+<script src="dos.js" defer></script>
+
 <script>
 var devteam=1;  // developer mode
 
@@ -28,7 +32,7 @@ var shift=0; // shift key pressed
 var ctrl=0;  // ctrl key pressed
 var alt=0;   // alt key pressed
 var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
-var altPhysical=false;   // track if alt was activated by physical keyboard
+7var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
 var line=""; // input text line
@@ -79,27 +83,7 @@ var PForce="hidden";
 var mapx=7;
 var mapy=11;
 var map="";
-
-async function powerOn() {
-  const startup = ['video.js', 'keyboard.js', 'dos.js'];
-  for (const src of startup) {
-    await new Promise(resolve => {
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload  = () => { console.log('Loaded', src); resolve(); };
-      s.onerror = (e) => { console.error('Failed', src, e); resolve(); }; // continue despite failure
-      document.head.appendChild(s);
-    });
-  }
-  bootAfterScripts();
-}
-
-// Start after DOM ready:
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', powerOn);
-else powerOn();
-
-function bootAfterScripts() {
-  
+ 
 
 function button(b, event) {
   // Resume pagination if paused
@@ -1938,7 +1922,5 @@ for (i=0;i<mySearch.length;i++) {
 }
 
 // if (SFiles) { showFiles(); }
-
-}
 
 </script></body></html>
