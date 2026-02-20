@@ -25,6 +25,45 @@ function safeGet(arr, y, x) {
   return (arr && arr[y]) ? arr[y][x] : undefined;
 }
 
+function updateDomCellInPlace(x, y) {
+  try {
+    var elId = 'c' + y + '_' + x; // repo convention: c{row}_{col}
+    var el = document.getElementById(elId);
+    var ch = safeGet(window.screenBuffer, y, x);
+    var styleObj = safeGet(window.styleBuffer, y, x);
+
+    if (!el) return false;
+
+    // write char (use &nbsp; for space)
+    if (typeof ch === 'string') {
+      if (ch === '\u00A0' || ch === ' ') el.innerHTML = '&nbsp;';
+      else el.textContent = ch;
+    } else {
+      el.innerHTML = '&nbsp;';
+    }
+
+    // apply styling helper (must exist in your codebase)
+    if (typeof applyStyleToDom === 'function') {
+      applyStyleToDom(el, styleObj);
+    } else {
+      // fallback minimal styling if helper missing
+      if (styleObj && styleObj.inverse) {
+        el.style.backgroundColor = '#fff';
+        el.style.color = '#000';
+      } else {
+        el.style.backgroundColor = '';
+        el.style.color = '';
+      }
+      el.style.fontWeight = (styleObj && styleObj.bold) ? 'bold' : '';
+    }
+
+    return true;
+  } catch (e) {
+    console.error('updateDomCellInPlace error:', e);
+    return false;
+  }
+}
+
 // ============================================================================
 // PRIMARY POKE FUNCTIONS - Character, Color, and Style
 // ============================================================================
