@@ -874,7 +874,7 @@ function print(inputString) {
 function print(inputString) {
   inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
   txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
-  var wasKeyon = !!keyon;
+  var wasKeyon = !!window.keyon;
   keysoff(); cursor(0);
   var end=pokeText(cursorX, cursorY, inputString);
   window.cursorX = end.x; window.cursorY = end.y;
