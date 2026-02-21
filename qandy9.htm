@@ -10,17 +10,12 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
 <div id="keyboard-container"></div>
 
 <script>
-
-// 
-// Global Variables
-//
+// Define Global Variables
 
 var devteam=1;  // developer mode
 var run="";
-var RAM="";           // Current file content in memory
-var RAMFILE="";       // Current filename loaded in RAM
-var RAMTYPE="";       // Current file type (js, txt, etc)
 
+// video.js
 var screenBuffer = [];
 var cursorX = 0;
 var cursorY = 0;
@@ -45,6 +40,7 @@ mapx=7;
 var mapy=11;
 var map="";
 
+// keyboard.js
 var keyon=1;
 var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
@@ -70,6 +66,12 @@ var selectionEnd = -1;    // End position of selection
 var selectionBgColor = '#ffffff';   // Selection background color
 var selectionFgColor = '#000000';   // Selection text color
 
+// dos.js
+var RAM="";           // Current file content in memory
+var RAMFILE="";       // Current filename loaded in RAM
+var RAMTYPE="";       // Current file type (js, txt, etc)
+
+// stray code
 var paginationEnabled = true;  // Enable/disable pagination feature
 var paginationPaused = false;  // Is print() currently paused?
 var paginationBuffer = [];     // Queued text waiting to be printed
