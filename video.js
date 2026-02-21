@@ -4,6 +4,19 @@
 // alert(JSON.stringify(peekStyle(y, x)));
 //
 
+var screenBuffer = [];
+var cursorX = 0;
+var cursorY = 0;
+var cursorOn=0;
+
+var styleBuffer = [];
+var currentStyle = {
+  color: 37,      // white foreground
+  bgcolor: 40,    // black background
+  bold: false,
+  inverse: false
+};
+
 function validateCoords(x, y) {
   return (typeof x === 'number' && typeof y === 'number' && 
           x >= 0 && y >= 0 && x < screenWidth && y < screenHeight);
@@ -1406,3 +1419,8 @@ txtEl.appendChild(frag);
 window.cursorX = window.cursorX || 0;
 window.cursorY = window.cursorY || 0;
 window.cursorOn = window.cursorOn || 0;
+
+// Signal that video.js is ready
+if (typeof window.qandySignalReady === 'function') {
+  window.qandySignalReady('Video');
+}

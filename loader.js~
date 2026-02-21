@@ -1,23 +1,9 @@
-<!DOCTYPE html>
-<html><head>
-<script>
-if (typeof window.print === 'function' && window.print.toString().indexOf('[native code]') !== -1) { window._native_print = window.print; window.print = function() {}; }
-</script>
-<link rel="stylesheet" type="text/css" href="qandy.css">
-</head><body><p><br>
-<div id=txt class="txt"></div>
-<div id="pop" class="pop" onMouseOver='PopUpVis="visible";' onMouseOut='PopUpVis=PForce; PUV=setTimeout("document.getElementById(\"pop\").style.visibility=PopUpVis;",100);'></div>
-<div id="keyboard-container"></div>
-
-<!-- Sequential script loader (inlined from loader.js) -->
-<script>
 (function() {
   'use strict';
 
   // Configuration array with script load order
   var SCRIPT_QUEUE = [
     { src: 'video.js', name: 'Video' },
-    { src: 'gfx.js', name: 'Graphics' },
     { src: 'keyboard.js', name: 'Keyboard' },
     { src: 'dos.js', name: 'DOS', optional: true },
     { src: 'qandy.js', name: 'Qandy Core' }
@@ -89,6 +75,3 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
     loadNext();
   }
 })();
-</script>
-
-</body></html>

@@ -1368,43 +1368,46 @@ txtEl = document.createElement('div');
 txtEl.id = 'txt';
 document.body.appendChild(txtEl);
 
-  // Build DOM grid into a fragment to minimize layout thrash
-  txtEl.innerHTML = '';
-  var frag = document.createDocumentFragment();
+// Build DOM grid into a fragment to minimize layout thrash
+txtEl.innerHTML = '';
+var frag = document.createDocumentFragment();
 
-  for (var y = 0; y < window.screenHeight; y++) {
-    var rowChars = new Array(window.screenWidth);
-    var rowStyles = new Array(window.screenWidth);
-    var rowRefs   = new Array(window.screenWidth);
+for (var y = 0; y < window.screenHeight; y++) {
+  var rowChars = new Array(window.screenWidth);
+  var rowStyles = new Array(window.screenWidth);
+  var rowRefs   = new Array(window.screenWidth);
 
-    var rowDiv = document.createElement('div');
-    rowDiv.className = 'qandy-row';
+  var rowDiv = document.createElement('div');
+  rowDiv.className = 'qandy-row';
 
-    for (var x = 0; x < window.screenWidth; x++) {
-      rowChars[x] = '\u00A0';
-      rowStyles[x] = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
+  for (var x = 0; x < window.screenWidth; x++) {
+    rowChars[x] = '\u00A0';
+    rowStyles[x] = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
 
-      var cell = document.createElement('span');
-      cell.id = 'c' + y + '_' + x;
-      // set class names for default colors so CSS can style them immediately
-      cell.className = 'qandy-cell ansi-fg-' + defaultColor + ' ansi-bg-' + defaultBg;
-      cell.textContent = '\u00A0';
-      // small snapshot to avoid costly classList scans in hot path
-      cell._qandyStyle = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
+    var cell = document.createElement('span');
+    cell.id = 'c' + y + '_' + x;
+    // set class names for default colors so CSS can style them immediately
+    cell.className = 'qandy-cell ansi-fg-' + defaultColor + ' ansi-bg-' + defaultBg;
+    cell.textContent = '\u00A0';
+    // small snapshot to avoid costly classList scans in hot path
+    cell._qandyStyle = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
 
-      rowDiv.appendChild(cell);
-      rowRefs[x] = cell;
-    }
-
-    frag.appendChild(rowDiv);
-    window.screenBuffer[y] = rowChars;
-    window.styleBuffer[y]  = rowStyles;
-    window.domCellRefs[y]  = rowRefs;
+    rowDiv.appendChild(cell);
+    rowRefs[x] = cell;
   }
 
-  txtEl.appendChild(frag);
-  // expose cursor state if other code expects it
-  window.cursorX = window.cursorX || 0;
-  window.cursorY = window.cursorY || 0;
-  window.cursorOn = window.cursorOn || 0;
+  frag.appendChild(rowDiv);
+  window.screenBuffer[y] = rowChars;
+  window.styleBuffer[y]  = rowStyles;
+  window.domCellRefs[y]  = rowRefs;
+}
 
+txtEl.appendChild(frag);
+window.cursorX = window.cursorX || 0;
+window.cursorY = window.cursorY || 0;
+window.cursorOn = window.cursorOn || 0;
+
+// Signal that video.js is ready
+if (typeof window.qandySignalReady === 'function') {
+  window.qandySignalReady('Video');
+}

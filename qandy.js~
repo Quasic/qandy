@@ -1084,7 +1084,7 @@ function updateSelectionVisuals(selStart, selEnd) {
     } else if (!styleBuffer[row][col].inverse) {
       styleBuffer[row][col].inverse = true;
       pokeCell(col, row);
-    }typeof keysoff typeof window.keysoff
+    }
   }
   // Clear inverse for cells outside selection in visible area (optional clean pass)
   // (you can optimize this to only clear previously-selected region)
@@ -1880,3 +1880,8 @@ for (i=0;i<mySearch.length;i++) {
 }
 
 // if (SFiles) { showFiles(); }
+
+// Signal that qandy.js is ready
+if (typeof window.qandySignalReady === 'function') {
+  window.qandySignalReady('Qandy Core');
+}

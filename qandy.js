@@ -1,48 +1,12 @@
-var devteam=1;  // developer mode
 
+var devteam=1;  // developer mode
 var run="";
-var txt="";
-var mode="txt"; // gfx or txt display
-var allowScriptESC=false; // if true, script handles ESC instead of universal termination
 
 // RAM - Working memory for file editing
 var RAM="";           // Current file content in memory
 var RAMFILE="";       // Current filename loaded in RAM
 var RAMTYPE="";       // Current file type (js, txt, etc)
 
-var keyon=1;
-var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
-var shift=0; // shift key pressed  
-var ctrl=0;  // ctrl key pressed
-var alt=0;   // alt key pressed
-var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
-var altPhysical=false;   // track if alt was activated by physical keyboard
-var keyboard=1; // turn keyboard input on/off
-
-var line=""; // input text line
-// Track where input line started on screen (set when input begins / after ENTER)
-var inputStartX = 0;
-var inputStartY = 0;
-var cursorPos=0; // cursor position in input line for editing
-var inputScrollPos=0; // starting position of visible input window
-
-// Command history support (like Linux terminal)
-var commandHistory = [];  // Array to store command history
-var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)
-var maxHistorySize = 50;  // Maximum number of commands to remember
-var tempCommand = "";     // Temporary storage for command being typed when browsing history
-
-// Text selection state
-var selectionStart = -1;  // Start position of selection (-1 = no selection)
-var selectionEnd = -1;    // End position of selection
-var selectionBgColor = '#ffffff';   // Selection background color
-var selectionFgColor = '#000000';   // Selection text color
-
-var screenBuffer = [];
-var cursorX = 0;
-var cursorY = 0;
-var cursorOn=0;
-// var prevCursor = { set: false, x: 0, y: 0, inverse: false };
 
 // Pagination support for overflow text
 var paginationEnabled = true;  // Enable/disable pagination feature
@@ -51,23 +15,6 @@ var paginationBuffer = [];     // Queued text waiting to be printed
 var paginationLinesBeforePause = 25;  // Lines to show before pausing
 var inInputMode = false;       // True when processing user input (prevents pagination)
 
-var styleBuffer = [];
-var currentStyle = {
-  color: 37,      // white foreground
-  bgcolor: 40,    // black background
-  bold: false,
-  inverse: false
-};
-
-var PopX=0;
-var PopY=0;
-var PopHide="hidden";
-var PopAlign="center";
-var PForce="hidden";
-var mapx=7;
-var mapy=11;
-var map="";
- 
 
 function button(b, event) {
   // Resume pagination if paused
@@ -1880,3 +1827,8 @@ for (i=0;i<mySearch.length;i++) {
 }
 
 // if (SFiles) { showFiles(); }
+
+// Signal that qandy.js is ready
+if (typeof window.qandySignalReady === 'function') {
+  window.qandySignalReady('Qandy Core');
+}
