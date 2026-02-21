@@ -1424,7 +1424,7 @@ function updateDisplay() {
   }
   lineHtml += '</span><br>';
   htmlContent += lineHtml;
-}
+}}
 
 txtEl.appendChild(frag);
 window.cursorX = window.cursorX || 0;

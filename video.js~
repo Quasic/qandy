@@ -1407,8 +1407,6 @@ function updateDisplay() {
       bold: currentStyle.bold,
       inverse: currentStyle.inverse
     };
-
-    // Build the class list for the character (map your ANSI to classes)
     const classes = [];
     if (style.inverse) {
       classes.push('ansi-inverse');
@@ -1417,18 +1415,13 @@ function updateDisplay() {
       classes.push(`ansi-bg-${style.bgcolor}`);
     }
     if (style.bold) classes.push('ansi-bold');
-
-    // Escape char for HTML; keep spaces as &nbsp;
     const escapedChar = (ch === ' ') ? '&nbsp;' :
                         (ch === '&') ? '&amp;' :
                         (ch === '<') ? '&lt;' :
                         (ch === '>') ? '&gt;' :
                         ch;
-
-    // Give each cell an id so it can be updated independently later.
     lineHtml += `<span id="c${y}_${x}" class="${classes.join(' ')}">${escapedChar}</span>`;
   }
-
   lineHtml += '</span><br>';
   htmlContent += lineHtml;
 }
