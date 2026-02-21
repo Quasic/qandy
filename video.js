@@ -625,6 +625,7 @@ window.clear = window.clearRegion = function(x, y, width, height) {
 
 function renderInputLine() {
   pokeText(inputStartX, inputStartY, line);
+  updateDisplay();
 }
 
 window.pokeText = function(x, y, text) {
@@ -641,6 +642,7 @@ window.pokeText = function(x, y, text) {
     currentX++;
     count++;
   }
+  updateDisplay();
   return count;
 };
 
@@ -1355,60 +1357,54 @@ function updateDisplay() {
   }
 
   for (let y = 0; y < rowsToRender; y++) {
-  // ensure row arrays exist (same as before)
-  if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
-  if (!styleBuffer[y]) {
-    styleBuffer[y] = new Array(screenWidth);
+    // ensure row arrays exist (same as before)
+    if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
+    if (!styleBuffer[y]) {
+      styleBuffer[y] = new Array(screenWidth);
+      for (let x = 0; x < screenWidth; x++) {
+        styleBuffer[y][x] = {
+          color: currentStyle.color,
+          bgcolor: currentStyle.bgcolor,
+          bold: currentStyle.bold,
+          inverse: currentStyle.inverse
+        };
+      }
+    }
+
+    let lineHtml = '<span class="qandy-line">';
+
     for (let x = 0; x < screenWidth; x++) {
-      styleBuffer[y][x] = {
+      const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
+      const style = styleBuffer[y][x] || {
         color: currentStyle.color,
         bgcolor: currentStyle.bgcolor,
         bold: currentStyle.bold,
         inverse: currentStyle.inverse
       };
+      const classes = [];
+      if (style.inverse) {
+        classes.push('ansi-inverse');
+      } else {
+        classes.push(`ansi-fg-${style.color}`);
+        classes.push(`ansi-bg-${style.bgcolor}`);
+      }
+      if (style.bold) classes.push('ansi-bold');
+
+      const escapedChar = (ch === ' ') ? '&nbsp;' :
+                          (ch === '&') ? '&amp;' :
+                          (ch === '<') ? '&lt;' :
+                          (ch === '>') ? '&gt;' :
+                          escapeChar(ch);
+
+      lineHtml += `<span id="c${y}_${x}" class="${classes.join(' ')}">${escapedChar}</span>`;
     }
+
+    lineHtml += '</span><br>';
+    htmlContent += lineHtml;
   }
 
-  let lineHtml = '<span class="qandy-line">';
-
-  for (let x = 0; x < screenWidth; x++) {
-    const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
-    const style = styleBuffer[y][x] || {
-      color: currentStyle.color,
-      bgcolor: currentStyle.bgcolor,
-      bold: currentStyle.bold,
-      inverse: currentStyle.inverse
-    };
-    const classes = [];
-    if (style.inverse) {
-      classes.push('ansi-inverse');
-    } else {
-      classes.push(`ansi-fg-${style.color}`);   // adjust names to match your CSS
-      classes.push(`ansi-bg-${style.bgcolor}`);
-    }
-    if (style.bold) classes.push('ansi-bold');
-    const escapedChar = (ch === ' ') ? '&nbsp;' :
-                        (ch === '&') ? '&amp;' :
-                        (ch === '<') ? '&lt;' :
-                        (ch === '>') ? '&gt;' :
-                       print() function?
-
-function print(inputString) {
-  inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
-  // old debug code, may or may not remove
-  txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
-  var wasKeyon = !!keyon;
-  keysoff();
-  cursor(0);
-  var end=pokeText(cursorX, cursorY, inputString); cursorX = end.x; cursorY = end.y;
-  if (wasKeyon) { keyson(); }
+  if (txtElement) txtElement.innerHTML = htmlContent;
 }
-  ch;
-    lineHtml += `<span id="c${y}_${x}" class="${classes.join(' ')}">${escapedChar}</span>`;
-  }
-  lineHtml += '</span><br>';
-  htmlContent += lineHtml;
-}}
 
 txtEl.appendChild(frag);
 window.cursorX = window.cursorX || 0;
