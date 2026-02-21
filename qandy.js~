@@ -160,10 +160,10 @@ function button(b, event) {
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos--;
-            if (cursorX==0) {
-              cursorY--; cursorX=screenWidth-1;
+            if (window.cursorX==0) {
+              window.cursorY--; window.cursorX=screenWidth-1;
             } else {
-              cursorX--;
+              window.cursorX--;
             }
           }
         }
@@ -877,7 +877,7 @@ function print(inputString) {
   var wasKeyon = !!keyon;
   keysoff(); cursor(0);
   var end=pokeText(cursorX, cursorY, inputString);
-  cursorX = end.x; cursorY = end.y;
+  window.cursorX = end.x; window.cursorY = end.y;
   if (wasKeyon) { keyson(); }
 }
 

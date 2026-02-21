@@ -102,12 +102,12 @@ function button(b, event) {
         cursor(0);
         if (selectionStart !== -1 && selectionEnd !== -1) {
           deleteSelection();
-          renderInputLine();
+          pokeInput();
         } else if (cursorPos > 0) {
           line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
           cursorPos--;
           setCursorToInputPos(cursorPos);
-          renderInputLine();
+          pokeInput();
         }
         selectionStart = -1; selectionEnd = -1;
         cursor(1);
@@ -138,7 +138,7 @@ function button(b, event) {
           }
         }
         selectionStart = -1; selectionEnd = -1;
-        renderInputLine();
+        pokeInput();
         cursor(1);
 
       } else if (k === "left") {
@@ -182,7 +182,7 @@ function button(b, event) {
             cursorX = sc.x;
             cursorY = sc.y;
             // reflect selection visually
-            renderInputLine();
+            pokeInput();
             updateSelectionVisuals(selectionStart, selectionEnd);
           } else {
             selectionStart = -1; selectionEnd = -1;
@@ -200,7 +200,7 @@ function button(b, event) {
           selectionEnd = 0;
           var sc = inputPosToScreen(0);
           cursorX = sc.x; cursorY = sc.y;
-          renderInputLine();
+          pokeInput();
           updateSelectionVisuals(selectionStart, selectionEnd);
         } else {
           // Regular HOME: move cursor to start, clear selection
@@ -877,7 +877,7 @@ function print(inputString) {
   var wasKeyon = !!keyon;
   keysoff(); cursor(0);
   var end=pokeText(cursorX, cursorY, inputString);
-  cursorX = end.x; cursorY = end.y;
+  window.cursorX = end.x; window.cursorY = end.y;
   if (wasKeyon) { keyson(); }
 }
 

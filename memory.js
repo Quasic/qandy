@@ -5,9 +5,39 @@ window.cursorX = 0;
 window.cursorY = 0;
 window.cursorOn=0;
 
-window.cursorX = 0;
-window.cursorY = 0;
-window.cursorOn = 0;
+// Add this in memory.js immediately after you set the initial values
+(function() {
+  // preserve initial values
+  var _inX = window.cursorX;
+  var _inY = window.cursorY;
+
+  Object.defineProperty(window, 'cursorX', {
+    configurable: true,
+    enumerable: true,
+    get: function() { return _inX; },
+    set: function(v) {
+      console.groupCollapsed('TRACE: window.cursorX set ->', v);
+      console.log('Previous:', _inX);
+      console.trace();
+      console.groupEnd();
+      _inX = v;
+    }
+  });
+
+  Object.defineProperty(window, 'cursorY', {
+    configurable: true,
+    enumerable: true,
+    get: function() { return _inY; },
+    set: function(v) {
+      console.groupCollapsed('TRACE: window.cursorY set ->', v);
+      console.log('Previous:', _inY);
+      console.trace();
+      console.groupEnd();
+      _inY = v;
+    }
+  });
+})();
+
 
 var styleBuffer = [];
 var currentStyle = {
@@ -46,39 +76,6 @@ window.inputStartX=0;
 window.inputStartY=0;
 window.cursorPos=0;
 window.inputScrollPos=0;
-
-// Add this in memory.js immediately after you set the initial values
-(function() {
-  // preserve initial values
-  var _inX = window.inputStartX;
-  var _inY = window.inputStartY;
-
-  Object.defineProperty(window, 'inputStartX', {
-    configurable: true,
-    enumerable: true,
-    get: function() { return _inX; },
-    set: function(v) {
-      console.groupCollapsed('TRACE: window.inputStartX set ->', v);
-      console.log('Previous:', _inX);
-      console.trace();
-      console.groupEnd();
-      _inX = v;
-    }
-  });
-
-  Object.defineProperty(window, 'inputStartY', {
-    configurable: true,
-    enumerable: true,
-    get: function() { return _inY; },
-    set: function(v) {
-      console.groupCollapsed('TRACE: window.inputStartY set ->', v);
-      console.log('Previous:', _inY);
-      console.trace();
-      console.groupEnd();
-      _inY = v;
-    }
-  });
-})();
 
 var commandHistory = [];  // Array to store command history
 var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)

@@ -5,9 +5,9 @@ window.cursorX = 0;
 window.cursorY = 0;
 window.cursorOn=0;
 
-window.cursorX = window.cursorX=0;
-window.cursorY = window.cursorY=0;
-window.cursorOn = window.cursorOn=0;
+window.cursorX = 0;
+window.cursorY = 0;
+window.cursorOn = 0;
 
 var styleBuffer = [];
 var currentStyle = {

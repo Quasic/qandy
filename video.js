@@ -4,7 +4,6 @@
 // alert(JSON.stringify(peekStyle(y, x)));
 //
 
-
 function validateCoords(x, y) {
   return (typeof x === 'number' && typeof y === 'number' && 
           x >= 0 && y >= 0 && x < screenWidth && y < screenHeight);
@@ -609,10 +608,23 @@ window.clear = window.clearRegion = function(x, y, width, height) {
   return fillChar(x, y, width, height, ' ');
 };
 
-
-function renderInputLine() {
-  pokeText(window.inputStartX, window.inputStartY, window.line); updateDisplay();
-}
+window.pokeInput = function(x, y, text) {
+  if (!text) return 0;
+  var str = String(text);
+  var count = 0;
+  var currentX = x; var currentY = y;
+  
+  for (var i = 0; i < str.length; i++) {
+    var char = str[i];
+    if (char === '\n') { currentX = 0; currentY++; if (currentY >= screenHeight) { break; } continue; }
+    if (currentX >= screenWidth) { currentX = 0; currentY++; if (currentY >= screenHeight) break; }
+    pokeCell(currentX, currentY, char);
+    currentX++;
+    count++;
+  }
+  updateDisplay();
+  return count;
+};
 
 window.pokeText = function(x, y, text) {
   if (!text) return 0;
