@@ -1880,3 +1880,8 @@ for (i=0;i<mySearch.length;i++) {
 }
 
 // if (SFiles) { showFiles(); }
+
+// Signal that qandy.js is ready
+if (typeof window.qandySignalReady === 'function') {
+  window.qandySignalReady('Qandy Core');
+}

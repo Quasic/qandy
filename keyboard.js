@@ -329,3 +329,8 @@ resize(); function resize() {
   }
  }
 }
+
+// Signal that keyboard.js is ready
+if (typeof window.qandySignalReady === 'function') {
+  window.qandySignalReady('Keyboard');
+}
