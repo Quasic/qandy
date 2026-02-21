@@ -421,57 +421,57 @@ window.hline = function(x, y, length, ch) {
 };
 
 // VLINE - Draw vertical line
-window.vline = function(x, y, height, ch) {
-  if (!validateCoords(x, y)) return 0;
-  
-  var char = ch || '|';
-  var maxY = Math.min(y + height, screenHeight);
-  var count = 0;
-  
-  for (var i = y; i < maxY; i++) {
-    screenBuffer[i][x] = char;
-    updateDomCellInPlace(x, i);
-    count++;
-  }
-  return count;
-};
+//window.vline = function(x, y, height, ch) {
+//  if (!validateCoords(x, y)) return 0;
+//  
+//  var char = ch || '|';
+//  var maxY = Math.min(y + height, screenHeight);
+//  var count = 0;
+//  
+//  for (var i = y; i < maxY; i++) {
+//    screenBuffer[i][x] = char;
+//    updateDomCellInPlace(x, i);
+//    count++;
+//  }
+//  return count;
+//};
 
 // LINE - Draw line between two points (Bresenham's algorithm)
-window.line = window.pokeLine = function(x1, y1, x2, y2, ch, styleObj) {
-  var char = (typeof ch === 'string') ? ch : (ch || '█');
-  var dx = Math.abs(x2 - x1);
-  var dy = Math.abs(y2 - y1);
-  var sx = (x1 < x2) ? 1 : -1;
-  var sy = (y1 < y2) ? 1 : -1;
-  var err = dx - dy;
-  var count = 0;
-  
-  while (true) {
-    // Plot point
-    if (validateCoords(x1, y1)) {
-      if (styleObj) {
-        pokeCell(x1, y1, char, styleObj);
-      } else {
-        pokeChar(x1, y1, char);
-      }
-      count++;
-    }
-    
-    // Check if we've reached the end
-    if (x1 === x2 && y1 === y2) break;
-    
-    var e2 = 2 * err;
-    if (e2 > -dy) {
-      err -= dy;
-      x1 += sx;
-    }
-    if (e2 < dx) {
-      err += dx;
-      y1 += sy;
-    }
-  }
-  return count;
-};
+//window.line = window.pokeLine = function(x1, y1, x2, y2, ch, styleObj) {
+//  var char = (typeof ch === 'string') ? ch : (ch || '█');
+//  var dx = Math.abs(x2 - x1);
+//  var dy = Math.abs(y2 - y1);
+//  var sx = (x1 < x2) ? 1 : -1;
+//  var sy = (y1 < y2) ? 1 : -1;
+//  var err = dx - dy;
+//  var count = 0;
+//  
+//  while (true) {
+//    // Plot point
+//    if (validateCoords(x1, y1)) {
+//      if (styleObj) {
+//        pokeCell(x1, y1, char, styleObj);
+//     } else {
+//        pokeChar(x1, y1, char);
+//      }
+//      count++;
+//    }
+//    
+//    // Check if we've reached the end
+//    if (x1 === x2 && y1 === y2) break;
+//    
+//    var e2 = 2 * err;
+ //   if (e2 > -dy) {
+//      err -= dy;
+//      x1 += sx;
+//    }
+//    if (e2 < dx) {
+//      err += dx;
+//      y1 += sy;
+//    }
+//  }
+//  return count;
+//};
 
 // BOX - Draw box with borders
 window.box = function(x, y, width, height, style) {
@@ -611,8 +611,7 @@ window.clear = window.clearRegion = function(x, y, width, height) {
 
 
 function renderInputLine() {
-  pokeText(inputStartX, inputStartY, line);
-  updateDisplay();
+  pokeText(window.inputStartX, window.inputStartY, window.line); updateDisplay();
 }
 
 window.pokeText = function(x, y, text) {

@@ -1,20 +1,5 @@
 
-var devteam=1;  // developer mode
-var run="";
-
-// RAM - Working memory for file editing
-var RAM="";           // Current file content in memory
-var RAMFILE="";       // Current filename loaded in RAM
-var RAMTYPE="";       // Current file type (js, txt, etc)
-
-
-// Pagination support for overflow text
-var paginationEnabled = true;  // Enable/disable pagination feature
-var paginationPaused = false;  // Is print() currently paused?
-var paginationBuffer = [];     // Queued text waiting to be printed
-var paginationLinesBeforePause = 25;  // Lines to show before pausing
-var inInputMode = false;       // True when processing user input (prevents pagination)
-
+window.run="qandy.js";
 
 function button(b, event) {
   // Resume pagination if paused
@@ -419,6 +404,7 @@ function button(b, event) {
         selectionStart = -1; selectionEnd = -1;
 
         // Insert character into line at cursorPos
+        console.log('DEBUG line typeof:', typeof line, 'value:', line);
         line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
         cursorPos += finalChar.length;
 
