@@ -652,11 +652,7 @@ window.pokeText = function(x, y, text) {
     var char = str[i];
     if (char === '\n') { currentX = 0; currentY++; if (currentY >= screenHeight) { break; } continue; }
     if (currentX >= screenWidth) { currentX = 0; currentY++; if (currentY >= screenHeight) break; }
-    if (styleObj) {
-      pokeCell(currentX, currentY, char, styleObj);
-    } else {
-      pokeChar(currentX, currentY, char);
-    }
+    pokeCell(currentX, currentY, char);
     currentX++;
     count++;
   }
