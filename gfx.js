@@ -1,15 +1,3 @@
-var txt="";
-var mode="txt"; // gfx or txt display
-var allowScriptESC=false; // if true, script handles ESC instead of universal termination
-
-var PopX=0;
-var PopY=0;
-var PopHide="hidden";
-var PopAlign="center";
-var PForce="hidden";
-var mapx=7;
-var mapy=11;
-var map="";
 
 tiles(); function tiles() {
  Z=0;

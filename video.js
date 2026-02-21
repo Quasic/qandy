@@ -4,18 +4,6 @@
 // alert(JSON.stringify(peekStyle(y, x)));
 //
 
-var screenBuffer = [];
-var cursorX = 0;
-var cursorY = 0;
-var cursorOn=0;
-
-var styleBuffer = [];
-var currentStyle = {
-  color: 37,      // white foreground
-  bgcolor: 40,    // black background
-  bold: false,
-  inverse: false
-};
 
 function validateCoords(x, y) {
   return (typeof x === 'number' && typeof y === 'number' && 
@@ -189,7 +177,6 @@ window.peekStyle = function(x, y) {
 // Most common style operation for text selection and highlighting
 
 window.pokeInverse = function(x, y, state, count) {
-  console.log("x="+x+" y="+y+" state="+state+" count="+count);
   if (typeof state === 'undefined') { return validateCoords(x, y) ? styleBuffer[y][x].inverse : undefined; }
   // Validate starting position
   if (!validateCoords(x, y)) return false;
@@ -1300,9 +1287,7 @@ window.screenBuffer = new Array(window.screenHeight);
 window.styleBuffer  = new Array(window.screenHeight);
 window.domCellRefs  = new Array(window.screenHeight);
 
-txtEl = document.createElement('div');
-txtEl.id = 'txt';
-document.body.appendChild(txtEl);
+var txtEl = document.getElementById('txt');
 
 // Build DOM grid into a fragment to minimize layout thrash
 txtEl.innerHTML = '';

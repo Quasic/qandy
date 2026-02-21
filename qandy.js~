@@ -879,6 +879,11 @@ function print(inputString) {
   cursor(0);
   var end=pokeText(cursorX, cursorY, inputString); cursorX = end.x; cursorY = end.y;
   if (wasKeyon) { keyson(); }
+  inputStartX = (typeof cursorX === 'number') ? Math.max(0, Math.min(screenWidth - 1, cursorX)) : 0;
+  inputStartY = (typeof cursorY === 'number') ? Math.max(0, Math.min(screenHeight - 1, cursorY)) : 0;
+  cursorPos = 0;
+  setCursorToInputPos(0);
+  //updateDisplay();
 }
 
 function print(inputString) {
