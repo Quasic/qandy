@@ -1389,11 +1389,7 @@ function updateDisplay() {
 
   if (txtElement) txtElement.innerHTML = htmlContent;
 }
-
 txtEl.appendChild(frag);
-window.cursorX = window.cursorX || 0;
-window.cursorY = window.cursorY || 0;
-window.cursorOn = window.cursorOn || 0;
 
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {

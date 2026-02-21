@@ -1132,7 +1132,7 @@ const ANSI = {
   bgColors: { 40: 'black', 41: 'red', 42: 'green', 43: 'yellow', 44: 'blue', 45: 'magenta', 46: 'cyan', 47: 'white', 100: 'black', 101: 'red', 102: 'green', 103: 'yellow', 104: 'blue', 105: 'magenta', 106: 'cyan', 107: 'white' },
   
   render: function(text) {
-    let html = ''; let currentColor = 'white'; let currentBgColor = 'black'; let bold = false; let inverse = false; let cursorX = 0; let cursorY = 0;
+    let html = ''; let currentColor = 'white'; let currentBgColor = 'black'; let bold = false; let inverse = false; let cX = 0; let cY = 0;
     const ansiRegex = /\x1b\[([\d;]*)([A-Za-z])/g; let lastIndex = 0; let match;
     while ((match = ansiRegex.exec(text)) !== null) {
       html += this.escapeHtml(text.substring(lastIndex, match.index));
@@ -1158,16 +1158,16 @@ const ANSI = {
           }
         });
       } else if (command === 'H' || command === 'f') {
-        cursorY = params[0] || 0;
-        cursorX = params[1] || 0;
+        cY = params[0] || 0;
+        cX = params[1] || 0;
       } else if (command === 'A') {
-        cursorY = Math.max(0, cursorY - (params[0] || 1));
+        cY = Math.max(0, cY - (params[0] || 1));
       } else if (command === 'B') {
-        cursorY += (params[0] || 1);
+        cY += (params[0] || 1);
       } else if (command === 'C') {
-        cursorX += (params[0] || 1);
+        cX += (params[0] || 1);
       } else if (command === 'D') {
-        cursorX = Math.max(0, cursorX - (params[0] || 1));
+        cX = Math.max(0, cX - (params[0] || 1));
       } else if (command === 'J') {
         if (params[0] === 2) {
           html = ''; // Clear screen 
