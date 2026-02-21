@@ -636,12 +636,12 @@ window.clear = window.clearRegion = function(x, y, width, height) {
   return fillChar(x, y, width, height, ' ');
 };
 
-// ============================================================================
-// TEXT FUNCTIONS - Write strings to screen
-// ============================================================================
 
-// PRINT - Write text at position (supports wrap and newlines)
-window.pokeText = function(x, y, text, styleObj, wrap) {
+function renderInputLine() {
+  pokeText(inputStartX, inputStartY, line);
+}
+
+window.pokeText = function(x, y, text) {
   if (!text) return 0;
   var str = String(text);
   var count = 0;
@@ -650,55 +650,17 @@ window.pokeText = function(x, y, text, styleObj, wrap) {
   
   for (var i = 0; i < str.length; i++) {
     var char = str[i];
-    
-    // Handle newline
-    if (char === '\n') {
-      currentX = x;
-      currentY++;
-      if (currentY >= screenHeight) break;
-      continue;
+    if (char === '\n') { currentX = 0; currentY++; if (currentY >= screenHeight) { break; } continue; }
+    if (currentX >= screenWidth) { currentX = 0; currentY++; if (currentY >= screenHeight) break; }
+    if (styleObj) {
+      pokeCell(currentX, currentY, char, styleObj);
+    } else {
+      pokeChar(currentX, currentY, char);
     }
-    
-    // Handle wrapping
-    if (currentX >= screenWidth) {
-      if (wrap) {
-        currentX = x;
-        currentY++;
-        if (currentY >= screenHeight) break;
-      } else {
-        break; // Stop if no wrap
-      }
-    }
-    
-    // Poke character
-    if (validateCoords(currentX, currentY)) {
-      if (styleObj) {
-        pokeCell(currentX, currentY, char, styleObj);
-      } else {
-        pokeChar(currentX, currentY, char);
-      }
-      currentX++;
-      count++;
-    }
+    currentX++;
+    count++;
   }
-  
   return count;
-};
-
-// PRINTC - Print centered text
-window.pokeTextCentered = function(y, text, styleObj) {
-  if (!text || y < 0 || y >= screenHeight) return 0;
-  var x = Math.floor((screenWidth - text.length) / 2);
-  if (x < 0) x = 0;
-  return pokeText(x, y, text, styleObj);
-};
-
-// PRINTR - Print right-aligned text
-window.pokeTextRight = function(y, text, styleObj) {
-  if (!text || y < 0 || y >= screenHeight) return 0;
-  var x = screenWidth - text.length;
-  if (x < 0) x = 0;
-  return pokeText(x, y, text, styleObj);
 };
 
 // ============================================================================
@@ -1365,8 +1327,6 @@ window.COLOR = {
 // shorter aliases for color constants
 window.C = window.COLOR;
 
-
-
 window.W = 32; window.screenWidth = window.W;
 window.H = 25; window.screenHeight = window.H;
 
@@ -1424,3 +1384,5 @@ window.cursorOn = window.cursorOn || 0;
 if (typeof window.qandySignalReady === 'function') {
   window.qandySignalReady('Video');
 }
+
+
