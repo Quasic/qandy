@@ -1064,6 +1064,17 @@ function print(inputString) {
   if (wasKeyon) { keyson(); }
 }
 
+function print(inputString) {
+  inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
+  txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
+  var wasKeyon = !!keyon;
+  keysoff(); cursor(0);
+  var end=pokeText(cursorX, cursorY, inputString);
+  cursorX = end.x; cursorY = end.y;
+  if (wasKeyon) { keyson(); }
+}
+
+
 function resumePagination() {
   // Clear the pause message by removing last few lines
   if (screenBuffer.length > 0) {
