@@ -43,7 +43,6 @@ function updateDomCellInPlace(x, y) {
       el.innerHTML = '&nbsp;';
     }
 
-    // apply styling helper (must exist in your codebase)
     if (typeof applyStyleToDom === 'function') {
       applyStyleToDom(el, styleObj);
     } else {
@@ -65,13 +64,7 @@ function updateDomCellInPlace(x, y) {
   }
 }
 
-// ==============n updateDomCellInPlace==============================================================
-// PRIMARY POKE FUNCTIONS - Character, Color, and Style
-// ============================================================================
-
-// POKE - Main function: poke character and/or style
 window.poke = window.pokeCell = function(x, y, ch, styleObj) {
-  // Fast coordinate validation only
   if (!validateCoords(x, y)) return false;
   
   // Handle parameter shifting: poke(x, y, styleObj)
@@ -80,12 +73,6 @@ window.poke = window.pokeCell = function(x, y, ch, styleObj) {
     ch = undefined;
   }
   
-  // Getter mode: poke(x, y) returns character
-  if (typeof ch === 'undefined' && typeof styleObj === 'undefined') {
-    return screenBuffer[y][x];
-  }
-  
-  // Update character if provided
   if (typeof ch !== 'undefined') {
     screenBuffer[y][x] = (typeof ch === 'string') ? ch : String(ch)[0] || ' ';
   }
@@ -103,6 +90,13 @@ window.poke = window.pokeCell = function(x, y, ch, styleObj) {
   updateDomCellInPlace(x, y);
   return true;
 };
+
+window.pokeInverse = function(x, y, state, count) {
+  styleBuffer[y][x].inverse = state;
+  updateDomCellInPlace(x, y);
+  return true;
+};
+
 
 // PEEK - Read character at position
 window.peek = function(x, y) { 
@@ -645,18 +639,13 @@ window.pokeText = function(x, y, text) {
   if (!text) return 0;
   var str = String(text);
   var count = 0;
-  var currentX = x;
-  var currentY = y;
+  var currentX = x; var currentY = y;
   
   for (var i = 0; i < str.length; i++) {
     var char = str[i];
     if (char === '\n') { currentX = 0; currentY++; if (currentY >= screenHeight) { break; } continue; }
     if (currentX >= screenWidth) { currentX = 0; currentY++; if (currentY >= screenHeight) break; }
-    if (styleObj) {
-      pokeCell(currentX, currentY, char, styleObj);
-    } else {
-      pokeChar(currentX, currentY, char);
-    }
+    pokeCell(currentX, currentY, char);
     currentX++;
     count++;
   }
@@ -1373,6 +1362,75 @@ for (var y = 0; y < window.screenHeight; y++) {
   window.screenBuffer[y] = rowChars;
   window.styleBuffer[y]  = rowStyles;
   window.domCellRefs[y]  = rowRefs;
+}
+
+function updateDisplay() {
+  const txtElement = document.getElementById("txt");
+  let htmlContent = '';
+  // Render the full visible screen (clamped to available buffer).
+  const rowsToRender = Math.min(screenHeight, screenBuffer.length);
+  // small helper to escape characters for HTML
+  function escapeChar(c) {
+    if (c === ' ') return '&nbsp;';
+    if (c === '&') return '&amp;';
+    if (c === '<') return '&lt;';
+    if (c === '>') return '&gt;';
+    // keep control chars out of output
+    if (c === '\t') return '&nbsp;&nbsp;&nbsp;&nbsp;';
+    if (c === '\r' || c === '\n') return '';
+    // default: return the character as-is (assumes ASCII printable)
+    return c;
+  }
+
+  for (let y = 0; y < rowsToRender; y++) {
+  // ensure row arrays exist (same as before)
+  if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
+  if (!styleBuffer[y]) {
+    styleBuffer[y] = new Array(screenWidth);
+    for (let x = 0; x < screenWidth; x++) {
+      styleBuffer[y][x] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: currentStyle.bold,
+        inverse: currentStyle.inverse
+      };
+    }
+  }
+
+  let lineHtml = '<span class="qandy-line">';
+
+  for (let x = 0; x < screenWidth; x++) {
+    const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
+    const style = styleBuffer[y][x] || {
+      color: currentStyle.color,
+      bgcolor: currentStyle.bgcolor,
+      bold: currentStyle.bold,
+      inverse: currentStyle.inverse
+    };
+
+    // Build the class list for the character (map your ANSI to classes)
+    const classes = [];
+    if (style.inverse) {
+      classes.push('ansi-inverse');
+    } else {
+      classes.push(`ansi-fg-${style.color}`);   // adjust names to match your CSS
+      classes.push(`ansi-bg-${style.bgcolor}`);
+    }
+    if (style.bold) classes.push('ansi-bold');
+
+    // Escape char for HTML; keep spaces as &nbsp;
+    const escapedChar = (ch === ' ') ? '&nbsp;' :
+                        (ch === '&') ? '&amp;' :
+                        (ch === '<') ? '&lt;' :
+                        (ch === '>') ? '&gt;' :
+                        ch;
+
+    // Give each cell an id so it can be updated independently later.
+    lineHtml += `<span id="c${y}_${x}" class="${classes.join(' ')}">${escapedChar}</span>`;
+  }
+
+  lineHtml += '</span><br>';
+  htmlContent += lineHtml;
 }
 
 txtEl.appendChild(frag);

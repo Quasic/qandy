@@ -1067,20 +1067,10 @@ function print(inputString) {
 function print(inputString) {
   inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
   txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
-
-  // If pagination is paused, queue the text (keeps previous behavior)
-  if (typeof paginationPaused !== 'undefined' && paginationPaused) {
-    if (typeof paginationBuffer === 'undefined') paginationBuffer = [];
-    paginationBuffer.push(inputString);
-    return;
-  }
-
-  if (!window.screenBuffer || !window.styleBuffer || !window.screenHeight) {
-    try { initScreen(); } catch (e) { /* best-effort */ }
-  }
   var wasKeyon = !!keyon;
   keysoff(); cursor(0);
-  var end=pokeText(cursorX, cursorY, inputString); cursorX = end.x; cursorY = end.y;
+  var end=pokeText(cursorX, cursorY, inputString);
+  cursorX = end.x; cursorY = end.y;
   if (wasKeyon) { keyson(); }
 }
 
