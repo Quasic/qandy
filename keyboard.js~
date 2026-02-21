@@ -1,4 +1,4 @@
-var normalKeys = {
+window.normalKeys = {
   "1":"1","2":"2","3":"3","4":"4","5":"5",
   "6":"6","7":"7","8":"8","9":"9","0":"0",
   "q":"q","w":"w","e":"e","r":"r","t":"t",
@@ -12,7 +12,7 @@ var normalKeys = {
   "\\":"\\", "`":"`"
 };
 
-var shiftedKeys = {
+window.shiftedKeys = {
   "1":"!","2":"@","3":"#","4":"$","5":"%",
   "6":"^","7":"&","8":"*","9":"(","0":")",
   "q":"Q","w":"W","e":"E","r":"R","t":"T",
@@ -26,7 +26,7 @@ var shiftedKeys = {
   "\\":"|", "`":"~"
 };
 
-var altKeys = {
+window.altKeys = {
   "q":"┌","w":"─","e":"┐","r":"├","t":"┤",
   "y":"└","u":"┴","i":"┘","o":"│","p":"┼",
   "a":"╔","s":"═","d":"╗","f":"╠","g":"╣",
@@ -39,7 +39,7 @@ var altKeys = {
   "\\":" ","`":"°", "'":"″"
 };
 
-var altShiftKeys = {
+window.altShiftKeys = {
   "q":"╭","w":"╌","e":"╮","r":"╞","t":"╡",
   "y":"╰","u":"╴","i":"╯","o":"╎","p":"╪",
   "a":"┏","s":"━","d":"┓","f":"┣","g":"┫",
@@ -52,12 +52,7 @@ var altShiftKeys = {
   "\\":" ","`":"¬", "'":"′"
 };
 
-// Export to window so legacy code expecting globals still works
-window.normalKeys = window.normalKeys || normalKeys;
-window.shiftedKeys = window.shiftedKeys || shiftedKeys;
-window.altKeys = window.altKeys || altKeys;
-window.altShiftKeys = window.altShiftKeys || altShiftKeys;
-var keyboardData = [
+window.keyboardData = [
   // Row 0: ESC, BACKTICK, BACKSLASH, OPEN, CLOSE, DASH, EQUAL, BACK (y=446)
   {id:"esc", label:"ESC", keyCode:27, x:47, y:446, width:52},
   {id:"backtick", label:"`", keyCode:192, x:103, y:446, width:28},
@@ -129,13 +124,10 @@ function cursor(a) {
     pokeInverse(cursorX, cursorY, true);
   } else {
     cursorOn = 0;
-    pokeInverse(cursorX, cursorY, false);  
+    pokeInverse(window.cursorX, window.cursorY, false);  
   }
 }
 
-initKeyboard(); 
-function initKeyboard() {
- // Create keyboard buttons dynamically from keyboard data array
  keyboardData.forEach(function(key) {
   var btn = document.createElement('div');
   btn.id = key.id;
@@ -179,7 +171,6 @@ function initKeyboard() {
   document.getElementById('keyboard-container').appendChild(btn);
  });
  updateKeyLabels();
-}
 
 function updateKeyLabels() {
   // Decide current modifier priority:
@@ -237,13 +228,13 @@ function updateKeyLabels() {
 }
 
 // Create a mapping from keyCode to element ID for quick lookup
-var keyCodeToId = {};
+window.keyCodeToId = {};
 keyboardData.forEach(function(key) {
   keyCodeToId[key.keyCode] = key.id;
 });
 
 // Store timeout IDs for each key to handle rapid key presses
-var keyTimeouts = {};
+window.keyTimeouts = {};
 
 // Function to highlight a virtual key
 function highlightKey(keyCode) {
@@ -305,7 +296,7 @@ document.getElementById("qpc").style.left = "32px";
 
 resize(); function resize() {
  // Position text element based on mode
- if (mode=="gfx") {
+ if (window.mode=="gfx") {
   up=32+(404-(document.getElementById('txt').offsetHeight));
   left=32+22+300;
   document.getElementById("txt").style.left=left+"px";
@@ -316,15 +307,16 @@ resize(); function resize() {
   document.getElementById("txt").style.left="54px";
   document.getElementById("txt").style.top=up+"px";
  }
- const textElement=document.getElementById("txt");
- textElement.scrollTop=textElement.scrollHeight;
- Z=0; for (Y=0; Y<=mapy; Y++) {
-  for (X=0; X<=mapx; X++) {
-   e=document.getElementById("T"+Z).style.top=50+(Y*32)+"px";  
-   e=document.getElementById("T"+Z).style.left=54+(X*32)+"px"; 
-   Z++;
-  }
- }
+ 
+ //const textElement=document.getElementById("txt");
+ //textElement.scrollTop=textElement.scrollHeight;
+ //Z=0; for (Y=0; Y<=mapy; Y++) {
+ // for (X=0; X<=mapx; X++) {
+ //  e=document.getElementById("T"+Z).style.top=50+(Y*32)+"px";  
+ //  e=document.getElementById("T"+Z).style.left=54+(X*32)+"px"; 
+ //  Z++;
+ // }
+ //}
 }
 
 // Signal that keyboard.js is ready

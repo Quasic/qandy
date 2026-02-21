@@ -1,8 +1,8 @@
 
 tiles(); function tiles() {
  Z=0;
- for (Y=0; Y<=mapy; Y++) {
-  for (X=0; X<=mapx; X++) {
+ for (Y=0; Y<=window.mapy; Y++) {
+  for (X=0; X<=window.mapx; X++) {
    T=document.createElement("img");
    T.id="T"+Z; T.src="t/Ga.png"; 
    T.height=32; T.width=32;

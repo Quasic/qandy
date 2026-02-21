@@ -147,16 +147,16 @@ function button(b, event) {
             if (selectionStart === -1) selectionStart = cursorPos;
             cursorPos--;
             selectionEnd = cursorPos;
-            if (cursorX > 0) {
-              cursorX--;
+            if (window.cursorX > 0) {
+              window.cursorX--;
             } else {
-              if (cursorY > 0) {
-                cursorY--; cursorX = screenWidth - 1;
+              if (window.cursorY > 0) {
+                window.cursorY--; window.cursorX = screenWidth - 1;
               } else {
-                cursorX = 0; cursorPos = 0; selectionEnd = 0;
+                window.cursorX = 0; window.cursorPos = 0; window.selectionEnd = 0;
               }
             }
-            pokeInverse(cursorX, cursorY, true);
+            pokeInverse(window.cursorX, window.cursorY, true);
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos--;
@@ -179,8 +179,8 @@ function button(b, event) {
             selectionEnd = cursorPos;
             // Update cursor screen coordinates from logical position
             var sc = inputPosToScreen(cursorPos);
-            cursorX = sc.x;
-            cursorY = sc.y;
+            window.cursorX = sc.x;
+            window.cursorY = sc.y;
             // reflect selection visually
             pokeInput();
             updateSelectionVisuals(selectionStart, selectionEnd);
@@ -199,7 +199,7 @@ function button(b, event) {
           cursorPos = 0;
           selectionEnd = 0;
           var sc = inputPosToScreen(0);
-          cursorX = sc.x; cursorY = sc.y;
+          window.cursorX = sc.x; window.cursorY = sc.y;
           pokeInput();
           updateSelectionVisuals(selectionStart, selectionEnd);
         } else {
@@ -207,13 +207,13 @@ function button(b, event) {
           selectionStart = -1; selectionEnd = -1;
           cursorPos = 0;
           var absCol = inputStartX + cursorPos;
-          cursorY = inputStartY + Math.floor(absCol / screenWidth);
-          cursorX = absCol % screenWidth; //@@
+          window.cursorY = inputStartY + Math.floor(absCol / screenWidth);
+          window.cursorX = absCol % screenWidth; //
           // clamp to screen bounds just in case
-          if (cursorY < 0) cursorY = 0;
-          if (cursorY >= screenHeight) cursorY = screenHeight - 1;
-          if (cursorX < 0) cursorX = 0;
-          if (cursorX >= screenWidth) cursorX = screenWidth - 1;
+          if (window.cursorY < 0) cursorY = 0;
+          if (window.cursorY >= screenHeight) window.cursorY = screenHeight - 1;
+          if (window.cursorX < 0) window.cursorX = 0;
+          if (window.cursorX >= screenWidth) window.cursorX = screenWidth - 1;
         }
         cursor(1);
       } else if (k === "end") {
@@ -291,17 +291,17 @@ function button(b, event) {
               document.head.appendChild(prg);
               line = "";
               cursorPos = 0;
-              window.inputStartX = cursorX; inputStartY = cursorY;
+              window.inputStartX = window.cursorX; window.inputStartY = window.cursorY;
             } else if (line.substr(0,3) === "cls") {
               if (typeof initScreen === 'function') initScreen(); else cls();
               line = "";
-              cursorX = 0; cursorY = 0; cursorPos = 0;
-              window.inputStartX = 0; inputStartY = 0;
+              window.cursorX = 0; window.cursorY = 0; window.cursorPos = 0;
+              window.inputStartX = 0; window.inputStartY = 0;
             } else {
               try { executeCode(line); } catch (e) { /* ignore */ }
               line = "";
               cursorPos = 0;
-              window.inputStartX = cursorX; inputStartY = cursorY;
+              window.inputStartX = window.cursorX; window.inputStartY = window.cursorY;
               cursor(1);
             }
             if (typeof updateDisplay === 'function') updateDisplay();
@@ -408,11 +408,11 @@ function button(b, event) {
         cursorPos += finalChar.length;
 
         // Advance cursorX, wrapping to next row if we hit screenWidth
-        cursorX += finalChar.length;
-        while (cursorX >= screenWidth) {
-          cursorX -= screenWidth;
-          cursorY++;
-          if (cursorY >= screenHeight) { cursorY = screenHeight - 1; }
+        window.cursorX += finalChar.length;
+        while (window.cursorX >= window.screenWidth) {
+          window.cursorX -= window.screenWidth;
+          window.cursorY++;
+          if (window.cursorY >= window.screenHeight) { window.cursorY = window.screenHeight - 1; }
         }
 
         // Re-render the full visible input line
@@ -862,7 +862,7 @@ function print(inputString) {
   var wasKeyon = !!keyon;
   keysoff();
   cursor(0);
-  var end=pokeText(cursorX, cursorY, inputString); cursorX = end.x; cursorY = end.y;
+  var end=pokeText(window.cursorX, window.cursorY, inputString); window.cursorX = end.x; cursorY = end.y;
   if (wasKeyon) { keyson(); }
   inputStartX = (typeof cursorX === 'number') ? Math.max(0, Math.min(screenWidth - 1, cursorX)) : 0;
   inputStartY = (typeof cursorY === 'number') ? Math.max(0, Math.min(screenHeight - 1, cursorY)) : 0;

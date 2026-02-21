@@ -1,8 +1,8 @@
 
 tiles(); function tiles() {
  Z=0;
- for (Y=0; Y<=window.mapy; Y++) {
-  for (X=0; X<=window.mapx; X++) {
+ for (Y=0; Y<=mapy; Y++) {
+  for (X=0; X<=mapx; X++) {
    T=document.createElement("img");
    T.id="T"+Z; T.src="t/Ga.png"; 
    T.height=32; T.width=32;
@@ -13,7 +13,6 @@ tiles(); function tiles() {
   }
  }
 }
-
 
 function gfx(scr) { a=0; for (b=0; b<=mapy; b++) { for (c=0; c<=mapx; c++) { e=document.getElementById("T"+a).src="t/"+scr.charAt(a*2)+scr.charAt((a*2)+1)+".png"; a++; }}}
 function hpop() { document.getElementById("pop").style.visibility="hidden"; }

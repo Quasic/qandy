@@ -1,44 +1,18 @@
 
-// video.js variables
-window.screenBuffer = [];
-window.cursorX = 0;
-window.cursorY = 0;
-window.cursorOn=0;
+// 
+// Global Variables
+//
 
-// Add this in memory.js immediately after you set the initial values
-(function() {
-  // preserve initial values
-  var _inX = window.cursorX;
-  var _inY = window.cursorY;
+var devteam=1;  // developer mode
+var run="";
+var RAM="";           // Current file content in memory
+var RAMFILE="";       // Current filename loaded in RAM
+var RAMTYPE="";       // Current file type (js, txt, etc)
 
-  Object.defineProperty(window, 'cursorX', {
-    configurable: true,
-    enumerable: true,
-    get: function() { return _inX; },
-    set: function(v) {
-      console.groupCollapsed('TRACE: window.cursorX set ->', v);
-      console.log('Previous:', _inX);
-      console.trace();
-      console.groupEnd();
-      _inX = v;
-    }
-  });
-
-  Object.defineProperty(window, 'cursorY', {
-    configurable: true,
-    enumerable: true,
-    get: function() { return _inY; },
-    set: function(v) {
-      console.groupCollapsed('TRACE: window.cursorY set ->', v);
-      console.log('Previous:', _inY);
-      console.trace();
-      console.groupEnd();
-      _inY = v;
-    }
-  });
-})();
-
-
+var screenBuffer = [];
+var cursorX = 0;
+var cursorY = 0;
+var cursorOn=0;
 var styleBuffer = [];
 var currentStyle = {
   color: 37,      // white foreground
@@ -47,21 +21,18 @@ var currentStyle = {
   inverse: false
 };
 
-// gfx.js variables
-window.txt="";
-window.mode="txt"; // gfx or txt display
-window.allowScriptESC=false; // if true, script handles ESC instead of universal termination
+var txt="";
+var mode="txt"; // gfx or txt display
+var allowScriptESC=false; // if true, script handles ESC instead of universal termination
+var PopX=0;
+var PopY=0;
+var PopHide="hidden";
+var PopAlign="center";
+var PForce="hidden";
+mapx=7;
+var mapy=11;
+var map="";
 
-window.PopX=0;
-window.PopY=0;
-window.PopHide="hidden";
-window.PopAlign="center";
-window.PForce="hidden";
-window.mapx=7;
-window.mapy=11;
-window.map="";
-
-// keyboard.js variables
 var keyon=1;
 var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
 var shift=0; // shift key pressed  
@@ -71,11 +42,11 @@ var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
-window.line ="";
-window.inputStartX=0;
-window.inputStartY=0;
-window.cursorPos=0;
-window.inputScrollPos=0;
+var line ="";
+var inputStartX=0;
+var inputStartY=0;
+var cursorPos=0;
+var inputScrollPos=0;
 
 var commandHistory = [];  // Array to store command history
 var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)
@@ -86,14 +57,6 @@ var selectionStart = -1;  // Start position of selection (-1 = no selection)
 var selectionEnd = -1;    // End position of selection
 var selectionBgColor = '#ffffff';   // Selection background color
 var selectionFgColor = '#000000';   // Selection text color
-
-// qandy.js variables
-
-var devteam=1;  // developer mode
-var run="";
-var RAM="";           // Current file content in memory
-var RAMFILE="";       // Current filename loaded in RAM
-var RAMTYPE="";       // Current file type (js, txt, etc)
 
 var paginationEnabled = true;  // Enable/disable pagination feature
 var paginationPaused = false;  // Is print() currently paused?
