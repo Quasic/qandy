@@ -404,7 +404,7 @@ function button(b, event) {
         selectionStart = -1; selectionEnd = -1;
 
         // Insert character into line at cursorPos
-        console.log('DEBUG line typ
+        console.log('DEBUG line typeof:', typeof line, 'value:', line);
         line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
         cursorPos += finalChar.length;
 
