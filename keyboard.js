@@ -183,7 +183,7 @@ function initKeyboard() {
  });
  document.getElementById("qpc").style.top = "32px"; 
  document.getElementById("qpc").style.left = "32px";
-updateKeyLabels();
+ updateKeyLabels();
 }
 
 function updateKeyLabels() {

@@ -183,7 +183,7 @@ function initKeyboard() {
  });
  document.getElementById("qpc").style.top = "32px"; 
  document.getElementById("qpc").style.left = "32px";
-updateKeyLabels();
+ updateKeyLabels();
 }
 
 function updateKeyLabels() {
@@ -196,39 +196,44 @@ function updateKeyLabels() {
   keyboardData.forEach(function(key) {
     var el = document.getElementById(key.id);
     if (!el) return;
-    var base = el.dataset.keyChar; // single-char canonical base
+    var base = el.dataset.keyChar; // single-char canonical base (could be 'a' or 'A' etc)
     if (!base || base.length === 0) return;
 
+    // Use lowercase for map lookups (maps are keyed by lower-case characters)
+    var lookup = base.toLowerCase();
     var label = base;
-      if (shiftActive && altShiftGraphics.hasOwnProperty(base)) {
-        label = altShiftGraphics[base];
-      } else if (altGraphics.hasOwnProperty(base)) {
-        label = altGraphics[base];
-      } else if (shiftActive && shiftedKeys.hasOwnProperty(base)) {
-        label = shiftedKeys[base];
-      } else if (capsActive && shiftedKeys.hasOwnProperty(base)) {
-        label = shiftedKeys[base];
-      } else if (normalKeys.hasOwnProperty(base)) {
-        label = normalKeys[base];
+
+    if (altActive) {
+      // ALT is active: prefer altShiftKeys (if Shift also active), then altKeys
+      if (shiftActive && typeof altShiftKeys === 'object' && altShiftKeys.hasOwnProperty(lookup)) {
+        label = altShiftKeys[lookup];
+      } else if (typeof altKeys === 'object' && altKeys.hasOwnProperty(lookup)) {
+        label = altKeys[lookup];
+      } else if (shiftActive && typeof shiftedKeys === 'object' && shiftedKeys.hasOwnProperty(lookup)) {
+        // fallback to shiftedKeys if no alt mapping available
+        label = shiftedKeys[lookup];
+      } else if (typeof normalKeys === 'object' && normalKeys.hasOwnProperty(lookup)) {
+        label = normalKeys[lookup];
       } else {
         label = base;
       }
     } else {
       // No ALT: existing CAPS/SHIFT logic
       if (capsActive) {
-        // caps acts like shift for letters
+        // caps acts like shift for letters — show shifted label if available
         if (shiftActive) {
-          // shift xor caps already handled elsewhere; keep original behavior:
-          // If both shift and caps, makeLower (shift xor caps) logic elsewhere will produce actual typed char.
-          // For labels: show shifted label if shiftedKeys has it
-          label = shiftedKeys.hasOwnProperty(base) ? shiftedKeys[base] : base.toUpperCase();
+          // both shift and caps: show shifted label if present
+          label = (typeof shiftedKeys === 'object' && shiftedKeys.hasOwnProperty(lookup)) ? shiftedKeys[lookup] : base.toUpperCase();
         } else {
-          label = shiftedKeys.hasOwnProperty(base) ? shiftedKeys[base] : base.toUpperCase();
+          label = (typeof shiftedKeys === 'object' && shiftedKeys.hasOwnProperty(lookup)) ? shiftedKeys[lookup] : base.toUpperCase();
         }
       } else {
         // no caps: show shifted if shift is pressed (transient)
-        if (shiftActive && shiftedKeys.hasOwnProperty(base)) label = shiftedKeys[base];
-        else label = normalKeys.hasOwnProperty(base) ? normalKeys[base] : base;
+        if (shiftActive && typeof shiftedKeys === 'object' && shiftedKeys.hasOwnProperty(lookup)) {
+          label = shiftedKeys[lookup];
+        } else {
+          label = (typeof normalKeys === 'object' && normalKeys.hasOwnProperty(lookup)) ? normalKeys[lookup] : base;
+        }
       }
     }
 
