@@ -220,7 +220,7 @@ function button(b, event) {
         // Move cursor to end of input line
         selectionStart = -1; selectionEnd = -1;
         setCursorToInputPos(line ? line.length : 0);
-        renderInputLine();
+        pokeInput();
         cursor(1);
 
       } else if (k === "up") {
@@ -234,7 +234,7 @@ function button(b, event) {
             historyIndex--;
             line = commandHistory[historyIndex];
             setCursorToInputPos(line.length);
-            renderInputLine();
+            pokeInput();
           }
         }
         cursor(1);
@@ -251,7 +251,7 @@ function button(b, event) {
             tempCommand = "";
           }
           setCursorToInputPos(line.length);
-          renderInputLine();
+          pokeInput();
         }
         cursor(1);
 
@@ -364,7 +364,7 @@ function button(b, event) {
                 selectionStart = -1; selectionEnd = -1;
                 line = (line || "").substring(0, cursorPos) + text + (line || "").substring(cursorPos);
                 cursorPos += text.length;
-                renderInputLine();
+                pokeInput();
                 setCursorToInputPos(cursorPos);
                 cursor(1);
               }
@@ -416,7 +416,7 @@ function button(b, event) {
         }
 
         // Re-render the full visible input line
-        renderInputLine();
+        pokeInput();
 
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
         cursor(1);
@@ -450,7 +450,7 @@ document.addEventListener('paste', function (event) {
    selectionStart = -1; selectionEnd = -1;
    line = (line || "").substring(0, cursorPos) + pastedText + (line || "").substring(cursorPos);
    cursorPos += pastedText.length;
-   renderInputLine();
+   pokeInput();
    setCursorToInputPos(cursorPos);
    cursor(1);
   }
