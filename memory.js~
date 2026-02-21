@@ -38,11 +38,11 @@ var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
 // memory.js — ensure shared globals are properties of window
-window.line = (typeof window.line === 'string') ? window.line : "";
-window.inputStartX = (typeof window.inputStartX === 'number') ? window.inputStartX : 0;
-window.inputStartY = (typeof window.inputStartY === 'number') ? window.inputStartY : 0;
-window.cursorPos = (typeof window.cursorPos === 'number') ? window.cursorPos : 0;
-window.inputScrollPos = (typeof window.inputScrollPos === 'number') ? window.inputScrollPos : 0;
+window.line ="";
+window.inputStartX=0;
+window.inputStartY=0;
+window.cursorPos=0;
+window.inputScrollPos=0;
 
 var commandHistory = [];  // Array to store command history
 var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)

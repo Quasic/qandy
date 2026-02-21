@@ -1,30 +1,3 @@
-var keyon=1;
-var caps=0;  // caps lock state: 0=lowercase, 1=uppercase, 2=extended graphics
-var shift=0; // shift key pressed  
-var ctrl=0;  // ctrl key pressed
-var alt=0;   // alt key pressed
-var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
-var altPhysical=false;   // track if alt was activated by physical keyboard
-var keyboard=1; // turn keyboard input on/off
-
-var line=""; // input text line
-// Track where input line started on screen (set when input begins / after ENTER)
-var inputStartX = 0;
-var inputStartY = 0;
-var cursorPos=0; // cursor position in input line for editing
-var inputScrollPos=0; // starting position of visible input window
-
-// Command history support (like Linux terminal)
-var commandHistory = [];  // Array to store command history
-var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)
-var maxHistorySize = 50;  // Maximum number of commands to remember
-var tempCommand = "";     // Temporary storage for command being typed when browsing history
-
-// Text selection state
-var selectionStart = -1;  // Start position of selection (-1 = no selection)
-var selectionEnd = -1;    // End position of selection
-var selectionBgColor = '#ffffff';   // Selection background color
-var selectionFgColor = '#000000';   // Selection text color
 
 var normalKeys = {
   "1":"1","2":"2","3":"3","4":"4","5":"5",

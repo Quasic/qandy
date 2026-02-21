@@ -37,7 +37,6 @@ var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
-// memory.js — ensure shared globals are properties of window
 window.line ="";
 window.inputStartX=0;
 window.inputStartY=0;
