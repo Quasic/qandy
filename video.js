@@ -1352,19 +1352,17 @@ window.COLOR = {
 // shorter aliases for color constants
 window.C = window.COLOR;
 
-initScreen();
-function initScreen(width, height, containerId) {
 
-  window.W = 32; window.screenWidth = window.W;
-  window.H = 25; window.screenHeight = window.H;
 
-  var defaultColor = (window.currentStyle && typeof window.currentStyle.color !== 'undefined') ? window.currentStyle.color : 37;
-  var defaultBg    = (window.currentStyle && typeof window.currentStyle.bgcolor !== 'undefined') ? window.currentStyle.bgcolor : 40;
+window.W = 32; window.screenWidth = window.W;
+window.H = 25; window.screenHeight = window.H;
 
-  // allocate buffers
-  window.screenBuffer = new Array(window.screenHeight);
-  window.styleBuffer  = new Array(window.screenHeight);
-  window.domCellRefs  = new Array(window.screenHeight);
+var defaultColor = (window.currentStyle && typeof window.currentStyle.color !== 'undefined') ? window.currentStyle.color : 37;
+var defaultBg    = (window.currentStyle && typeof window.currentStyle.bgcolor !== 'undefined') ? window.currentStyle.bgcolor : 40;
+
+window.screenBuffer = new Array(window.screenHeight);
+window.styleBuffer  = new Array(window.screenHeight);
+window.domCellRefs  = new Array(window.screenHeight);
 
   // find container (create if missing)
   var txtEl = document.getElementById(containerId || 'txt');
@@ -1413,4 +1411,4 @@ function initScreen(width, height, containerId) {
   window.cursorX = window.cursorX || 0;
   window.cursorY = window.cursorY || 0;
   window.cursorOn = window.cursorOn || 0;
-}
+
