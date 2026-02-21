@@ -4,6 +4,7 @@
   // Configuration array with script load order
   var SCRIPT_QUEUE = [
     { src: 'video.js', name: 'Video' },
+    { src: 'gfx.js', name: 'Graphics' },
     { src: 'keyboard.js', name: 'Keyboard' },
     { src: 'dos.js', name: 'DOS', optional: true },
     { src: 'qandy.js', name: 'Qandy Core' }
