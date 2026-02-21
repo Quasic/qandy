@@ -1,4 +1,20 @@
 
+// Fallback defaults for variables declared in qandy.js.
+// These ensure keyboard.js works when loaded before qandy.js.
+var keyon        = typeof keyon        !== 'undefined' ? keyon        : 1;
+var caps         = typeof caps         !== 'undefined' ? caps         : 0;
+var shift        = typeof shift        !== 'undefined' ? shift        : 0;
+var ctrl         = typeof ctrl         !== 'undefined' ? ctrl         : 0;
+var alt          = typeof alt          !== 'undefined' ? alt          : 0;
+var ctrlPhysical = typeof ctrlPhysical !== 'undefined' ? ctrlPhysical : false;
+var altPhysical  = typeof altPhysical  !== 'undefined' ? altPhysical  : false;
+var mode         = typeof mode         !== 'undefined' ? mode         : 'txt';
+var mapy         = typeof mapy         !== 'undefined' ? mapy         : 11;
+var mapx         = typeof mapx         !== 'undefined' ? mapx         : 7;
+var cursorX      = typeof cursorX      !== 'undefined' ? cursorX      : 0;
+var cursorY      = typeof cursorY      !== 'undefined' ? cursorY      : 0;
+var cursorOn     = typeof cursorOn     !== 'undefined' ? cursorOn     : 0;
+
 // Keyboard maps as top-level vars (raw glyphs). Replace old mapping blocks with this.
 
 var normalKeys = {
