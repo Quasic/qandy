@@ -181,8 +181,6 @@ function initKeyboard() {
   btn.onclick = function() { button(key.keyCode); };
   document.getElementById('keyboard-container').appendChild(btn);
  });
- document.getElementById("qpc").style.top = "32px"; 
- document.getElementById("qpc").style.left = "32px";
  updateKeyLabels();
 }
 
@@ -305,6 +303,8 @@ img.id="qpc"; img.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAY
 img.style.width="300px"; img.style.height="600px"; img.style.zIndex="0"; 
 img.style.position="absolute";
 document.body.appendChild(img);
+document.getElementById("qpc").style.top = "32px";
+document.getElementById("qpc").style.left = "32px";
 
 resize(); function resize() {
  // Position text element based on mode
