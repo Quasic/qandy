@@ -1,9 +1,9 @@
 
 // video.js variables
-var screenBuffer = [];
-var cursorX = 0;
-var cursorY = 0;
-var cursorOn=0;
+window.screenBuffer = [];
+window.cursorX = 0;
+window.cursorY = 0;
+window.cursorOn=0;
 
 var styleBuffer = [];
 var currentStyle = {
@@ -37,12 +37,44 @@ var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
-// memory.js — ensure shared globals are properties of window
 window.line ="";
 window.inputStartX=0;
 window.inputStartY=0;
 window.cursorPos=0;
 window.inputScrollPos=0;
+
+// Add this in memory.js immediately after you set the initial values
+(function() {
+  // preserve initial values
+  var _inX = window.inputStartX;
+  var _inY = window.inputStartY;
+
+  Object.defineProperty(window, 'inputStartX', {
+    configurable: true,
+    enumerable: true,
+    get: function() { return _inX; },
+    set: function(v) {
+      console.groupCollapsed('TRACE: window.inputStartX set ->', v);
+      console.log('Previous:', _inX);
+      console.trace();
+      console.groupEnd();
+      _inX = v;
+    }
+  });
+
+  Object.defineProperty(window, 'inputStartY', {
+    configurable: true,
+    enumerable: true,
+    get: function() { return _inY; },
+    set: function(v) {
+      console.groupCollapsed('TRACE: window.inputStartY set ->', v);
+      console.log('Previous:', _inY);
+      console.trace();
+      console.groupEnd();
+      _inY = v;
+    }
+  });
+})();
 
 var commandHistory = [];  // Array to store command history
 var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)

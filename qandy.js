@@ -160,10 +160,10 @@ function button(b, event) {
           } else {
             selectionStart = -1; selectionEnd = -1;
             cursorPos--;
-            if (cursorX==0) {
-              cursorY--; cursorX=screenWidth-1;
+            if (window.cursorX==0) {
+              window.cursorY--; window.cursorX=screenWidth-1;
             } else {
-              cursorX--;
+              window.cursorX--;
             }
           }
         }
@@ -277,7 +277,7 @@ function button(b, event) {
             try { input(line); } catch (e) { /* ignore */ }
             line = "";
             cursorPos = 0;
-            inputStartX = cursorX; inputStartY = cursorY;
+            window.inputStartX = cursorX; inputStartY = cursorY;
             if (typeof updateDisplay === 'function') updateDisplay();
             cursor(1);   // <-- RE-ENABLE CURSOR after processing input
           } else {
@@ -291,17 +291,17 @@ function button(b, event) {
               document.head.appendChild(prg);
               line = "";
               cursorPos = 0;
-              inputStartX = cursorX; inputStartY = cursorY;
+              window.inputStartX = cursorX; inputStartY = cursorY;
             } else if (line.substr(0,3) === "cls") {
               if (typeof initScreen === 'function') initScreen(); else cls();
               line = "";
               cursorX = 0; cursorY = 0; cursorPos = 0;
-              inputStartX = 0; inputStartY = 0;
+              window.inputStartX = 0; inputStartY = 0;
             } else {
               try { executeCode(line); } catch (e) { /* ignore */ }
               line = "";
               cursorPos = 0;
-              inputStartX = cursorX; inputStartY = cursorY;
+              window.inputStartX = cursorX; inputStartY = cursorY;
               cursor(1);
             }
             if (typeof updateDisplay === 'function') updateDisplay();
@@ -924,8 +924,8 @@ print("\nQandy Pocket\nComputer v1.j\n\n");
 cursor(1); 
 
 // Record where the input prompt starts after boot message
-inputStartX = cursorX;
-inputStartY = cursorY;
+window.inputStartX = cursorX;
+window.inputStartY = cursorY;
 
 SFiles=1;
 mySearch=location.search.substr(1).split("&")

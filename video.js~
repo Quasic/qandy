@@ -611,8 +611,7 @@ window.clear = window.clearRegion = function(x, y, width, height) {
 
 
 function renderInputLine() {
-  pokeText(inputStartX, inputStartY, line);
-  updateDisplay();
+  pokeText(window.inputStartX, window.inputStartY, window.line); updateDisplay();
 }
 
 window.pokeText = function(x, y, text) {
