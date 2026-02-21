@@ -1,7 +1,5 @@
 
 function tiles() {
-  // local helpers / constants (lowercase)
-  let tileSize = 32;
   let topOffset = 50;   // historic layout: top = 50 + y*32
   let leftOffset = 54;  // historic layout: left = 54 + x*32
 

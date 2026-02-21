@@ -1,5 +1,5 @@
 
-window.run="qandy.js";
+run="qandy.js";
 
 function button(b, event) {
   // Resume pagination if paused
@@ -103,10 +103,10 @@ function button(b, event) {
         if (selectionStart !== -1 && selectionEnd !== -1) {
           deleteSelection();
           pokeInput();
-        } else if (cursorPos > 0) {
-          line = line.substring(0, cursorPos - 1) + line.substring(cursorPos);
-          cursorPos--;
-          setCursorToInputPos(cursorPos);
+        } else if (CURP > 0) {
+          line = line.substring(0, CURP - 1) + line.substring(CURP);
+          CURP--;
+          setCursorToInputPos(CURP);
           pokeInput();
         }
         selectionStart = -1; selectionEnd = -1;
@@ -121,20 +121,20 @@ function button(b, event) {
             cutStart = Math.min(selectionStart, selectionEnd);
             cutEnd = Math.max(selectionStart, selectionEnd);
           } else {
-            cutStart = cursorPos;
+            cutStart = CURP;
             cutEnd = line.length;
           }
           if (cutStart < cutEnd) {
             navigator.clipboard.writeText(line.substring(cutStart, cutEnd)).catch(function(e){ console.warn('clipboard write failed', e); });
             line = line.substring(0, cutStart) + line.substring(cutEnd);
-            cursorPos = cutStart;
+            CURP = cutStart;
             setCursorToInputPos(cutStart);
           }
         } else {
           if (selectionStart !== -1 && selectionEnd !== -1) {
             deleteSelection();  // <-- deleteSelection() doesn't re-render!
-          } else if (cursorPos < line.length) {
-            line = line.substring(0, cursorPos) + line.substring(cursorPos + 1);
+          } else if (CURP < line.length) {
+            line = line.substring(0, CURP) + line.substring(CURP + 1);
           }
         }
         selectionStart = -1; selectionEnd = -1;
@@ -142,78 +142,78 @@ function button(b, event) {
         cursor(1);
 
       } else if (k === "left") {
-        if (cursorPos > 0) {
+        if (CURP > 0) {
           if (shift) {
-            if (selectionStart === -1) selectionStart = cursorPos;
-            cursorPos--;
-            selectionEnd = cursorPos;
-            if (window.cursorX > 0) {
-              window.cursorX--;
+            if (selectionStart === -1) selectionStart = CURP;
+            CURP--;
+            selectionEnd = CURP;
+            if (CURX > 0) {
+              CURX--;
             } else {
-              if (window.cursorY > 0) {
-                window.cursorY--; window.cursorX = screenWidth - 1;
+              if (CURY > 0) {
+                CURY--; CURX = screenWidth - 1;
               } else {
-                window.cursorX = 0; window.cursorPos = 0; window.selectionEnd = 0;
+                CURX = 0; CURP = 0; selectionEnd = 0;
               }
             }
-            pokeInverse(window.cursorX, window.cursorY, true);
+            pokeInverse(CURX, CURY, true);
           } else {
             selectionStart = -1; selectionEnd = -1;
-            cursorPos--;
-            if (window.cursorX==0) {
-              window.cursorY--; window.cursorX=screenWidth-1;
+            CURP--;
+            if (CURX==0) {
+              CURY--; CURX=screenWidth-1;
             } else {
-              window.cursorX--;
+              CURX--;
             }
           }
         }
         cursor(1);      
       } else if (k === "right") {
         // Move cursor right; extend selection if SHIFT held
-        if (cursorPos < line.length) {
+        if (CURP < line.length) {
           if (shift) {
-            if (selectionStart === -1) selectionStart = cursorPos;
-            cursorPos++;
-            if (cursorPos < 0) cursorPos = 0;
-            if (cursorPos > line.length) cursorPos = line.length;
-            selectionEnd = cursorPos;
+            if (selectionStart === -1) selectionStart = CURP;
+            CURP++;
+            if (CURP < 0) CURP = 0;
+            if (CURP > line.length) CURP = line.length;
+            selectionEnd = CURP;
             // Update cursor screen coordinates from logical position
-            var sc = inputPosToScreen(cursorPos);
-            window.cursorX = sc.x;
-            window.cursorY = sc.y;
+            var sc = inputPosToScreen(CURP);
+            CURX = sc.x;
+            CURY = sc.y;
             // reflect selection visually
             pokeInput();
             updateSelectionVisuals(selectionStart, selectionEnd);
           } else {
             selectionStart = -1; selectionEnd = -1;
-            cursorPos++;
-            setCursorToInputPos(cursorPos);
+            CURP++;
+            setCursorToInputPos(CURP);
             //renderInputLine();
           }
         }
         cursor(1);
       } else if (k === "home") {
-        if (shift && cursorPos > 0) {
+        if (shift && CURP > 0) {
           // SHIFT+HOME: extend selection to start of line
-          if (selectionStart === -1) selectionStart = cursorPos;
-          cursorPos = 0;
+          if (selectionStart === -1) selectionStart = CURP;
+          CURP = 0;
           selectionEnd = 0;
           var sc = inputPosToScreen(0);
-          window.cursorX = sc.x; window.cursorY = sc.y;
+          CURX = sc.x; CURY = sc.y;
           pokeInput();
           updateSelectionVisuals(selectionStart, selectionEnd);
         } else {
           // Regular HOME: move cursor to start, clear selection
           selectionStart = -1; selectionEnd = -1;
-          cursorPos = 0;
-          var absCol = inputStartX + cursorPos;
-          window.cursorY = inputStartY + Math.floor(absCol / screenWidth);
-          window.cursorX = absCol % screenWidth; //
+          CURP = 0;
+          var absCol = inputStartX + CURP;
+          CURY = inputStartY + Math.floor(absCol / screenWidth);
+          CURX = absCol % screenWidth; //
           // clamp to screen bounds just in case
-          if (window.cursorY < 0) cursorY = 0;
-          if (window.cursorY >= screenHeight) window.cursorY = screenHeight - 1;
-          if (window.cursorX < 0) window.cursorX = 0;
-          if (window.cursorX >= screenWidth) window.cursorX = screenWidth - 1;
+          if (CURY < 0) CURY = 0;
+          if (CURY >= screenHeight) CURY = screenHeight - 1;
+          if (CURX < 0) CURX = 0;
+          if (CURX >= screenWidth) CURX = screenWidth - 1;
         }
         cursor(1);
       } else if (k === "end") {
@@ -276,8 +276,8 @@ function button(b, event) {
             print("\n");
             try { input(line); } catch (e) { /* ignore */ }
             line = "";
-            cursorPos = 0;
-            window.inputStartX = cursorX; inputStartY = cursorY;
+            CURP = 0;
+            inputStartX = CURX; inputStartY = CURY;
             if (typeof updateDisplay === 'function') updateDisplay();
             cursor(1);   // <-- RE-ENABLE CURSOR after processing input
           } else {
@@ -290,18 +290,18 @@ function button(b, event) {
               prg.onerror = function() { print("Error loading program\n"); keyson(); };
               document.head.appendChild(prg);
               line = "";
-              cursorPos = 0;
-              window.inputStartX = window.cursorX; window.inputStartY = window.cursorY;
+              CURP = 0;
+              inputStartX = CURX; inputStartY = CURY;
             } else if (line.substr(0,3) === "cls") {
               if (typeof initScreen === 'function') initScreen(); else cls();
               line = "";
-              window.cursorX = 0; window.cursorY = 0; window.cursorPos = 0;
-              window.inputStartX = 0; window.inputStartY = 0;
+              CURX = 0; CURY = 0; CURP = 0;
+              inputStartX = 0; inputStartY = 0;
             } else {
               try { executeCode(line); } catch (e) { /* ignore */ }
               line = "";
-              cursorPos = 0;
-              window.inputStartX = window.cursorX; window.inputStartY = window.cursorY;
+              CURP = 0;
+              inputStartX = CURX; inputStartY = CURY;
               cursor(1);
             }
             if (typeof updateDisplay === 'function') updateDisplay();
@@ -362,10 +362,10 @@ function button(b, event) {
                 cursor(0);
                 if (selectionStart !== -1 && selectionEnd !== -1) deleteSelection();
                 selectionStart = -1; selectionEnd = -1;
-                line = (line || "").substring(0, cursorPos) + text + (line || "").substring(cursorPos);
-                cursorPos += text.length;
+                line = (line || "").substring(0, CURP) + text + (line || "").substring(CURP);
+                CURP += text.length;
                 pokeInput();
-                setCursorToInputPos(cursorPos);
+                setCursorToInputPos(CURP);
                 cursor(1);
               }
             }).catch(function(){});
@@ -403,20 +403,21 @@ function button(b, event) {
         }
         selectionStart = -1; selectionEnd = -1;
 
-        // Insert character into line at cursorPos
-        line = (line || "").substring(0, cursorPos) + finalChar + (line || "").substring(cursorPos);
-        cursorPos += finalChar.length;
+        // Insert character into line at CURP
+        line = (line || "").substring(0, CURP) + finalChar + (line || "").substring(CURP);
+        CURP += finalChar.length;
 
-        // Advance cursorX, wrapping to next row if we hit screenWidth
-        window.cursorX += finalChar.length;
-        while (window.cursorX >= window.screenWidth) {
-          window.cursorX -= window.screenWidth;
-          window.cursorY++;
-          if (window.cursorY >= window.screenHeight) { window.cursorY = window.screenHeight - 1; }
+        // Advance CURX, wrapping to next row if we hit screenWidth
+        CURX += finalChar.length;
+        while (CURX >= screenWidth) {
+          CURX -= screenWidth;
+          CURY++;
+          if (CURY >= screenHeight) { CURY = screenHeight - 1; }
         }
 
         // Re-render the full visible input line
-        pokeInput();
+
+        pokeInput(CURX, CURY);
 
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
         cursor(1);
@@ -441,17 +442,17 @@ document.addEventListener('paste', function (event) {
   var pastedText;
   if (event.clipboardData && event.clipboardData.getData) {
    pastedText = event.clipboardData.getData('text/plain');
-  } else if (window.clipboardData && window.clipboardData.getData) {
-   pastedText = window.clipboardData.getData('Text');
+  } else if (clipboardData && clipboardData.getData) {
+   pastedText = clipboardData.getData('Text');
   }
   if (pastedText) {
    cursor(0);
    if (selectionStart !== -1 && selectionEnd !== -1) deleteSelection();
    selectionStart = -1; selectionEnd = -1;
-   line = (line || "").substring(0, cursorPos) + pastedText + (line || "").substring(cursorPos);
-   cursorPos += pastedText.length;
+   line = (line || "").substring(0, CURP) + pastedText + (line || "").substring(CURP);
+   CURP += pastedText.length;
    pokeInput();
-   setCursorToInputPos(cursorPos);
+   setCursorToInputPos(CURP);
    cursor(1);
   }
  }
@@ -592,21 +593,21 @@ function pressup(event) {
 }
 
 function ensureBuffersAndRow(y) {
-  if (!window.screenHeight) window.screenHeight = 25;
-  if (!window.screenBuffer) window.screenBuffer = [];
-  if (!window.styleBuffer) window.styleBuffer = [];
-  if (!window.screenBuffer[y]) {
-    window.screenBuffer[y] = new Array(32);
-    for (var i = 0; i < 32; i++) window.screenBuffer[y][i] = ' ';
+  if (!screenHeight) screenHeight = 25;
+  if (!screenBuffer) screenBuffer = [];
+  if (!styleBuffer) styleBuffer = [];
+  if (!screenBuffer[y]) {
+    screenBuffer[y] = new Array(32);
+    for (var i = 0; i < 32; i++) screenBuffer[y][i] = ' ';
   }
-  if (!window.styleBuffer[y]) {
-    window.styleBuffer[y] = new Array(32);
+  if (!styleBuffer[y]) {
+    styleBuffer[y] = new Array(32);
     for (var i = 0; i < 32; i++) {
-      window.styleBuffer[y][i] = {
-        color: (window.currentStyle && window.currentStyle.color) || 37,
-        bgcolor: (window.currentStyle && window.currentStyle.bgcolor) || 40,
-        bold: !!(window.currentStyle && window.currentStyle.bold),
-        inverse: !!(window.currentStyle && window.currentStyle.inverse)
+      styleBuffer[y][i] = {
+        color: (currentStyle && currentStyle.color) || 37,
+        bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
+        bold: !!(currentStyle && currentStyle.bold),
+        inverse: !!(currentStyle && currentStyle.inverse)
       };
     }
   }
@@ -664,8 +665,8 @@ function ensureBuffersAndRow(y) {
     try {
       var elId = 'c' + y + '_' + x; // repo convention: c{row}_{col}
       var el = document.getElementById(elId);
-      var ch = safeGet(window.screenBuffer, y, x);
-      var styleObj = safeGet(window.styleBuffer, y, x);
+      var ch = safeGet(screenBuffer, y, x);
+      var styleObj = safeGet(styleBuffer, y, x);
 
       if (!el) return false;
 
@@ -862,11 +863,11 @@ function print(inputString) {
   var wasKeyon = !!keyon;
   keysoff();
   cursor(0);
-  var end=pokeText(window.cursorX, window.cursorY, inputString); window.cursorX = end.x; cursorY = end.y;
+  var end=pokeText(CURX, CURY, inputString); CURX = end.x; CURY = end.y;
   if (wasKeyon) { keyson(); }
-  inputStartX = (typeof cursorX === 'number') ? Math.max(0, Math.min(screenWidth - 1, cursorX)) : 0;
-  inputStartY = (typeof cursorY === 'number') ? Math.max(0, Math.min(screenHeight - 1, cursorY)) : 0;
-  cursorPos = 0;
+  inputStartX = (typeof CURX === 'number') ? Math.max(0, Math.min(screenWidth - 1, CURX)) : 0;
+  inputStartY = (typeof CURY === 'number') ? Math.max(0, Math.min(screenHeight - 1, CURY)) : 0;
+  CURP = 0;
   setCursorToInputPos(0);
   updateDisplay();
 }
@@ -874,10 +875,10 @@ function print(inputString) {
 function print(inputString) {
   inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
   txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
-  var wasKeyon = !!window.keyon;
+  var wasKeyon = !!keyon;
   keysoff(); cursor(0);
-  var end=pokeText(cursorX, cursorY, inputString);
-  window.cursorX = end.x; window.cursorY = end.y;
+  var end=pokeText(CURX, CURY, inputString);
+  CURX = end.x; CURY = end.y;
   if (wasKeyon) { keyson(); }
 }
 
@@ -924,8 +925,8 @@ print("\nQandy Pocket\nComputer v1.j\n\n");
 cursor(1); 
 
 // Record where the input prompt starts after boot message
-window.inputStartX = cursorX;
-window.inputStartY = cursorY;
+inputStartX = CURX;
+inputStartY = CURY;
 
 SFiles=1;
 mySearch=location.search.substr(1).split("&")
@@ -943,6 +944,6 @@ for (i=0;i<mySearch.length;i++) {
 // if (SFiles) { showFiles(); }
 
 // Signal that qandy.js is ready
-if (typeof window.qandySignalReady === 'function') {
-  window.qandySignalReady('Qandy Core');
+if (typeof qandySignalReady === 'function') {
+  qandySignalReady('Qandy Core');
 }

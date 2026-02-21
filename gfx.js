@@ -22,8 +22,8 @@ function tiles() {
       t.width = "32px";
       t.className = 'tile';
       t.style.position = 'absolute';
-      t.style.top = (topOffset + y * tileSize) + 'px';
-      t.style.left = (leftOffset + x * tileSize) + 'px';
+      t.style.top = (topOffset + y *32) + 'px';
+      t.style.left = (leftOffset + x *32) + 'px';
       t.style.zIndex = '10';
       // capture index in closure
       //(function(index) {

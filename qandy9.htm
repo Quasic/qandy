@@ -17,9 +17,6 @@ var run="";
 
 // video.js
 var screenBuffer = [];
-var cursorX = 0;
-var cursorY = 0;
-var cursorOn=0;
 var styleBuffer = [];
 var currentStyle = {
   color: 37,      // white foreground
@@ -50,10 +47,14 @@ var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
+var CURX = 0;  // cursor x
+var CURY = 0;  // cursor y
+var CURP = 0;  // cursor p 
+var CURON = 0; // cursor on
+
 var line ="";
 var inputStartX=0;
 var inputStartY=0;
-var cursorPos=0;
 var inputScrollPos=0;
 
 var commandHistory = [];  // Array to store command history

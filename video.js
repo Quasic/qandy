@@ -608,7 +608,9 @@ window.clear = window.clearRegion = function(x, y, width, height) {
   return fillChar(x, y, width, height, ' ');
 };
 
-window.pokeInput = function(x, y, text) {
+window.pokeInput = function(x, y) {
+  text=line;
+  alert(x+" "+y+" "+text);
   if (!text) return 0;
   var str = String(text);
   var count = 0;
