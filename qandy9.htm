@@ -29,7 +29,7 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
 
   // Called by each script when its initialization is complete
   window.qandySignalReady = function(scriptName) {
-    console.log('\u2713 ' + scriptName + ' signaled ready');
+    //console.log('\u2713 ' + scriptName + ' signaled ready');
     if (typeof signalAdvance === 'function') {
       signalAdvance();
     }
@@ -38,7 +38,7 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
   function loadNext() {
     if (currentIndex >= SCRIPT_QUEUE.length) {
       var elapsed = Date.now() - startTime;
-      console.log('\u2713 All scripts loaded successfully in ' + elapsed + 'ms');
+      //console.log('\u2713 All scripts loaded successfully in ' + elapsed + 'ms');
       document.dispatchEvent(new CustomEvent('qandyReady'));
       return;
     }
@@ -46,7 +46,7 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
     var entry = SCRIPT_QUEUE[currentIndex];
     currentIndex++;
 
-    console.log('Loading: ' + entry.name + ' (' + entry.src + ')');
+    //console.log('Loading: ' + entry.name + ' (' + entry.src + ')');
 
     var advanced = false;
     function advance() {
@@ -74,7 +74,7 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
     };
 
     script.onload = function() {
-      console.log('\u2713 Loaded: ' + entry.name);
+      //console.log('\u2713 Loaded: ' + entry.name);
       // If the script already called qandySignalReady, advance() is a no-op here
       advance();
     };

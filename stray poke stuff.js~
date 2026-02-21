@@ -705,3 +705,183 @@ function cls() {
   try { document.querySelectorAll('.qandy-cursor').forEach(el => el.classList.remove('qandy-cursor')); } catch (e) {}
 }
 
+function triggerPaginationPause() {
+  // Prevent re-entering pause state
+  if (paginationPaused) return;
+
+
+  // Ensure buffers initialized
+  if (!screenBuffer || screenBuffer.length === 0) initScreen();
+  if (!styleBuffer || styleBuffer.length === 0) initScreen();
+
+  // Save visible state we will restore
+  const savedCursorX = typeof cursorX !== 'undefined' ? cursorX : 0;
+  const savedCursorY = typeof cursorY !== 'undefined' ? cursorY : 0;
+  const savedStyle = {
+    color: currentStyle.color,
+    bgcolor: currentStyle.bgcolor,
+    bold: currentStyle.bold,
+    inverse: currentStyle.inverse
+  };
+
+  // Mark pagination state and disable normal input
+  paginationPaused = true;
+  keysoff();
+
+  // Reset any printed-line counters so next page starts fresh
+  if (typeof printedLinesSinceLastPause !== 'undefined') printedLinesSinceLastPause = 0;
+
+  // Build ANSI-coded pause message:
+  // - Move cursor to bottom row (screenHeight), column 1
+  // - Erase the entire line (\x1b[2K) or use \x1b[K to clear from cursor to end
+  // - Set bright white and bold for visibility, print message, then reset attributes
+  const row = Math.max(1, (typeof screenHeight === 'number' ? screenHeight : 25)); // ANSI rows are 1-based
+  const pauseMsgPlain = "Press Any Key to Continue:";
+  const ansiPause =
+    "\x1b[" + row + ";1H" +    // CUP to bottom line, col 1
+    "\x1b[2K" +               // Erase entire line
+    "\x1b[1;37m" +            // Bold + white foreground
+    pauseMsgPlain +
+    "\x1b[0m";                // Reset attributes
+
+  // Use draw() to render the ANSI-coded pause message WITHOUT scrolling
+  try {
+    draw(ansiPause);
+  } catch (e) {
+    // If draw() fails, fallback to writing into buffers directly (best-effort)
+    console.warn("draw() failed in triggerPaginationPause():", e);
+    // fallback: write into screenBuffer directly on last line
+    const r = Math.min(screenHeight - 1, savedCursorY + 1);
+    // clear line
+    for (let c = 0; c < screenWidth; c++) {
+      screenBuffer[row - 1][c] = ' ';
+      styleBuffer[row - 1][c] = {
+        color: 37, bgcolor: currentStyle.bgcolor, bold: true, inverse: false
+      };
+    }
+    // write message, clipped to screenWidth
+    for (let i = 0; i < pauseMsgPlain.length && i < screenWidth; i++) {
+      screenBuffer[row - 1][i] = pauseMsgPlain.charAt(i);
+      styleBuffer[row - 1][i] = { color: 37, bgcolor: currentStyle.bgcolor, bold: true, inverse: false };
+    }
+  }
+
+  // Force a display update so the message is visible now
+  try {
+    updateDisplay();
+  } catch (e) {
+    // best-effort DOM refresh fallback
+    try { document.getElementById("txt").innerHTML = document.getElementById("txt").innerHTML; } catch (_) {}
+  }
+
+  // Restore cursor position and style variables so printing resumes cleanly later.
+  cursorX = savedCursorX;
+  cursorY = savedCursorY;
+  currentStyle.color = savedStyle.color;
+  currentStyle.bgcolor = savedStyle.bgcolor;
+  currentStyle.bold = savedStyle.bold;
+  currentStyle.inverse = savedStyle.inverse;
+}
+
+// logical index = position within `line` (0-based)
+function logicalToScreen(index) {
+  const charsPerLine = screenWidth;
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  const rowOffset = Math.floor(index / charsPerLine);
+  const col = index % charsPerLine;
+  const row = baseRow + rowOffset;
+  return { row: row, col: col };  // col doesn't use inputStartX!
+}
+
+function syncCursorCoordsFromPos() {
+  // Recompute cursorX/cursorY from cursorPos using inputPosToScreen helper
+  const sc = inputPosToScreen(cursorPos);
+  cursorX = sc.x;
+  cursorY = sc.y;
+  cursorPos = cursorPos; // unchanged
+  // visually re-place cursor using existing cursor() routine
+  if (cursorOn) {
+    cursor(0); // hide previous visual
+  }
+  cursor(1);   // show at new coords
+}
+
+function writeInputSegmentToScreenRow(targetRow, startIdx, length) {
+  if (targetRow < 0 || targetRow >= screenHeight) return;
+  if (!screenBuffer[targetRow]) {
+    screenBuffer[targetRow] = new Array(screenWidth).fill('\u00A0');
+  }
+  if (!styleBuffer[targetRow]) {
+    styleBuffer[targetRow] = new Array(screenWidth);
+    for (let x = 0; x < screenWidth; x++) {
+      styleBuffer[targetRow][x] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: false,
+        inverse: false
+      };
+    }
+  }
+
+  const inputStyle = {
+    color: (currentStyle && currentStyle.color) || 37,
+    bgcolor: (currentStyle && currentStyle.bgcolor) || 40,
+    bold: false,
+    inverse: false
+  };
+
+  for (let i = 0; i < length; i++) {
+    const strIdx = startIdx + i;
+    const ch = (strIdx < line.length) ? line.charAt(strIdx) : '\u00A0'; // NBSP when beyond text
+    const col = i;
+    if (screenBuffer[targetRow][col] !== ch || !styleBuffer[targetRow][col] || styleBuffer[targetRow][col].inverse) {
+      screenBuffer[targetRow][col] = ch;
+      // set explicit style for input text (non-inverse)
+      styleBuffer[targetRow][col] = Object.assign({}, inputStyle);
+      // update DOM via pokeCell and pass style so prevCursor can't accidentally capture inverse
+      try { pokeCell(col, targetRow, ch, inputStyle); } catch (e) { /* best-effort */ }
+    }
+  }
+}
+
+// Update visual selection between selStart and selEnd (logical indices)
+
+// Update visual selection between selStart and selEnd (logical indices)
+function updateSelectionVisuals(selStart, selEnd) {
+  if (selStart === -1 || selEnd === -1) return;
+  if (selStart > selEnd) { const t = selStart; selStart = selEnd; selEnd = t; }
+  const charsPerLine = screenWidth;
+  for (let i = selStart; i < selEnd; i++) {
+    const { row, col } = logicalToScreen(i);
+    if (row < 0 || row >= screenHeight || col < 0 || col >= screenWidth) continue;
+    if (!styleBuffer[row]) continue;
+    if (!styleBuffer[row][col]) {
+      styleBuffer[row][col] = {
+        color: currentStyle.color,
+        bgcolor: currentStyle.bgcolor,
+        bold: false,
+        inverse: true
+      };
+      pokeCell(col, row);
+    } else if (!styleBuffer[row][col].inverse) {
+      styleBuffer[row][col].inverse = true;
+      pokeCell(col, row);
+    }
+  }
+  // Clear inverse for cells outside selection in visible area (optional clean pass)
+  // (you can optimize this to only clear previously-selected region)
+  const totalVisible = Math.min(Math.ceil(Math.max(1, line.length) / charsPerLine), screenHeight);
+  const baseRow = cursorY - Math.floor(cursorPos / charsPerLine);
+  for (let r = baseRow; r < baseRow + totalVisible; r++) {
+    if (!styleBuffer[r]) continue;
+    for (let c = 0; c < screenWidth; c++) {
+      const logicalIndex = (r - baseRow) * charsPerLine + c;
+      if (logicalIndex < selStart || logicalIndex >= selEnd) {
+        if (styleBuffer[r][c] && styleBuffer[r][c].inverse) {
+          styleBuffer[r][c].inverse = false;
+          pokeCell(c, r);
+        }
+      }
+    }
+  }
+}

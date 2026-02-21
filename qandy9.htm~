@@ -83,7 +83,7 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
   }
 
   // Start loading once the DOM is ready
-  if (document.reas so no word is broken dyState === 'loading') {
+  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', loadNext);
   } else {
     loadNext();

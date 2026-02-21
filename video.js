@@ -66,24 +66,32 @@ function updateDomCellInPlace(x, y) {
 
 window.poke = window.pokeCell = function(x, y, ch, styleObj) {
   if (!validateCoords(x, y)) return false;
-  
   // Handle parameter shifting: poke(x, y, styleObj)
-  if (typeof ch === 'object' && typeof styleObj === 'undefined') {
-    styleObj = ch;
-    ch = undefined;
-  }
-  
+  if (typeof ch === 'object' && typeof styleObj === 'undefined') { styleObj = ch; ch = undefined; }
+
   if (typeof ch !== 'undefined') {
     screenBuffer[y][x] = (typeof ch === 'string') ? ch : String(ch)[0] || ' ';
   }
-  
-  // Update style if provided (direct access, no null checks needed)
+
+  // Helper to read currentStyle safely
+  var cs = (window.currentStyle && typeof window.currentStyle === 'object') ? window.currentStyle : { color: 37, bgcolor: 40, bold: false, inverse: false };
+
+  // If styleObj provided -> normalize/replace using styleObj (use currentStyle as defaults)
   if (styleObj && typeof styleObj === 'object') {
-    var style = styleBuffer[y][x];
-    if (typeof styleObj.color !== 'undefined') style.color = styleObj.color;
-    if (typeof styleObj.bgcolor !== 'undefined') style.bgcolor = styleObj.bgcolor;
-    if (typeof styleObj.bold !== 'undefined') style.bold = !!styleObj.bold;
-    if (typeof styleObj.inverse !== 'undefined') style.inverse = !!styleObj.inverse;
+    window.styleBuffer[y][x] = {
+      color: (typeof styleObj.color !== 'undefined') ? styleObj.color : (typeof cs.color !== 'undefined' ? cs.color : 37),
+      bgcolor: (typeof styleObj.bgcolor !== 'undefined') ? styleObj.bgcolor : (typeof cs.bgcolor !== 'undefined' ? cs.bgcolor : 40),
+      bold: (typeof styleObj.bold !== 'undefined') ? !!styleObj.bold : !!cs.bold,
+      inverse: (typeof styleObj.inverse !== 'undefined') ? !!styleObj.inverse : !!cs.inverse
+    };
+  } else {
+    // No styleObj -> replace the style cell with currentStyle (overwrite previous)
+    window.styleBuffer[y][x] = {
+      color: (typeof cs.color !== 'undefined') ? cs.color : 37,
+      bgcolor: (typeof cs.bgcolor !== 'undefined') ? cs.bgcolor : 40,
+      bold: !!cs.bold,
+      inverse: !!cs.inverse
+    };
   }
   
   // Fast DOM update
@@ -102,10 +110,6 @@ window.pokeInverse = function(x, y, state, count) {
 window.peek = function(x, y) { 
   return validateCoords(x, y) ? screenBuffer[y][x] : undefined;
 };
-
-// ============================================================================
-// CHARACTER POKE FUNCTIONS
-// ============================================================================
 
 // POKECHAR - Poke character only (fastest character updates)
 window.pokeChar = function(x, y, ch, count) {
@@ -140,10 +144,6 @@ window.pokeChar = function(x, y, ch, count) {
 window.peekChar = function(x, y) { 
   return validateCoords(x, y) ? screenBuffer[y][x] : undefined;
 };
-
-// ============================================================================
-// STYLE POKE FUNCTIONS - General style manipulation
-// ============================================================================
 
 // POKESTYLE - Update any style properties (color, bgcolor, bold, inverse)
 window.pokeStyle = function(x, y, styleObj, count) {
@@ -184,10 +184,6 @@ window.pokeStyle = function(x, y, styleObj, count) {
 window.peekStyle = function(x, y) { 
   return validateCoords(x, y) ? styleBuffer[y][x] : undefined;
 };
-
-// ============================================================================
-// SPECIALIZED STYLE FUNCTIONS - Ultra-fast single-property updates
-// ============================================================================
 
 // POKEINVERSE - Toggle inverse video (white on black <-> black on white)
 // Most common style operation for text selection and highlighting
@@ -338,10 +334,6 @@ window.peekColor = function(x, y) {
   var style = styleBuffer[y][x];
   return { fg: style.color, bg: style.bgcolor };
 };
-
-// ============================================================================
-// FILL FUNCTIONS - Fast region filling
-// ============================================================================
 
 // FILLCHAR - Fill rectangular area with character
 window.fillChar = function(x, y, width, height, ch) {
@@ -652,10 +644,6 @@ window.pokeText = function(x, y, text) {
   return count;
 };
 
-// ============================================================================
-// SCREEN MANIPULATION - Scroll, copy, capture
-// ============================================================================
-
 // SCROLL - Scroll region in any direction
 window.scroll = window.scrollRegion = function(x, y, width, height, direction, distance, fillChar) {
   distance = distance || 1;
@@ -866,9 +854,6 @@ window.restore = window.restoreScreen = function(capture) {
   return true;
 };
 
-// ============================================================================
-// FLOOD FILL - Fill enclosed area
-// ============================================================================
 window.flood = window.floodFill = function(x, y, ch, styleObj) {
   if (!validateCoords(x, y)) return 0;
   
@@ -909,10 +894,6 @@ window.flood = window.floodFill = function(x, y, ch, styleObj) {
   
   return filled;
 };
-
-// ============================================================================
-// SPRITE SUPPORT - Character-based sprites
-// ============================================================================
 
 // SPRITE - Create sprite from array of strings
 window.sprite = window.createSprite = function(data) {
@@ -1040,9 +1021,6 @@ window.drawInputLine = function(text, writeCol, writeRow) {
   return updated;
 };
 
-// ============================================================================
-// BATCH MODE - Disable DOM updates for bulk operations
-// ============================================================================
 var batchMode = false;
 
 // BEGIN - Start batch mode (accumulate changes)
@@ -1063,9 +1041,6 @@ updateDomCellInPlace = function(x, y) {
   return _originalUpdateDomCellInPlace(x, y);
 };
 
-// ============================================================================
-// DOUBLE BUFFERING - Flicker-free animation
-// ============================================================================
 var backBuffer = null;
 var backBufferStyle = null;
 var doubleBufferEnabled = false;
@@ -1122,9 +1097,6 @@ window.swap = window.swapBuffers = function() {
   updateDisplay(); // Render back buffer to screen
 };
 
-// ============================================================================
-// PERFORMANCE PROFILING - Test poke performance
-// ============================================================================
 window.profile = window.profilePoke = function(testName, iterations, testFunc) {
   var start = performance.now();
   
@@ -1419,7 +1391,19 @@ function updateDisplay() {
                         (ch === '&') ? '&amp;' :
                         (ch === '<') ? '&lt;' :
                         (ch === '>') ? '&gt;' :
-                        ch;
+                       print() function?
+
+function print(inputString) {
+  inputString = (typeof inputString === 'undefined' || inputString === null) ? '' : String(inputString);
+  // old debug code, may or may not remove
+  txt = (typeof txt !== 'undefined' && txt !== null) ? txt + inputString : inputString;
+  var wasKeyon = !!keyon;
+  keysoff();
+  cursor(0);
+  var end=pokeText(cursorX, cursorY, inputString); cursorX = end.x; cursorY = end.y;
+  if (wasKeyon) { keyson(); }
+}
+  ch;
     lineHtml += `<span id="c${y}_${x}" class="${classes.join(' ')}">${escapedChar}</span>`;
   }
   lineHtml += '</span><br>';
@@ -1435,5 +1419,3 @@ window.cursorOn = window.cursorOn || 0;
 if (typeof window.qandySignalReady === 'function') {
   window.qandySignalReady('Video');
 }
-
-
