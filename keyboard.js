@@ -1,15 +1,6 @@
 
 function keyson() { keyon=1; cursor(1); }
 function keysoff() { keyon=0; cursor(0); }
-function cursor(a) {
-  if (a === 1) {
-    CURON = 1;
-    pokeInverse(CURX, CURY, true);
-  } else {
-    CURON = 0;
-    pokeInverse(CURX, CURY, false);  
-  }
-}
 
 keyboardData.forEach(function(key) {
   var btn = document.createElement('div');

@@ -811,7 +811,10 @@ function print(txt) {
   txt = (typeof txt === 'undefined' || txt === null) ? '' : String(txt);
   var wasKeyon = !!keyon;
   //keysoff(); cursor(0);
+  alert(CURX+" "+CURY);
   pokeText(txt);
+  alert(CURX+" "+CURY);
+  cursor(1);
   //if (wasKeyon) { keyson(); }
 }
 

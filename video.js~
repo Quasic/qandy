@@ -41,36 +41,34 @@ window.pokeCell = function(x, y, ch, styleObj) {
 
 let lastx=0; let lasty=0; 
 
-window.pokeText = function(text, x, y) {
+window.pokeText = function(text) {
   if (!text) return false; var str = String(text);
-  if (typeof x !== 'number' || !isFinite(x) || x < 0) { x = (lastx > -1) ? lastx : 0; }
-  if (typeof y !== 'number' || !isFinite(y) || y < 0) { y = (lasty > -1) ? lasty : 0; }
-  var currentX = x; var currentY = y;
+  var curx = CURX; var cury = CURY;
   for (var i = 0; i < str.length; i++) {
     var char = str[i];
     if (char === '\n') { 
-     currentX = 0; currentY++; 
-     if (currentY >= H) {
+     curx = 0; cury++; 
+     if (cury >= H) {
      	return false; break;
      }
      continue;
     }
-    if (currentX >= W) { 
-     currentX = 0; currentY++; 
-     if (currentY >= screenHeight) {
+    if (curx >= W) { 
+     curx = 0; cury++; 
+     if (cury >= H) {
      	 return false; break;
      }
     }
-    pokeCell(currentX, currentY, char); currentX++;
+    pokeCell(curx, cury, char); curx++;
   }
-  lastx=currentX;
-  lasty=currentY;
+  CURX=curx;
+  CURY=cury;
   updateDisplay(); return true;
 };
 
 window.pokeInput = function() {
   if (!LINE) return false; var str = String(LINE);
-  var curx = CURX; var cury = CURY;
+  var curx = LINEX; var cury = LINEY;
   for (var i = 0; i < str.length; i++) {
     var char = str[i];
     if (char === '\n') { 
@@ -84,18 +82,33 @@ window.pokeInput = function() {
     }
     pokeCell(curx, cury, char); curx++;
   }
-  CURX=curx;
-  CURY=cury;
   updateDisplay();
   return true;
 };
 
-window.pokeInverse = function(x, y, state, count) {
+window.pokeInverse = function(x, y, state) {
   styleBuffer[y][x].inverse = state;
   updateDomCellInPlace(x, y);
   return true;
 };
 
+window.pokeInverse = function(x, y, state, count) {
+  if (typeof state === 'undefined') { state=true; }
+  if (!validateCoords(x, y)) return false;
+  var inverseState = !!state;
+  if (typeof count === 'number' && count > 1) {
+    var endX = Math.min(x + count, W);
+    for (var i = x; i < endX; i++) {
+    	// this loop does not wrap at x loc 32
+      styleBuffer[y][i].inverse = inverseState;
+      updateDomCellInPlace(i, y);
+    }
+    return true;
+  }
+  styleBuffer[x][y].inverse = inverseState;
+  updateDomCellInPlace(x, y);
+  return true;
+};
 
 // PEEK - Read character at position
 window.peek = function(x, y) { 
@@ -1220,7 +1233,7 @@ for (var y = 0; y < window.screenHeight; y++) {
   window.domCellRefs[y]  = rowRefs;
 }
 
-function updateDisplay() {
+window.updateDisplay = function() {
   const txtElement = document.getElementById("txt");
   let htmlContent = '';
   // Render the full visible screen (clamped to available buffer).
@@ -1333,6 +1346,16 @@ function updateDomCellInPlace(x, y) {
   } catch (e) {
     console.error('updateDomCellInPlace error:', e);
     return false;
+  }
+}
+
+function cursor(a) {
+  if (a === 1) {
+    CURON = 1;
+    pokeInverse(CURX, CURY, true);
+  } else {
+    CURON = 0;
+    pokeInverse(CURX, CURY, false);  
   }
 }
 

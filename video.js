@@ -61,14 +61,14 @@ window.pokeText = function(text) {
     }
     pokeCell(curx, cury, char); curx++;
   }
-  lastx=curx;
-  lasty=cury;
+  CURX=curx;
+  CURY=cury;
   updateDisplay(); return true;
 };
 
 window.pokeInput = function() {
   if (!LINE) return false; var str = String(LINE);
-  var curx = CURX; var cury = CURY;
+  var curx = LINEX; var cury = LINEY;
   for (var i = 0; i < str.length; i++) {
     var char = str[i];
     if (char === '\n') { 
@@ -82,18 +82,33 @@ window.pokeInput = function() {
     }
     pokeCell(curx, cury, char); curx++;
   }
-  CURX=curx;
-  CURY=cury;
   updateDisplay();
   return true;
 };
 
-window.pokeInverse = function(x, y, state, count) {
+window.pokeInverse = function(x, y, state) {
   styleBuffer[y][x].inverse = state;
   updateDomCellInPlace(x, y);
   return true;
 };
 
+window.pokeInverse = function(x, y, state, count) {
+  if (typeof state === 'undefined') { state=true; }
+  if (!validateCoords(x, y)) return false;
+  var inverseState = !!state;
+  if (typeof count === 'number' && count > 1) {
+    var endX = Math.min(x + count, W);
+    for (var i = x; i < endX; i++) {
+    	// this loop does not wrap at x loc 32
+      styleBuffer[y][i].inverse = inverseState;
+      updateDomCellInPlace(i, y);
+    }
+    return true;
+  }
+  styleBuffer[x][y].inverse = inverseState;
+  updateDomCellInPlace(x, y);
+  return true;
+};
 
 // PEEK - Read character at position
 window.peek = function(x, y) { 
@@ -1218,7 +1233,7 @@ for (var y = 0; y < window.screenHeight; y++) {
   window.domCellRefs[y]  = rowRefs;
 }
 
-function updateDisplay() {
+window.updateDisplay = function() {
   const txtElement = document.getElementById("txt");
   let htmlContent = '';
   // Render the full visible screen (clamped to available buffer).
@@ -1331,6 +1346,16 @@ function updateDomCellInPlace(x, y) {
   } catch (e) {
     console.error('updateDomCellInPlace error:', e);
     return false;
+  }
+}
+
+function cursor(a) {
+  if (a === 1) {
+    CURON = 1;
+    pokeInverse(CURX, CURY, true);
+  } else {
+    CURON = 0;
+    pokeInverse(CURX, CURY, false);  
   }
 }
 

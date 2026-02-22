@@ -812,6 +812,7 @@ function print(txt) {
   var wasKeyon = !!keyon;
   //keysoff(); cursor(0);
   pokeText(txt);
+  cursor(1);
   //if (wasKeyon) { keyson(); }
 }
 
