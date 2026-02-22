@@ -6,14 +6,9 @@ System Overview
 
 
 The qandy.htm file is the computer's BIOS that gets
-executed when powered on. It dispalys a logo and displays
-a "power on" message, web standards require the user
-interaction before the sound API can be turned on. When
-loaded, it makes a "beep" just like an old retro computer
-would have done. 
+executed when powered on. It loads a series of "hardware"
+scripts:
 
-After user input, the "hardware" scripts are loaded, each
-one emulating the hardware it is named after. They include:
 
 video.js is the video driver that handles the text screen
 operations. It translates a "retro screen" into a 
@@ -39,10 +34,4 @@ with external devices starting with LOCAL for
 localStorage in the user's web browser. When a server
 is written, it will be able to interact with the server
 via the "COOKIE" device, which I might even call "MODEM".  
-
-
-This is a good start and a solid foundation. I can work
-with this. :)
-
--Joe
 
