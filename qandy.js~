@@ -85,13 +85,11 @@ function button(b, event) {
   // Ignore raw control codes (<32) that aren't already mapped
   if (!k && b < 32) { cursor(1); return; }
 
- if (SOUND) {
   ensureSoundScript();
   try {
     // short soft feedback: 800Hz for 40ms (adjust as desired)
     if (typeof beep === 'function') beep(800, 40);
   } catch (e) { /* ignore errors in audio */ }
- }
 
   // Modifier key toggles (virtual keyboard)
   if (k === "ctrl") {

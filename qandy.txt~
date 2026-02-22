@@ -42,14 +42,3 @@ localStorage in the user's web browser. When a server
 is written, it will be able to interact with the server
 via the "COOKIE" device, which I might even call "MODEM".  
 
-
-
-Things to do:
-
-Write edit.js to input and edit files with the
-dos.js script saving them to localStorage.
-
- 
-Write a draw.js script that will allow the
-user to draw full screen ANSI art and save them as
-.ans files.
