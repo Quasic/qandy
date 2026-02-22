@@ -735,8 +735,8 @@ function applyANSICode(codes) {
 }
 
 function scrollScreenDown() {
-  VIDEO.shift();
-  COLOR.shift();
+  screenBuffer.shift();
+  styleBuffer.shift();
   
   const newLine = [];
   const newStyleLine = [];
@@ -749,8 +749,8 @@ function scrollScreenDown() {
       inverse: currentStyle.inverse
     };
   }
-  VIDEO.push(newLine);
-  COLOR.push(newStyleLine);
+  screenBuffer.push(newLine);
+  styleBuffer.push(newStyleLine);
 }
 
 // Helper functions
@@ -794,12 +794,12 @@ function print(txt) {
 
 function resumePagination() {
   // Clear the pause message by removing last few lines
-  if (VIDEO.length > 0) {
+  if (screenBuffer.length > 0) {
     // Remove the "Press Any Key" message line
-    const lastLineIdx = VIDEO.length - 1;
+    const lastLineIdx = screenBuffer.length - 1;
     for (let x = 0; x < W; x++) {
-      VIDEO[lastLineIdx][x] = ' ';
-      COLOR[lastLineIdx][x] = {
+      screenBuffer[lastLineIdx][x] = ' ';
+      styleBuffer[lastLineIdx][x] = {
         color: 37,
         bgcolor: 40,
         bold: false,

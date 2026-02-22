@@ -17,8 +17,12 @@ var devteam=1;  // developer mode
 var run="";
 
 // video.js
-var screenBuffer = [];
-var styleBuffer = [];
+
+var W=32;
+H=25;
+var VIDEO = [];
+var COLOR = [];
+var ATTR = []
 var currentStyle = {
   color: 37,      // white foreground
   bgcolor: 40,    // black background
@@ -26,6 +30,19 @@ var currentStyle = {
   inverse: false
 };
 
+// Attribute bit constants (16-bit)
+var ATTR_INVERSE    = 0x0001;
+var ATTR_BOLD       = 0x0002;
+var ATTR_DIM        = 0x0004;
+var ATTR_ITALIC     = 0x0008;
+var ATTR_UNDERLINE  = 0x0010;
+var ATTR_BLINK      = 0x0020;
+var ATTR_RAPIDBLINK = 0x0040; // optional
+var ATTR_HIDDEN     = 0x0080;
+var ATTR_STRIKE     = 0x0100;
+var ATTR_OVERLINE   = 0x0200; // optional
+
+// gfx.js
 var txt="";
 var mode="txt"; // gfx or txt display
 var allowScriptESC=false; // if true, script handles ESC instead of universal termination
@@ -193,7 +210,9 @@ var RAMFILE="";       // Current filename loaded in RAM
 var RAMTYPE="";       // Current file type (js, txt, etc)
 
 // sound.js
+var SOUND=false;       // enable/disable sound card
 var SOUND=true;       // enable/disable sound card
+
 
 // stray code
 var paginationEnabled = true;  // Enable/disable pagination feature
@@ -231,15 +250,12 @@ var inInputMode = false;       // True when processing user input (prevents pagi
   function loadNext() {
     if (currentIndex >= SCRIPT_QUEUE.length) {
       var elapsed = Date.now() - startTime;
-      // console.log('\u2713 All scripts loaded successfully in ' + elapsed + 'ms');
       document.dispatchEvent(new CustomEvent('qandyReady'));
       return;
     }
 
     var entry = SCRIPT_QUEUE[currentIndex];
     currentIndex++;
-
-    // console.log('Loading: ' + entry.name + ' (' + entry.src + ')');
 
     var advanced = false;
     function advance() {
@@ -258,29 +274,23 @@ var inInputMode = false;       // True when processing user input (prevents pagi
     script.onerror = function() {
       signalAdvance = null;
       if (entry.optional) {
-        console.warn('\u26a0 Optional script not found: ' + entry.name);
-        // continue to next script
-        loadNext();
+        console.warn('⚠ Optional script not found: ' + entry.name);
       } else {
-        console.error('\u2718 Failed to load required script: ' + entry.name + ' (' + entry.src + ')');
+        console.error('✘ Failed to load required script: ' + entry.name + ' (' + entry.src + ')');
       }
+      advance();
     };
 
-    // If the script doesn't call qandySignalReady within a reasonable time, advance anyway
+    // Advance immediately when the script file loads (onload fallback)
+    script.onload = function() { advance(); };
+
+    // Keep a shorter timeout as a final safety
     var timeout = setTimeout(function() {
       if (!advanced) {
-        // console.warn('Timed out waiting for ' + entry.name + ' to signal ready. Continuing.');
+        console.warn('Timed out waiting for ' + entry.name + ' to signal ready. Continuing.');
         advance();
       }
-    }, 5000);
-
-    // When this script actually loads, leave it to call qandySignalReady normally.
-    script.onload = function() {
-      // some libs may not call qandySignalReady; we still rely on onload+timeout fallback
-      // clear the timeout if already advanced
-      if (advanced) clearTimeout(timeout);
-    };
-
+    }, 1000); // 
     document.head.appendChild(script);
   }
 
@@ -318,7 +328,7 @@ var inInputMode = false;       // True when processing user input (prevents pagi
     overlay.style.cursor = 'pointer';
     overlay.style.userSelect = 'none';
     overlay.style.whiteSpace = 'pre-wrap'; // or 'pre'
-    overlay.textContent = 'QANDY\nPOCKET\nCOMPUTER';
+    overlay.textContent = 'qANDY\nPOCKET\nCOMPUTER';
 
     // Center small helper text beneath main label
     var helper = document.createElement('div');

@@ -1096,40 +1096,22 @@ window.pokeRefresh = function(x, y) {
     return true;
   }
 
-  // Single-cell refresh (x,y) where x=col, y=row
-  var elCell = (DOM[y] && DOM[y][x]);
-  if (!elCell) return false;
 
-  var chCell = (VIDEO[y] && typeof VIDEO[y][x] !== 'undefined') ? VIDEO[y][x] : ' ';
-  var newTextCell = (chCell === ' ' || chCell === '\u00A0') ? '\u00A0' : chCell;
-  if (elCell.textContent !== newTextCell) elCell.textContent = newTextCell;
 
-  var ccell = (COLOR[y] && COLOR[y][x]) || {};
-  var fg = (typeof ccell.color !== 'undefined') ? ccell.color : ((window.currentStyle && currentStyle.color) ? currentStyle.color : 37);
-  var bg = (typeof ccell.bgcolor !== 'undefined') ? ccell.bgcolor : ((window.currentStyle && currentStyle.bgcolor) ? currentStyle.bgcolor : 40);
 
-  var attrVal = (ATTR && ATTR[y] && typeof ATTR[y][x] !== 'undefined') ? ATTR[y][x] : 0;
-  var inv   = !!(attrVal & (window.ATTR_INVERSE || 0x0001));
-  var bold  = !!(attrVal & (window.ATTR_BOLD    || 0x0002));
-  var dim   = !!(attrVal & (window.ATTR_DIM     || 0x0004));
-  var italic= !!(attrVal & (window.ATTR_ITALIC  || 0x0008));
-  var under = !!(attrVal & (window.ATTR_UNDERLINE || 0x0010));
-  var blink = !!(attrVal & (window.ATTR_BLINK   || 0x0020));
 
-  var classStr = 'qandy-cell ansi-fg-' + fg + ' ansi-bg-' + bg;
-  if (bold) classStr += ' ansi-bold';
-  if (inv)  classStr += ' ansi-inverse';
-  if (italic) classStr += ' ansi-italic';
-  if (under) classStr += ' ansi-underline';
-  if (dim) classStr += ' ansi-dim';
-  if (blink) classStr += ' ansi-blink';
 
-  if (elCell._lastClass !== classStr) {
-    elCell.className = classStr;
-    elCell._lastClass = classStr;
-  }
+  // Single-cell refresh assume x,y are valid numbers and within bounds
+  var elCell = DOM[y][x];
+  var chCell = VIDEO[y][x];
+  elCell.textContent = (chCell === ' ' || chCell === '\u00A0') ? '\u00A0' : chCell;
+  var s = COLOR[y][x];
+  elCell.className = 'qandy-cell ansi-fg-' + s.color +
+                       ' ansi-bg-' + s.bgcolor +
+                       (s.bold ? ' ansi-bold' : '') +
+                       (s.inverse ? ' ansi-inverse' : '');
   return true;
-}
+};
 
 // Helper: read a cell's visual properties by combining COLOR (color/bg) and ATTR (boolean flags).
 function getCellStyle(x, y) {
