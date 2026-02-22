@@ -1,6 +1,4 @@
 
-var device = "local";
-
 function _getPrefix() {
   switch(device) {
     case "local":

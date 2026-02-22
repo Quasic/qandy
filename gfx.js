@@ -1,17 +1,47 @@
 
-tiles(); function tiles() {
- Z=0;
- for (Y=0; Y<=mapy; Y++) {
-  for (X=0; X<=mapx; X++) {
-   T=document.createElement("img");
-   T.id="T"+Z; T.src="t/Ga.png"; 
-   T.height=32; T.width=32;
-   T.className="tile";
-   T.onmousedown=new Function("ClickTile("+(Z)+",this.parentNode)");     
-   document.body.appendChild(T);
-   Z++;
+function tiles() {
+  let topOffset = 50;   // historic layout: top = 50 + y*32
+  let leftOffset = 54;  // historic layout: left = 54 + x*32
+
+  // remove any existing tiles to avoid duplicates (safe if called multiple times)
+  let cleanupIndex = 0;
+  while (true) {
+    const old = document.getElementById('T' + cleanupIndex);
+    if (!old) break;
+    old.parentNode && old.parentNode.removeChild(old);
+    cleanupIndex++;
   }
- }
+
+  // create and absolutely position tiles once
+  for (let z=0, y=0; y<=H; y++) {
+    for (let x=0; x<=W; x++, z++) {
+      const t=document.createElement('img');
+      t.id = 'T' + z;
+      t.src = 't/Ga.png';
+      t.height = "32px";
+      t.width = "32px";
+      t.className = 'tile';
+      t.style.position = 'absolute';
+      t.style.top = (topOffset + y *32) + 'px';
+      t.style.left = (leftOffset + x *32) + 'px';
+      t.style.zIndex = '10';
+      // capture index in closure
+      //(function(index) {
+      //  t.onmousedown = function (evt) {
+      //    try { ClickTile(index, this.parentNode); }
+      //    catch (e) { console.error('ClickTile error', e); }
+      //  };
+      //})(z);
+      document.body.appendChild(t);
+    }
+  }
+}
+
+// run tiles() once DOM is ready (device layout is fixed, so one-time placement is fine)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', tiles);
+} else {
+  tiles();
 }
 
 function gfx(scr) { a=0; for (b=0; b<=mapy; b++) { for (c=0; c<=mapx; c++) { e=document.getElementById("T"+a).src="t/"+scr.charAt(a*2)+scr.charAt((a*2)+1)+".png"; a++; }}}
@@ -47,6 +77,72 @@ function pop(htm) {
  document.getElementById("pop").style.left=PopX;
  document.getElementById("pop").style.visibility="visible";
  //poptimer=setTimeout('document.getElementById("pop").style.visibility="visible";',200);
+}
+
+function char(C,O,Z) {
+ Y=Math.floor(Z/(mapx+1)); X=Z-(Y*(mapx+1)); Y--;
+ idface="cf"+C; idbody="cb"+C; idwpn="cw"+C; idarm="ca"+C; idhat="ch"+C;
+ face=""; body=""; wpn=""; arm=""; hat="";
+
+ if (O.indexOf("A")>-1) { face="A"+O.charAt(O.indexOf("A")+1); }
+ if (O.indexOf("B")>-1) { face="B"+O.charAt(O.indexOf("B")+1); }
+ if (O.indexOf("E")>-1) { face="E"+O.charAt(O.indexOf("E")+1); }
+ if (O.indexOf("F")>-1) { face="F"+O.charAt(O.indexOf("F")+1); }
+
+ if (O.indexOf("C")>-1) { body="C"+O.charAt(O.indexOf("C")+1); }
+ if (O.indexOf("D")>-1) { body="D"+O.charAt(O.indexOf("D")+1); }
+ if (O.indexOf("G")>-1) { body="G"+O.charAt(O.indexOf("G")+1); }
+ if (O.indexOf("H")>-1) { body="H"+O.charAt(O.indexOf("H")+1); }
+
+ if (document.getElementById("cb"+C)) {
+  e=document.getElementById("cb"+C).src="c/"+body+".png";
+  e=document.getElementById("cb"+C).style.top=32+22+(Y*32)+"px";
+  e=document.getElementById("cb"+C).style.left=(32+22+(X*32))+"px";
+ } else {
+  chr=document.createElement("img");
+  chr.id="cb"+C; chr.src="c/"+body+".png";
+  chr.className="char";  
+  chr.style.position="absolute"; chr.style.height=64; chr.style.width=32;
+  chr.style.top=32+22+(Y*32)+"px"; chr.style.left=(32+22+(X*32))+"px";
+  chr.onclick=function() { chr.onmousedown=new Function("ClickChar("+(PZ)+",this.parentNode)"); }
+  chr.style.zIndex="150";  
+  document.body.appendChild(chr);
+ }
+ if (document.getElementById("cf"+C)) {
+  e=document.getElementById("cf"+C).src="c/"+face+".png";
+  e=document.getElementById("cf"+C).style.top=32+22+(Y*32)+"px";
+  e=document.getElementById("cf"+C).style.left=(32+22+(X*32))+"px";
+ } else {
+  chr=document.createElement("img");
+  chr.id="cf"+C; chr.src="c/"+face+".png";
+  chr.className="char";  
+  chr.style.position="absolute"; chr.style.height=64; chr.style.width=32;
+  chr.style.top=32+22+(Y*32)+"px"; chr.style.left=(32+22+(X*32))+"px";
+  chr.onclick=function() { chr.onmousedown=new Function("ClickChar("+(PZ)+",this.parentNode)"); }
+  chr.style.zIndex="151";
+  document.body.appendChild(chr);
+ }
+
+ if (O.indexOf("I")>-1) { hat="I"+O.charAt(O.indexOf("I")+1); }
+ if (O.indexOf("J")>-1) { hat="J"+O.charAt(O.indexOf("J")+1); }
+ if (hat) {
+  if (document.getElementById("ch"+C)) {
+   e=document.getElementById("ch"+C).src="c/"+hat+".png";
+   e=document.getElementById("ch"+C).style.top=32+22+(Y*32)+"px";
+   e=document.getElementById("ch"+C).style.left=(32+22+(X*32))+"px";
+  } else {
+   chr=document.createElement("img");
+   chr.id="ch"+C; chr.src="c/"+hat+".png";
+   chr.className="char";  
+   chr.style.position="absolute"; chr.style.height=64; chr.style.width=32;
+   chr.style.top=32+22+(Y*32)+"px"; chr.style.left=(32+22+(X*32))+"px";
+   chr.onclick=function() { chr.onmousedown=new Function("ClickChar("+(PZ)+",this.parentNode)"); }
+   chr.style.zIndex="152";
+   document.body.appendChild(chr);
+  } 
+ } else {
+  if (document.getElementById("ch"+PName)) { document.getElementById("ch"+PName).remove(); } 
+ }
 }
 
 function char(C,O,Z) {

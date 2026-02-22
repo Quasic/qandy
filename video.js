@@ -4,54 +4,7 @@
 // alert(JSON.stringify(peekStyle(y, x)));
 //
 
-function validateCoords(x, y) {
-  return (typeof x === 'number' && typeof y === 'number' && 
-          x >= 0 && y >= 0 && x < screenWidth && y < screenHeight);
-}
-
-function safeGet(arr, y, x) {
-  return (arr && arr[y]) ? arr[y][x] : undefined;
-}
-
-function updateDomCellInPlace(x, y) {
-  try {
-    var elId = 'c' + y + '_' + x; // repo convention: c{row}_{col}
-    var el = document.getElementById(elId);
-    var ch = safeGet(window.screenBuffer, y, x);
-    var styleObj = safeGet(window.styleBuffer, y, x);
-
-    if (!el) return false;
-
-    // write char (use &nbsp; for space)
-    if (typeof ch === 'string') {
-      if (ch === '\u00A0' || ch === ' ') el.innerHTML = '&nbsp;';
-      else el.textContent = ch;
-    } else {
-      el.innerHTML = '&nbsp;';
-    }
-
-    if (typeof applyStyleToDom === 'function') {
-      applyStyleToDom(el, styleObj);
-    } else {
-      // fallback minimal styling if helper missing
-      if (styleObj && styleObj.inverse) {
-        el.style.backgroundColor = '#fff';
-        el.style.color = '#000';
-      } else {
-        el.style.backgroundColor = '';
-        el.style.color = '';
-      }
-      el.style.fontWeight = (styleObj && styleObj.bold) ? 'bold' : '';
-    }
-
-    return true;
-  } catch (e) {
-    console.error('updateDomCellInPlace error:', e);
-    return false;
-  }
-}
-
-window.poke = window.pokeCell = function(x, y, ch, styleObj) {
+window.pokeCell = function(x, y, ch, styleObj) {
   if (!validateCoords(x, y)) return false;
   // Handle parameter shifting: poke(x, y, styleObj)
   if (typeof ch === 'object' && typeof styleObj === 'undefined') { styleObj = ch; ch = undefined; }
@@ -83,6 +36,55 @@ window.poke = window.pokeCell = function(x, y, ch, styleObj) {
   
   // Fast DOM update
   updateDomCellInPlace(x, y);
+  return true;
+};
+
+let lastx=0; let lasty=0; 
+
+window.pokeText = function(text) {
+  if (!text) return false; var str = String(text);
+  var curx = CURX; var cury = CURY;
+  for (var i = 0; i < str.length; i++) {
+    var char = str[i];
+    if (char === '\n') { 
+     curx = 0; cury++; 
+     if (cury >= H) {
+     	return false; break;
+     }
+     continue;
+    }
+    if (curx >= W) { 
+     curx = 0; cury++; 
+     if (cury >= H) {
+     	 return false; break;
+     }
+    }
+    pokeCell(curx, cury, char); curx++;
+  }
+  lastx=curx;
+  lasty=cury;
+  updateDisplay(); return true;
+};
+
+window.pokeInput = function() {
+  if (!LINE) return false; var str = String(LINE);
+  var curx = CURX; var cury = CURY;
+  for (var i = 0; i < str.length; i++) {
+    var char = str[i];
+    if (char === '\n') { 
+     curx = 0; cury++; 
+     if (cury >= H) { return false; }
+     continue;
+    }
+    if (curx >= W) { 
+     curx = 0; cury++; 
+     if (cury >= H) { return false; }
+    }
+    pokeCell(curx, cury, char); curx++;
+  }
+  CURX=curx;
+  CURY=cury;
+  updateDisplay();
   return true;
 };
 
@@ -415,9 +417,9 @@ window.fillPattern = function(x, y, pattern, count) {
 // ============================================================================
 
 // HLINE - Draw horizontal line
-window.hline = function(x, y, length, ch) {
-  return pokeChar(x, y, ch || '-', length);
-};
+//window.hline = function(x, y, length, ch) {
+//  return pokeChar(x, y, ch || '-', length);
+//};
 
 // VLINE - Draw vertical line
 //window.vline = function(x, y, height, ch) {
@@ -473,39 +475,39 @@ window.hline = function(x, y, length, ch) {
 //};
 
 // BOX - Draw box with borders
-window.box = function(x, y, width, height, style) {
-  if (!validateCoords(x, y)) return 0;
+//window.box = function(x, y, width, height, style) {
+//  if (!validateCoords(x, y)) return 0;
+//  
+//  var chars = style || {
+//    tl: '┌', tr: '┐', bl: '└', br: '┘',
+//    h: '─', v: '│'
+//  };
+//  
+//  // Validate bottom-right corner
+//  var x2 = x + width - 1;
+//  var y2 = y + height - 1;
+//  if (!validateCoords(x2, y2)) return 0;
+//  
+//  // Corners
+//  pokeChar(x, y, chars.tl);
+//  pokeChar(x2, y, chars.tr);
+//  pokeChar(x, y2, chars.bl);
+//  pokeChar(x2, y2, chars.br);
+//  
+//  // Horizontal lines (use span for performance)
+//  if (width > 2) {
+//    pokeChar(x + 1, y, chars.h, width - 2);
+//    pokeChar(x + 1, y2, chars.h, width - 2);
+//  }
   
-  var chars = style || {
-    tl: '┌', tr: '┐', bl: '└', br: '┘',
-    h: '─', v: '│'
-  };
+//  // Vertical lines
+//  for (var i = 1; i < height - 1; i++) {
+//    pokeChar(x, y + i, chars.v);
+//    pokeChar(x2, y + i, chars.v);
+//  }
   
-  // Validate bottom-right corner
-  var x2 = x + width - 1;
-  var y2 = y + height - 1;
-  if (!validateCoords(x2, y2)) return 0;
-  
-  // Corners
-  pokeChar(x, y, chars.tl);
-  pokeChar(x2, y, chars.tr);
-  pokeChar(x, y2, chars.bl);
-  pokeChar(x2, y2, chars.br);
-  
-  // Horizontal lines (use span for performance)
-  if (width > 2) {
-    pokeChar(x + 1, y, chars.h, width - 2);
-    pokeChar(x + 1, y2, chars.h, width - 2);
-  }
-  
-  // Vertical lines
-  for (var i = 1; i < height - 1; i++) {
-    pokeChar(x, y + i, chars.v);
-    pokeChar(x2, y + i, chars.v);
-  }
-  
-  return width * 2 + height * 2 - 4;
-};
+//  return width * 2 + height * 2 - 4;
+//};
 
 // RECT - Draw rectangle (supports fill)
 window.rect = window.pokeRect = function(x, y, width, height, ch, styleObj, fill) {
@@ -606,42 +608,6 @@ window.circle = window.pokeCircle = function(centerX, centerY, radius, ch, style
 // CLEAR - Clear region
 window.clear = window.clearRegion = function(x, y, width, height) {
   return fillChar(x, y, width, height, ' ');
-};
-
-window.pokeInput = function(x, y, text) {
-  if (!text) return 0;
-  var str = String(text);
-  var count = 0;
-  var currentX = x; var currentY = y;
-  
-  for (var i = 0; i < str.length; i++) {
-    var char = str[i];
-    if (char === '\n') { currentX = 0; currentY++; if (currentY >= screenHeight) { break; } continue; }
-    if (currentX >= screenWidth) { currentX = 0; currentY++; if (currentY >= screenHeight) break; }
-    pokeCell(currentX, currentY, char);
-    currentX++;
-    count++;
-  }
-  updateDisplay();
-  return count;
-};
-
-window.pokeText = function(x, y, text) {
-  if (!text) return 0;
-  var str = String(text);
-  var count = 0;
-  var currentX = x; var currentY = y;
-  
-  for (var i = 0; i < str.length; i++) {
-    var char = str[i];
-    if (char === '\n') { currentX = 0; currentY++; if (currentY >= screenHeight) { break; } continue; }
-    if (currentX >= screenWidth) { currentX = 0; currentY++; if (currentY >= screenHeight) break; }
-    pokeCell(currentX, currentY, char);
-    currentX++;
-    count++;
-  }
-  updateDisplay();
-  return count;
 };
 
 // SCROLL - Scroll region in any direction
@@ -937,88 +903,6 @@ window.draw = function(sprite, x, y, styleObj, transparent) {
   }
   
   return count;
-};
-
-window.drawInputLine = function(text, writeCol, writeRow) {
-  var W = screenWidth;
-  var H = screenHeight;
-  
-  // this line of code is wrong
-  if (writeRow < 0 || writeRow >= H || writeCol >= W) return 0;
-
-  var curStyle = (typeof currentStyle === 'object' && currentStyle) ? currentStyle : { color: 37, bgcolor: 40 };
-  var idx = 0;
-  var rowOffset = 0;
-  var updated = 0;
-
-  // Batch DOM updates so we only paint once at the end
-  try { beginBatch(); } catch (e) { /* beginBatch may exist as begin(); ignore if not */ try { begin(); } catch(_) {} }
-
-  while (idx < text.length && (writeRow + rowOffset) < H) {
-    var y = writeRow + rowOffset;
-    var rowStartCol = (rowOffset === 0) ? writeCol : 0;
-    var avail = W - rowStartCol;
-    if (avail <= 0) break;
-
-    // Ensure buffers exist for this row
-    if (!screenBuffer[y]) {
-      screenBuffer[y] = new Array(W);
-      styleBuffer[y]  = new Array(W);
-      for (var xi = 0; xi < W; xi++) {
-        screenBuffer[y][xi] = '\u00A0';
-        styleBuffer[y][xi]  = { color: curStyle.color, bgcolor: curStyle.bgcolor, bold: false, inverse: false };
-      }
-    }
-
-    // Number of characters to write into this row
-    var writeCount = Math.min(avail, text.length - idx);
-
-    // Write contiguous block for this row
-    for (var i = 0; i < writeCount; i++) {
-      var x = rowStartCol + i;
-      var ch = text.charAt(idx + i) || '\u00A0';
-
-      var prevCh = screenBuffer[y][x];
-      var prevStyle = styleBuffer[y][x];
-
-      // Defensive init if missing
-      if (!prevStyle) {
-        prevStyle = { color: curStyle.color, bgcolor: curStyle.bgcolor, bold: false, inverse: false };
-        styleBuffer[y][x] = prevStyle;
-        if (typeof prevCh === 'undefined') prevCh = '\u00A0';
-        screenBuffer[y][x] = prevCh;
-      }
-
-      // Preserve prevStyle.inverse; only update non-inverse style props and char
-      var needUpdate = false;
-      if (prevCh !== ch) needUpdate = true;
-      else if (prevStyle.color !== curStyle.color) needUpdate = true;
-      else if (prevStyle.bgcolor !== curStyle.bgcolor) needUpdate = true;
-      else if (prevStyle.bold !== false) needUpdate = true;
-
-      if (needUpdate) {
-        screenBuffer[y][x] = ch;
-        prevStyle.color = curStyle.color;
-        prevStyle.bgcolor = curStyle.bgcolor;
-        prevStyle.bold = false;
-        // DO NOT touch prevStyle.inverse - preserve selection/highlight
-
-        updated++;
-      }
-    }
-
-    idx += writeCount;
-    rowOffset++;
-  }
-
-  // If we still want to blank trailing visible columns on the first row (after text),
-  // but preserve inverse, you can optionally write NBSPs for the remainder. This is omitted
-  // for max speed unless you need to explicitly clear old characters.
-
-  // Flush DOM updates once
-  try { endBatch(); } catch (e) { /* endBatch may exist as end(); ignore if not */ try { end(); } catch(_) {} }
-
-  return updated;
 };
 
 var batchMode = false;
@@ -1402,6 +1286,54 @@ function updateDisplay() {
   if (txtElement) txtElement.innerHTML = htmlContent;
 }
 txtEl.appendChild(frag);
+
+function validateCoords(x, y) {
+  return (typeof x === 'number' && typeof y === 'number' && 
+          x >= 0 && y >= 0 && x < screenWidth && y < screenHeight);
+}
+
+function safeGet(arr, y, x) {
+  return (arr && arr[y]) ? arr[y][x] : undefined;
+}
+
+function updateDomCellInPlace(x, y) {
+  try {
+    var elId = 'c' + y + '_' + x; // repo convention: c{row}_{col}
+    var el = document.getElementById(elId);
+    var ch = safeGet(window.screenBuffer, y, x);
+    var styleObj = safeGet(window.styleBuffer, y, x);
+
+    if (!el) return false;
+
+    // write char (use &nbsp; for space)
+    if (typeof ch === 'string') {
+      if (ch === '\u00A0' || ch === ' ') el.innerHTML = '&nbsp;';
+      else el.textContent = ch;
+    } else {
+      el.innerHTML = '&nbsp;';
+    }
+
+    if (typeof applyStyleToDom === 'function') {
+      applyStyleToDom(el, styleObj);
+    } else {
+      // fallback minimal styling if helper missing
+      if (styleObj && styleObj.inverse) {
+        el.style.backgroundColor = '#fff';
+        el.style.color = '#000';
+      } else {
+        el.style.backgroundColor = '';
+        el.style.color = '';
+      }
+      el.style.fontWeight = (styleObj && styleObj.bold) ? 'bold' : '';
+    }
+
+    return true;
+  } catch (e) {
+    console.error('updateDomCellInPlace error:', e);
+    return false;
+  }
+}
+
 
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {
