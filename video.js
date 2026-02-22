@@ -86,11 +86,25 @@ window.pokeInput = function() {
   return true;
 };
 
-window.pokeInverse = function(x, y, state) {
-  styleBuffer[y][x].inverse = state;
-  pokeFresh(x, y);
-  return true;
+window.peekInverse = function(x, y) { //@@
+  if (typeof x !== 'number' || typeof y !== 'number') return undefined;
+  // Prefer existing validator if available
+  if (typeof validateCoords === 'function') {
+    if (!validateCoords(x, y)) return undefined;
+  } else {
+    // Minimal fallback checks
+    var sw = (typeof screenWidth === 'number') ? screenWidth : (typeof W === 'number' ? W : null);
+    var sh = (typeof screenHeight === 'number') ? screenHeight : (typeof H === 'number' ? H : null);
+    if (sw === null || sh === null) return undefined;
+    if (x < 0 || y < 0 || x >= sw || y >= sh) return undefined;
+  }
+  if (!window.styleBuffer || !window.styleBuffer[y]) return undefined;
+  var style = window.styleBuffer[y][x];
+  return style ? !!style.inverse : undefined;
 };
+
+// Alias if you prefer a short name
+window.peekInv = window.peekInverse;
 
 window.pokeInverse = function(x, y, state, count) {
   if (typeof state === 'undefined') { state=true; }
@@ -944,6 +958,171 @@ function buildClass(s) {
   if (s.inverse) cls += ' ansi-inverse';
   return cls;
 }
+
+(function(){
+  'use strict';
+
+  // Attribute bit constants (16-bit)
+  window.ATTR_INVERSE    = 0x0001;
+  window.ATTR_BOLD       = 0x0002;
+  window.ATTR_DIM        = 0x0004;
+  window.ATTR_ITALIC     = 0x0008;
+  window.ATTR_UNDERLINE  = 0x0010;
+  window.ATTR_BLINK      = 0x0020;
+  window.ATTR_RAPIDBLINK = 0x0040; // optional
+  window.ATTR_HIDDEN     = 0x0080;
+  window.ATTR_STRIKE     = 0x0100;
+  window.ATTR_OVERLINE   = 0x0200; // optional
+
+  // Ensure screen size variables exist
+  var sw = (typeof screenWidth === 'number') ? screenWidth : (typeof W === 'number' ? W : null);
+  var sh = (typeof screenHeight === 'number') ? screenHeight : (typeof H === 'number' ? H : null);
+  if (sw === null || sh === null) {
+    console.warn('init-attr-step1: screenWidth/screenHeight not found - run after initScreen()');
+    return;
+  }
+
+  // 1) Alias VRAM -> screenBuffer so new code can use VRAM[][] now.
+  if (!window.VRAM) window.VRAM = window.screenBuffer;
+
+  // 2) Allocate ATTR rows as Uint16Array if not present
+  if (!window.ATTR) {
+    window.ATTR = new Array(sh);
+    for (var y = 0; y < sh; y++) {
+      window.ATTR[y] = new Uint16Array(sw); // all zeros
+    }
+    console.log('init-attr-step1: ATTR allocated as Uint16Array rows');
+  } else {
+    console.log('init-attr-step1: ATTR already exists, skipping allocation');
+  }
+
+  // 3) Lightweight migration: copy common booleans from existing styleBuffer into ATTR.
+  //    This does NOT remove or change styleBuffer objects; it just mirrors flags into ATTR.
+  if (window.styleBuffer) {
+    var migrated = 0;
+    for (var yy = 0; yy < sh; yy++) {
+      if (!styleBuffer[yy]) continue;
+      for (var xx = 0; xx < sw; xx++) {
+        var s = styleBuffer[yy][xx];
+        if (!s) continue;
+        var bits = 0;
+        if (s.inverse) bits |= ATTR_INVERSE;
+        if (s.bold)    bits |= ATTR_BOLD;
+        if (s.italic)  bits |= ATTR_ITALIC;
+        if (s.underline) bits |= ATTR_UNDERLINE;
+        if (s.blink)   bits |= ATTR_BLINK;
+        if (s.hidden)  bits |= ATTR_HIDDEN;
+        if (s.strike)  bits |= ATTR_STRIKE;
+        if (bits) {
+          ATTR[yy][xx] = (ATTR[yy][xx] | bits);
+          migrated++;
+        }
+      }
+    }
+    console.log('init-attr-step1: migrated', migrated, 'flags from styleBuffer into ATTR (mirror only)');
+  } else {
+    console.log('init-attr-step1: styleBuffer not present; no migration performed');
+  }
+
+  // 4) Helper functions (non-destructive; safe wrappers)
+  window.hasAttr = function(x, y, attrBit) {
+    if (!window.ATTR || !ATTR[y]) return false;
+    return !!(ATTR[y][x] & attrBit);
+  };
+
+  window.peekAttr = function(x, y) {
+    if (!window.ATTR || !ATTR[y]) return undefined;
+    return ATTR[y][x];
+  };
+
+  // peekInverse: prefer ATTR, fallback to styleBuffer
+  window.peekInverse = function(x, y) {
+    if (typeof x !== 'number' || typeof y !== 'number') return undefined;
+    if (window.ATTR && ATTR[y]) {
+      return !!(ATTR[y][x] & ATTR_INVERSE);
+    }
+    // fallback for old code during migration
+    if (window.styleBuffer && styleBuffer[y] && styleBuffer[y][x]) {
+      return !!styleBuffer[y][x].inverse;
+    }
+    return undefined;
+  };
+
+  // Note: do not override existing pokeInverse here to avoid breaking current flow.
+  // Later steps will add a pokeInverse that updates both styleBuffer and ATTR consistently.
+  console.log('init-attr-step1: ready. Use VRAM[][] and ATTR[][] in new code. peekInverse(x,y) tied to ATTR (fallback styleBuffer).');
+
+})();
+
+(function(){
+  // ensure ATTR constants exist
+  if (!window.ATTR_INVERSE) {
+    window.ATTR_INVERSE    = 0x0001;
+    window.ATTR_BOLD       = 0x0002;
+    window.ATTR_ITALIC     = 0x0008;
+    window.ATTR_UNDERLINE  = 0x0010;
+    window.ATTR_BLINK      = 0x0020;
+    window.ATTR_HIDDEN     = 0x0080;
+    window.ATTR_STRIKE     = 0x0100;
+  }
+  if (!window.ATTR || !ATTR[0]) { console.warn('ATTR not initialized (run init-attr-step1)'); return; }
+
+  window._setAttrBit = function(x, y, bit, state) {
+    if (typeof x !== 'number' || typeof y !== 'number') return false;
+    if (!ATTR[y]) return false;
+    if (state) ATTR[y][x] |= bit;
+    else       ATTR[y][x] &= ~bit;
+
+    // Mirror to styleBuffer if present
+    if (window.styleBuffer && styleBuffer[y]) {
+      var sb = styleBuffer[y][x];
+      if (!sb) {
+        sb = { color: (window.defaultColor||37), bgcolor: (window.defaultBg||40), bold:false, inverse:false };
+        styleBuffer[y][x] = sb;
+      }
+      sb.inverse = !!(ATTR[y][x] & (window.ATTR_INVERSE || 0x0001));
+      sb.bold    = !!(ATTR[y][x] & (window.ATTR_BOLD    || 0x0002));
+      sb.italic  = !!(ATTR[y][x] & (window.ATTR_ITALIC  || 0x0008));
+      sb.underline = !!(ATTR[y][x] & (window.ATTR_UNDERLINE || 0x0010));
+      sb.blink   = !!(ATTR[y][x] & (window.ATTR_BLINK   || 0x0020));
+      sb.hidden  = !!(ATTR[y][x] & (window.ATTR_HIDDEN  || 0x0080));
+      sb.strike  = !!(ATTR[y][x] & (window.ATTR_STRIKE  || 0x0100));
+    }
+    return true;
+  };
+
+  window.pokeAttrBit = function(x, y, bit, state) {
+    var ok = _setAttrBit(x, y, bit, !!state);
+    if (!ok) return false;
+    if (typeof pokeRefresh === 'function') pokeRefresh(x,y);
+    return true;
+  };
+
+  window.pokeInverse = function(x, y, state, count) {
+    if (typeof x !== 'number' || typeof y !== 'number') return false;
+    if (typeof count === 'number' && count > 1) {
+      var endX = x + count;
+      for (var xi = x; xi < endX; xi++) _setAttrBit(xi, y, window.ATTR_INVERSE, !!state);
+      if (typeof pokeRefreshRow === 'function') pokeRefreshRow(y, x, count);
+      else if (typeof pokeRefresh === 'function') for (var xr = x; xr < endX; xr++) pokeRefresh(xr, y);
+      return count;
+    }
+    _setAttrBit(x, y, window.ATTR_INVERSE, !!state);
+    if (typeof pokeRefresh === 'function') pokeRefresh(x,y);
+    return true;
+  };
+
+  window.peekAttr = function(x,y) { return (ATTR && ATTR[y]) ? ATTR[y][x] : undefined; };
+  window.peekInverse = function(x,y) {
+    if (ATTR && ATTR[y]) return !!(ATTR[y][x] & (window.ATTR_INVERSE || 0x0001));
+    if (styleBuffer && styleBuffer[y] && styleBuffer[y][x]) return !!styleBuffer[y][x].inverse;
+    return undefined;
+  };
+
+  console.log('Step2: pokeInverse/pokeAttrBit/peekAttr installed.');
+})();
+
+
 
 window.pokeRefresh = function(x, y) {
   // - pokeRefresh()        -> refresh entire screen (fast)
