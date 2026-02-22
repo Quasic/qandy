@@ -119,7 +119,7 @@ window.pokeInverse = function(x, y, state, count) {
     }
     return true;
   }
-  styleBuffer[x][y].inverse = inverseState;
+  styleBuffer[y][x].inverse = inverseState;
   pokeRefresh(x, y);
   return true;
 };
