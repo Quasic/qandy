@@ -2,16 +2,17 @@
 function keyson() { keyon=1; cursor(1); }
 function keysoff() { keyon=0; cursor(0); }
 function cursor(a) {
+  alert(CURX+" "+CURY);
   if (a === 1) {
-    cursorOn = 1;
-    pokeInverse(cursorX, cursorY, true);
+    CURON = 1;
+    pokeInverse(CURX, CURY, true);
   } else {
-    cursorOn = 0;
-    pokeInverse(window.cursorX, window.cursorY, false);  
+    CURON = 0;
+    pokeInverse(CURX, CURY, false);  
   }
 }
 
- keyboardData.forEach(function(key) {
+keyboardData.forEach(function(key) {
   var btn = document.createElement('div');
   btn.id = key.id;
   btn.innerHTML = key.label;
