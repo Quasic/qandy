@@ -278,7 +278,7 @@ function button(b, event) {
             LINE = "";
             CURP = 0;
             LINEX = CURX; LINEY = CURY;
-            updateDisplay();
+            pokeRefresh();
             cursor(1); // did we disable cursor? i don't think we do anymore
           } else {
             print("\n");
@@ -304,7 +304,7 @@ function button(b, event) {
               LINEX = CURX; LINEY = CURY;
               cursor(1);
             }
-            updateDisplay();
+            pokeRefresh();
           }
         }
 
@@ -636,31 +636,6 @@ function applyStyleToDom(el, styleObj) {
   }
 }
 
-function updateDomCellInPlace(x, y) {
-  try {
-    var elId = 'c' + y + '_' + x; // repo convention: c{row}_{col}
-    var el = document.getElementById(elId);
-    var ch = safeGet(screenBuffer, y, x);
-    var styleObj = safeGet(styleBuffer, y, x);
-
-    if (!el) return false;
-
-    // write char (use &nbsp; for space)
-    if (typeof ch === 'string') {
-      if (ch === '\u00A0' || ch === ' ') el.innerHTML = '&nbsp;';
-      else el.textContent = ch;
-    } else {
-      el.innerHTML = '&nbsp;';
-    }
-
-    applyStyleToDom(el, styleObj);
-    return true;
-  } catch (e) {
-    console.error('updateDomCellInPlace error:', e);
-    return false;
-  }
-}
-
 function executeCode(code) {
   try {
     var trimmed = String(code).trim();
@@ -812,6 +787,7 @@ function print(txt) {
   var wasKeyon = !!keyon;
   //keysoff(); cursor(0);
   pokeText(txt);
+  cursor(1);
   //if (wasKeyon) { keyson(); }
 }
 

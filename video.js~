@@ -35,42 +35,40 @@ window.pokeCell = function(x, y, ch, styleObj) {
   }
   
   // Fast DOM update
-  updateDomCellInPlace(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
 let lastx=0; let lasty=0; 
 
-window.pokeText = function(text, x, y) {
+window.pokeText = function(text) {
   if (!text) return false; var str = String(text);
-  if (typeof x !== 'number' || !isFinite(x) || x < 0) { x = (lastx > -1) ? lastx : 0; }
-  if (typeof y !== 'number' || !isFinite(y) || y < 0) { y = (lasty > -1) ? lasty : 0; }
-  var currentX = x; var currentY = y;
+  var curx = CURX; var cury = CURY;
   for (var i = 0; i < str.length; i++) {
     var char = str[i];
     if (char === '\n') { 
-     currentX = 0; currentY++; 
-     if (currentY >= H) {
+     curx = 0; cury++; 
+     if (cury >= H) {
      	return false; break;
      }
      continue;
     }
-    if (currentX >= W) { 
-     currentX = 0; currentY++; 
-     if (currentY >= screenHeight) {
+    if (curx >= W) { 
+     curx = 0; cury++; 
+     if (cury >= H) {
      	 return false; break;
      }
     }
-    pokeCell(currentX, currentY, char); currentX++;
+    pokeCell(curx, cury, char); curx++;
   }
-  lastx=currentX;
-  lasty=currentY;
-  updateDisplay(); return true;
+  CURX=curx;
+  CURY=cury;
+  pokeRefresh(); return true;
 };
 
 window.pokeInput = function() {
   if (!LINE) return false; var str = String(LINE);
-  var curx = CURX; var cury = CURY;
+  var curx = LINEX; var cury = LINEY;
   for (var i = 0; i < str.length; i++) {
     var char = str[i];
     if (char === '\n') { 
@@ -84,25 +82,52 @@ window.pokeInput = function() {
     }
     pokeCell(curx, cury, char); curx++;
   }
-  CURX=curx;
-  CURY=cury;
-  updateDisplay();
+  pokeRefresh();
   return true;
 };
+
+window.peekInverse = function(x, y) { //@@
+  if (typeof x !== 'number' || typeof y !== 'number') return undefined;
+  // Prefer existing validator if available
+  if (typeof validateCoords === 'function') {
+    if (!validateCoords(x, y)) return undefined;
+  } else {
+    // Minimal fallback checks
+    var sw = (typeof screenWidth === 'number') ? screenWidth : (typeof W === 'number' ? W : null);
+    var sh = (typeof screenHeight === 'number') ? screenHeight : (typeof H === 'number' ? H : null);
+    if (sw === null || sh === null) return undefined;
+    if (x < 0 || y < 0 || x >= sw || y >= sh) return undefined;
+  }
+  if (!window.styleBuffer || !window.styleBuffer[y]) return undefined;
+  var style = window.styleBuffer[y][x];
+  return style ? !!style.inverse : undefined;
+};
+
+// Alias if you prefer a short name
+window.peekInv = window.peekInverse;
 
 window.pokeInverse = function(x, y, state, count) {
-  styleBuffer[y][x].inverse = state;
-  updateDomCellInPlace(x, y);
+  if (typeof state === 'undefined') { state=true; }
+  if (!validateCoords(x, y)) return false;
+  var inverseState = !!state;
+  if (typeof count === 'number' && count > 1) {
+    var endX = Math.min(x + count, W);
+    for (var i = x; i < endX; i++) {
+    	// this loop does not wrap at x loc 32
+      styleBuffer[y][i].inverse = inverseState;
+      pokeRefresh(i, y);
+    }
+    return true;
+  }
+  styleBuffer[x][y].inverse = inverseState;
+  pokeRefresh(x, y);
   return true;
 };
 
-
-// PEEK - Read character at position
 window.peek = function(x, y) { 
   return validateCoords(x, y) ? screenBuffer[y][x] : undefined;
 };
 
-// POKECHAR - Poke character only (fastest character updates)
 window.pokeChar = function(x, y, ch, count) {
   // Getter mode
   if (typeof ch === 'undefined') {
@@ -120,23 +145,21 @@ window.pokeChar = function(x, y, ch, count) {
     var endX = Math.min(x + count, screenWidth);
     for (var i = x; i < endX; i++) {
       screenBuffer[y][i] = char;
-      updateDomCellInPlace(i, y);
+      pokeRefresh(i, y);
     }
     return endX - x; // Return number of cells updated
   }
   
   // Single cell update
   screenBuffer[y][x] = char;
-  updateDomCellInPlace(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
-// PEEKCHAR - Read character at position
 window.peekChar = function(x, y) { 
   return validateCoords(x, y) ? screenBuffer[y][x] : undefined;
 };
 
-// POKESTYLE - Update any style properties (color, bgcolor, bold, inverse)
 window.pokeStyle = function(x, y, styleObj, count) {
   // Getter mode
   if (typeof styleObj === 'undefined') {
@@ -155,7 +178,7 @@ window.pokeStyle = function(x, y, styleObj, count) {
       if (typeof styleObj.bgcolor !== 'undefined') style.bgcolor = styleObj.bgcolor;
       if (typeof styleObj.bold !== 'undefined') style.bold = !!styleObj.bold;
       if (typeof styleObj.inverse !== 'undefined') style.inverse = !!styleObj.inverse;
-      updateDomCellInPlace(i, y);
+      pokeRefresh(i, y);
     }
     return endX - x;
   }
@@ -167,7 +190,7 @@ window.pokeStyle = function(x, y, styleObj, count) {
   if (typeof styleObj.bold !== 'undefined') style.bold = !!styleObj.bold;
   if (typeof styleObj.inverse !== 'undefined') style.inverse = !!styleObj.inverse;
   
-  updateDomCellInPlace(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
@@ -188,25 +211,23 @@ window.pokeInverse = function(x, y, state, count) {
     var endX = Math.min(x + count, screenWidth);
     for (var i = x; i < endX; i++) {
       styleBuffer[y][i].inverse = inverseState;
-      updateDomCellInPlace(i, y);
+      pokeRefresh(i, y);
     }
     return endX - x;
   }  
   // Single cell update - direct property access (fastest)
   styleBuffer[y][x].inverse = inverseState;
-  updateDomCellInPlace(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
-// TOGGLEINVERSE - Flip inverse state
 window.toggleInverse = function(x, y) {
   if (!validateCoords(x, y)) return false;
   styleBuffer[y][x].inverse = !styleBuffer[y][x].inverse;
-  updateDomCellInPlace(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
-// POKEBOLD - Set bold text attribute
 window.pokeBold = function(x, y, state, count) {
   // Getter mode
   if (typeof state === 'undefined') {
@@ -223,14 +244,14 @@ window.pokeBold = function(x, y, state, count) {
     var endX = Math.min(x + count, screenWidth);
     for (var i = x; i < endX; i++) {
       styleBuffer[y][i].bold = boldState;
-      updateDomCellInPlace(i, y);
+      pokeRefresh(i, y);
     }
     return endX - x;
   }
   
   // Single cell
   styleBuffer[y][x].bold = boldState;
-  updateDomCellInPlace(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
@@ -250,14 +271,14 @@ window.pokeFG = function(x, y, color, count) {
     var endX = Math.min(x + count, screenWidth);
     for (var i = x; i < endX; i++) {
       styleBuffer[y][i].color = color;
-      updateDomCellInPlace(i, y);
+      pokeRefresh(i, y);
     }
     return endX - x;
   }
   
   // Single cell
   styleBuffer[y][x].color = color;
-  updateDomCellInPlace(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
@@ -277,18 +298,18 @@ window.pokeBG = function(x, y, color, count) {
     var endX = Math.min(x + count, screenWidth);
     for (var i = x; i < endX; i++) {
       styleBuffer[y][i].bgcolor = color;
-      updateDomCellInPlace(i, y);
+      pokeRefresh(i, y);
     }
     return endX - x;
   }
   
   // Single cell
   styleBuffer[y][x].bgcolor = color;
-  updateDomCellInPlace(x, y);
+  pokeFresh(x, y);
   return true;
 };
 
-// POKECOLOR - C64-style: set foreground and background color together
+// POKECOLOR - set foreground and background color together
 window.pokeColor = function(x, y, fgColor, bgColor, count) {
   // Getter mode: return {fg, bg}
   if (typeof fgColor === 'undefined') {
@@ -306,7 +327,7 @@ window.pokeColor = function(x, y, fgColor, bgColor, count) {
     for (var i = x; i < endX; i++) {
       if (typeof fgColor !== 'undefined') styleBuffer[y][i].color = fgColor;
       if (typeof bgColor !== 'undefined') styleBuffer[y][i].bgcolor = bgColor;
-      updateDomCellInPlace(i, y);
+      pokeRefresh(i, y);
     }
     return endX - x;
   }
@@ -314,7 +335,7 @@ window.pokeColor = function(x, y, fgColor, bgColor, count) {
   // Single cell
   if (typeof fgColor !== 'undefined') styleBuffer[y][x].color = fgColor;
   if (typeof bgColor !== 'undefined') styleBuffer[y][x].bgcolor = bgColor;
-  updateDomCellInPlace(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
@@ -325,287 +346,6 @@ window.peekColor = function(x, y) {
   return { fg: style.color, bg: style.bgcolor };
 };
 
-// FILLCHAR - Fill rectangular area with character
-window.fillChar = function(x, y, width, height, ch) {
-  if (!validateCoords(x, y)) return 0;
-  
-  var char = (typeof ch === 'string') ? ch : String(ch)[0] || ' ';
-  var updated = 0;
-  var maxY = Math.min(y + height, screenHeight);
-  
-  for (var row = y; row < maxY; row++) {
-    var result = pokeChar(x, row, char, width);
-    updated += (typeof result === 'number') ? result : 1;
-  }
-  return updated;
-};
-
-// FILLSTYLE - Fill rectangular area with style
-window.fillStyle = function(x, y, width, height, styleObj) {
-  if (!validateCoords(x, y)) return 0;
-  
-  var updated = 0;
-  var maxY = Math.min(y + height, screenHeight);
-  
-  for (var row = y; row < maxY; row++) {
-    var result = pokeStyle(x, row, styleObj, width);
-    updated += (typeof result === 'number') ? result : 1;
-  }
-  return updated;
-};
-
-// FILLCOLOR - Fill rectangular area with color
-window.fillColor = function(x, y, width, height, fgColor, bgColor) {
-  if (!validateCoords(x, y)) return 0;
-  
-  var updated = 0;
-  var maxY = Math.min(y + height, screenHeight);
-  
-  for (var row = y; row < maxY; row++) {
-    var result = pokeColor(x, row, fgColor, bgColor, width);
-    updated += (typeof result === 'number') ? result : 1;
-  }
-  return updated;
-};
-
-// FILLINVERSE - Fill rectangular area with inverse state
-window.fillInverse = function(x, y, width, height, state) {
-  if (!validateCoords(x, y)) return 0;
-  
-  var updated = 0;
-  var maxY = Math.min(y + height, screenHeight);
-  
-  for (var row = y; row < maxY; row++) {
-    var result = pokeInverse(x, row, state, width);
-    updated += (typeof result === 'number') ? result : 1;
-  }
-  return updated;
-};
-
-// FILLBOLD - Fill rectangular area with bold state
-window.fillBold = function(x, y, width, height, state) {
-  if (!validateCoords(x, y)) return 0;
-  
-  var updated = 0;
-  var maxY = Math.min(y + height, screenHeight);
-  
-  for (var row = y; row < maxY; row++) {
-    var result = pokeBold(x, row, state, width);
-    updated += (typeof result === 'number') ? result : 1;
-  }
-  return updated;
-};
-
-// FILLPATTERN - Repeat a pattern string across row
-window.fillPattern = function(x, y, pattern, count) {
-  if (!validateCoords(x, y)) return 0;
-  if (!pattern || typeof pattern !== 'string') return 0;
-  
-  var patternLen = pattern.length;
-  var totalChars = Math.min(count || screenWidth, screenWidth - x);
-  var updated = 0;
-  
-  for (var i = 0; i < totalChars; i++) {
-    var char = pattern[i % patternLen];
-    screenBuffer[y][x + i] = char;
-    updateDomCellInPlace(x + i, y);
-    updated++;
-  }
-  return updated;
-};
-
-// ============================================================================
-// DRAWING PRIMITIVES - Lines and shapes
-// ============================================================================
-
-// HLINE - Draw horizontal line
-//window.hline = function(x, y, length, ch) {
-//  return pokeChar(x, y, ch || '-', length);
-//};
-
-// VLINE - Draw vertical line
-//window.vline = function(x, y, height, ch) {
-//  if (!validateCoords(x, y)) return 0;
-//  
-//  var char = ch || '|';
-//  var maxY = Math.min(y + height, screenHeight);
-//  var count = 0;
-//  
-//  for (var i = y; i < maxY; i++) {
-//    screenBuffer[i][x] = char;
-//    updateDomCellInPlace(x, i);
-//    count++;
-//  }
-//  return count;
-//};
-
-// LINE - Draw line between two points (Bresenham's algorithm)
-//window.line = window.pokeLine = function(x1, y1, x2, y2, ch, styleObj) {
-//  var char = (typeof ch === 'string') ? ch : (ch || '█');
-//  var dx = Math.abs(x2 - x1);
-//  var dy = Math.abs(y2 - y1);
-//  var sx = (x1 < x2) ? 1 : -1;
-//  var sy = (y1 < y2) ? 1 : -1;
-//  var err = dx - dy;
-//  var count = 0;
-//  
-//  while (true) {
-//    // Plot point
-//    if (validateCoords(x1, y1)) {
-//      if (styleObj) {
-//        pokeCell(x1, y1, char, styleObj);
-//     } else {
-//        pokeChar(x1, y1, char);
-//      }
-//      count++;
-//    }
-//    
-//    // Check if we've reached the end
-//    if (x1 === x2 && y1 === y2) break;
-//    
-//    var e2 = 2 * err;
- //   if (e2 > -dy) {
-//      err -= dy;
-//      x1 += sx;
-//    }
-//    if (e2 < dx) {
-//      err += dx;
-//      y1 += sy;
-//    }
-//  }
-//  return count;
-//};
-
-// BOX - Draw box with borders
-//window.box = function(x, y, width, height, style) {
-//  if (!validateCoords(x, y)) return 0;
-//  
-//  var chars = style || {
-//    tl: '┌', tr: '┐', bl: '└', br: '┘',
-//    h: '─', v: '│'
-//  };
-//  
-//  // Validate bottom-right corner
-//  var x2 = x + width - 1;
-//  var y2 = y + height - 1;
-//  if (!validateCoords(x2, y2)) return 0;
-//  
-//  // Corners
-//  pokeChar(x, y, chars.tl);
-//  pokeChar(x2, y, chars.tr);
-//  pokeChar(x, y2, chars.bl);
-//  pokeChar(x2, y2, chars.br);
-//  
-//  // Horizontal lines (use span for performance)
-//  if (width > 2) {
-//    pokeChar(x + 1, y, chars.h, width - 2);
-//    pokeChar(x + 1, y2, chars.h, width - 2);
-//  }
-  
-//  // Vertical lines
-//  for (var i = 1; i < height - 1; i++) {
-//    pokeChar(x, y + i, chars.v);
-//    pokeChar(x2, y + i, chars.v);
-//  }
-  
-//  return width * 2 + height * 2 - 4;
-//};
-
-// RECT - Draw rectangle (supports fill)
-window.rect = window.pokeRect = function(x, y, width, height, ch, styleObj, fill) {
-  var char = ch || '█';
-  var count = 0;
-  
-  if (fill) {
-    count = fillChar(x, y, width, height, char);
-    if (styleObj) {
-      fillStyle(x, y, width, height, styleObj);
-    }
-  } else {
-    // Just outline
-    hline(x, y, width, char);
-    hline(x, y + height - 1, width, char);
-    vline(x, y, height, char);
-    vline(x + width - 1, y, height, char);
-    count = width * 2 + height * 2 - 4;
-    
-    if (styleObj) {
-      fillStyle(x, y, width, 1, styleObj);
-      fillStyle(x, y + height - 1, width, 1, styleObj);
-      fillStyle(x, y, 1, height, styleObj);
-      fillStyle(x + width - 1, y, 1, height, styleObj);
-    }
-  }
-  
-  return count;
-};
-
-// CIRCLE - Draw circle (Bresenham's circle algorithm)
-window.circle = window.pokeCircle = function(centerX, centerY, radius, ch, styleObj, fill) {
-  var char = ch || '○';
-  var count = 0;
-  
-  if (fill) {
-    // Filled circle
-    for (var y = -radius; y <= radius; y++) {
-      for (var x = -radius; x <= radius; x++) {
-        if (x*x + y*y <= radius*radius) {
-          var px = centerX + x;
-          var py = centerY + y;
-          if (validateCoords(px, py)) {
-            if (styleObj) {
-              pokeCell(px, py, char, styleObj);
-            } else {
-              pokeChar(px, py, char);
-            }
-            count++;
-          }
-        }
-      }
-    }
-  } else {
-    // Circle outline
-    var x = 0;
-    var y = radius;
-    var d = 3 - 2 * radius;
-    
-    var plotCirclePoints = function(cx, cy, x, y) {
-      var points = [
-        [cx + x, cy + y], [cx - x, cy + y],
-        [cx + x, cy - y], [cx - x, cy - y],
-        [cx + y, cy + x], [cx - y, cy + x],
-        [cx + y, cy - x], [cx - y, cy - x]
-      ];
-      
-      for (var i = 0; i < points.length; i++) {
-        var px = points[i][0];
-        var py = points[i][1];
-        if (validateCoords(px, py)) {
-          if (styleObj) {
-            pokeCell(px, py, char, styleObj);
-          } else {
-            pokeChar(px, py, char);
-          }
-          count++;
-        }
-      }
-    };
-    
-    while (y >= x) {
-      plotCirclePoints(centerX, centerY, x, y);
-      x++;
-      
-      if (d > 0) {
-        y--;
-        d = d + 4 * (x - y) + 10;
-      } else {
-        d = d + 4 * x + 6;
-      }
-    }
-  }
-  
-  return count;
-};
 
 // CLEAR - Clear region
 window.clear = window.clearRegion = function(x, y, width, height) {
@@ -631,7 +371,7 @@ window.scroll = window.scrollRegion = function(x, y, width, height, direction, d
           if (srcRow < y2) {
             screenBuffer[row][col] = screenBuffer[srcRow][col];
             styleBuffer[row][col] = Object.assign({}, styleBuffer[srcRow][col]);
-            updateDomCellInPlace(col, row);
+            pokeRefresh(col, row);
           }
         }
       }
@@ -651,7 +391,7 @@ window.scroll = window.scrollRegion = function(x, y, width, height, direction, d
           if (srcRow >= y) {
             screenBuffer[row][col] = screenBuffer[srcRow][col];
             styleBuffer[row][col] = Object.assign({}, styleBuffer[srcRow][col]);
-            updateDomCellInPlace(col, row);
+            pokeRefresh(col, row);
           }
         }
       }
@@ -671,7 +411,7 @@ window.scroll = window.scrollRegion = function(x, y, width, height, direction, d
           if (srcCol < x2) {
             screenBuffer[row][col] = screenBuffer[row][srcCol];
             styleBuffer[row][col] = Object.assign({}, styleBuffer[row][srcCol]);
-            updateDomCellInPlace(col, row);
+            pokeRefresh(col, row);
           }
         }
       }
@@ -691,7 +431,7 @@ window.scroll = window.scrollRegion = function(x, y, width, height, direction, d
           if (srcCol >= x) {
             screenBuffer[row][col] = screenBuffer[row][srcCol];
             styleBuffer[row][col] = Object.assign({}, styleBuffer[row][srcCol]);
-            updateDomCellInPlace(col, row);
+            pokeRefresh(col, row);
           }
         }
       }
@@ -768,7 +508,7 @@ window.copy = window.copyRegion = function(srcX, srcY, destX, destY, width, heig
       
       screenBuffer[dRow][dCol] = tempChars[row][col];
       styleBuffer[dRow][dCol] = tempStyles[row][col];
-      updateDomCellInPlace(dCol, dRow);
+      pokeRefresh(dCol, dRow);
       copied++;
     }
   }
@@ -908,24 +648,22 @@ window.draw = function(sprite, x, y, styleObj, transparent) {
 };
 
 var batchMode = false;
-
 // BEGIN - Start batch mode (accumulate changes)
 window.begin = window.beginBatch = function() {
   batchMode = true;
 };
-
 // END - End batch mode (flush all changes to screen)
 window.end = window.endBatch = function() {
   batchMode = false;
-  updateDisplay(); // Single full screen refresh
+  pokeRefresh(); // Single full screen refresh
 };
 
-// Override updateDomCellInPlace to respect batch mode
-var _originalUpdateDomCellInPlace = updateDomCellInPlace;
-updateDomCellInPlace = function(x, y) {
-  if (batchMode) return true; // Skip DOM updates in batch mode
-  return _originalUpdateDomCellInPlace(x, y);
-};
+//// Override updateDomCellInPlace to respect batch mode
+//var _originalUpdateDomCellInPlace = updateDomCellInPlace;
+//updateDomCellInPlace = function(x, y) {
+//  if (batchMode) return true; // Skip DOM updates in batch mode
+//  return _originalUpdateDomCellInPlace(x, y);
+//};
 
 var backBuffer = null;
 var backBufferStyle = null;
@@ -980,7 +718,7 @@ window.sbuffer = window.disableDoubleBuffer = function() {
 // SWAP - Swap buffers (show back buffer)
 window.swap = window.swapBuffers = function() {
   if (!doubleBufferEnabled) return;
-  updateDisplay(); // Render back buffer to screen
+  pokeRefresh(); // Render back buffer to screen
 };
 
 window.profile = window.profilePoke = function(testName, iterations, testFunc) {
@@ -1184,24 +922,19 @@ window.screenBuffer = new Array(window.screenHeight);
 window.styleBuffer  = new Array(window.screenHeight);
 window.domCellRefs  = new Array(window.screenHeight);
 
+// init the DOM
 var txtEl = document.getElementById('txt');
-
-// Build DOM grid into a fragment to minimize layout thrash
 txtEl.innerHTML = '';
 var frag = document.createDocumentFragment();
-
 for (var y = 0; y < window.screenHeight; y++) {
   var rowChars = new Array(window.screenWidth);
   var rowStyles = new Array(window.screenWidth);
   var rowRefs   = new Array(window.screenWidth);
-
   var rowDiv = document.createElement('div');
   rowDiv.className = 'qandy-row';
-
   for (var x = 0; x < window.screenWidth; x++) {
     rowChars[x] = '\u00A0';
     rowStyles[x] = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
-
     var cell = document.createElement('span');
     cell.id = 'c' + y + '_' + x;
     // set class names for default colors so CSS can style them immediately
@@ -1209,85 +942,227 @@ for (var y = 0; y < window.screenHeight; y++) {
     cell.textContent = '\u00A0';
     // small snapshot to avoid costly classList scans in hot path
     cell._qandyStyle = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
-
     rowDiv.appendChild(cell);
     rowRefs[x] = cell;
   }
-
   frag.appendChild(rowDiv);
   window.screenBuffer[y] = rowChars;
   window.styleBuffer[y]  = rowStyles;
   window.domCellRefs[y]  = rowRefs;
 }
-
-function updateDisplay() {
-  const txtElement = document.getElementById("txt");
-  let htmlContent = '';
-  // Render the full visible screen (clamped to available buffer).
-  const rowsToRender = Math.min(screenHeight, screenBuffer.length);
-  // small helper to escape characters for HTML
-  function escapeChar(c) {
-    if (c === ' ') return '&nbsp;';
-    if (c === '&') return '&amp;';
-    if (c === '<') return '&lt;';
-    if (c === '>') return '&gt;';
-    // keep control chars out of output
-    if (c === '\t') return '&nbsp;&nbsp;&nbsp;&nbsp;';
-    if (c === '\r' || c === '\n') return '';
-    // default: return the character as-is (assumes ASCII printable)
-    return c;
-  }
-
-  for (let y = 0; y < rowsToRender; y++) {
-    // ensure row arrays exist (same as before)
-    if (!screenBuffer[y]) { screenBuffer[y] = new Array(screenWidth).fill(' '); }
-    if (!styleBuffer[y]) {
-      styleBuffer[y] = new Array(screenWidth);
-      for (let x = 0; x < screenWidth; x++) {
-        styleBuffer[y][x] = {
-          color: currentStyle.color,
-          bgcolor: currentStyle.bgcolor,
-          bold: currentStyle.bold,
-          inverse: currentStyle.inverse
-        };
-      }
-    }
-
-    let lineHtml = '<span class="qandy-line">';
-
-    for (let x = 0; x < screenWidth; x++) {
-      const ch = (screenBuffer[y][x] === undefined || screenBuffer[y][x] === null) ? ' ' : screenBuffer[y][x];
-      const style = styleBuffer[y][x] || {
-        color: currentStyle.color,
-        bgcolor: currentStyle.bgcolor,
-        bold: currentStyle.bold,
-        inverse: currentStyle.inverse
-      };
-      const classes = [];
-      if (style.inverse) {
-        classes.push('ansi-inverse');
-      } else {
-        classes.push(`ansi-fg-${style.color}`);
-        classes.push(`ansi-bg-${style.bgcolor}`);
-      }
-      if (style.bold) classes.push('ansi-bold');
-
-      const escapedChar = (ch === ' ') ? '&nbsp;' :
-                          (ch === '&') ? '&amp;' :
-                          (ch === '<') ? '&lt;' :
-                          (ch === '>') ? '&gt;' :
-                          escapeChar(ch);
-
-      lineHtml += `<span id="c${y}_${x}" class="${classes.join(' ')}">${escapedChar}</span>`;
-    }
-
-    lineHtml += '</span><br>';
-    htmlContent += lineHtml;
-  }
-
-  if (txtElement) txtElement.innerHTML = htmlContent;
-}
 txtEl.appendChild(frag);
+
+function buildClass(s) {
+  var cls = 'qandy-cell ansi-fg-' + s.color + ' ansi-bg-' + s.bgcolor;
+  if (s.bold) cls += ' ansi-bold';
+  if (s.inverse) cls += ' ansi-inverse';
+  return cls;
+}
+
+(function(){
+  'use strict';
+
+  // Attribute bit constants (16-bit)
+  window.ATTR_INVERSE    = 0x0001;
+  window.ATTR_BOLD       = 0x0002;
+  window.ATTR_DIM        = 0x0004;
+  window.ATTR_ITALIC     = 0x0008;
+  window.ATTR_UNDERLINE  = 0x0010;
+  window.ATTR_BLINK      = 0x0020;
+  window.ATTR_RAPIDBLINK = 0x0040; // optional
+  window.ATTR_HIDDEN     = 0x0080;
+  window.ATTR_STRIKE     = 0x0100;
+  window.ATTR_OVERLINE   = 0x0200; // optional
+
+  // Ensure screen size variables exist
+  var sw = (typeof screenWidth === 'number') ? screenWidth : (typeof W === 'number' ? W : null);
+  var sh = (typeof screenHeight === 'number') ? screenHeight : (typeof H === 'number' ? H : null);
+  if (sw === null || sh === null) {
+    console.warn('init-attr-step1: screenWidth/screenHeight not found - run after initScreen()');
+    return;
+  }
+
+  // 1) Alias VRAM -> screenBuffer so new code can use VRAM[][] now.
+  if (!window.VRAM) window.VRAM = window.screenBuffer;
+
+  // 2) Allocate ATTR rows as Uint16Array if not present
+  if (!window.ATTR) {
+    window.ATTR = new Array(sh);
+    for (var y = 0; y < sh; y++) {
+      window.ATTR[y] = new Uint16Array(sw); // all zeros
+    }
+    console.log('init-attr-step1: ATTR allocated as Uint16Array rows');
+  } else {
+    console.log('init-attr-step1: ATTR already exists, skipping allocation');
+  }
+
+  // 3) Lightweight migration: copy common booleans from existing styleBuffer into ATTR.
+  //    This does NOT remove or change styleBuffer objects; it just mirrors flags into ATTR.
+  if (window.styleBuffer) {
+    var migrated = 0;
+    for (var yy = 0; yy < sh; yy++) {
+      if (!styleBuffer[yy]) continue;
+      for (var xx = 0; xx < sw; xx++) {
+        var s = styleBuffer[yy][xx];
+        if (!s) continue;
+        var bits = 0;
+        if (s.inverse) bits |= ATTR_INVERSE;
+        if (s.bold)    bits |= ATTR_BOLD;
+        if (s.italic)  bits |= ATTR_ITALIC;
+        if (s.underline) bits |= ATTR_UNDERLINE;
+        if (s.blink)   bits |= ATTR_BLINK;
+        if (s.hidden)  bits |= ATTR_HIDDEN;
+        if (s.strike)  bits |= ATTR_STRIKE;
+        if (bits) {
+          ATTR[yy][xx] = (ATTR[yy][xx] | bits);
+          migrated++;
+        }
+      }
+    }
+    console.log('init-attr-step1: migrated', migrated, 'flags from styleBuffer into ATTR (mirror only)');
+  } else {
+    console.log('init-attr-step1: styleBuffer not present; no migration performed');
+  }
+
+  // 4) Helper functions (non-destructive; safe wrappers)
+  window.hasAttr = function(x, y, attrBit) {
+    if (!window.ATTR || !ATTR[y]) return false;
+    return !!(ATTR[y][x] & attrBit);
+  };
+
+  window.peekAttr = function(x, y) {
+    if (!window.ATTR || !ATTR[y]) return undefined;
+    return ATTR[y][x];
+  };
+
+  // peekInverse: prefer ATTR, fallback to styleBuffer
+  window.peekInverse = function(x, y) {
+    if (typeof x !== 'number' || typeof y !== 'number') return undefined;
+    if (window.ATTR && ATTR[y]) {
+      return !!(ATTR[y][x] & ATTR_INVERSE);
+    }
+    // fallback for old code during migration
+    if (window.styleBuffer && styleBuffer[y] && styleBuffer[y][x]) {
+      return !!styleBuffer[y][x].inverse;
+    }
+    return undefined;
+  };
+
+  // Note: do not override existing pokeInverse here to avoid breaking current flow.
+  // Later steps will add a pokeInverse that updates both styleBuffer and ATTR consistently.
+  console.log('init-attr-step1: ready. Use VRAM[][] and ATTR[][] in new code. peekInverse(x,y) tied to ATTR (fallback styleBuffer).');
+
+})();
+
+(function(){
+  // ensure ATTR constants exist
+  if (!window.ATTR_INVERSE) {
+    window.ATTR_INVERSE    = 0x0001;
+    window.ATTR_BOLD       = 0x0002;
+    window.ATTR_ITALIC     = 0x0008;
+    window.ATTR_UNDERLINE  = 0x0010;
+    window.ATTR_BLINK      = 0x0020;
+    window.ATTR_HIDDEN     = 0x0080;
+    window.ATTR_STRIKE     = 0x0100;
+  }
+  if (!window.ATTR || !ATTR[0]) { console.warn('ATTR not initialized (run init-attr-step1)'); return; }
+
+  window._setAttrBit = function(x, y, bit, state) {
+    if (typeof x !== 'number' || typeof y !== 'number') return false;
+    if (!ATTR[y]) return false;
+    if (state) ATTR[y][x] |= bit;
+    else       ATTR[y][x] &= ~bit;
+
+    // Mirror to styleBuffer if present
+    if (window.styleBuffer && styleBuffer[y]) {
+      var sb = styleBuffer[y][x];
+      if (!sb) {
+        sb = { color: (window.defaultColor||37), bgcolor: (window.defaultBg||40), bold:false, inverse:false };
+        styleBuffer[y][x] = sb;
+      }
+      sb.inverse = !!(ATTR[y][x] & (window.ATTR_INVERSE || 0x0001));
+      sb.bold    = !!(ATTR[y][x] & (window.ATTR_BOLD    || 0x0002));
+      sb.italic  = !!(ATTR[y][x] & (window.ATTR_ITALIC  || 0x0008));
+      sb.underline = !!(ATTR[y][x] & (window.ATTR_UNDERLINE || 0x0010));
+      sb.blink   = !!(ATTR[y][x] & (window.ATTR_BLINK   || 0x0020));
+      sb.hidden  = !!(ATTR[y][x] & (window.ATTR_HIDDEN  || 0x0080));
+      sb.strike  = !!(ATTR[y][x] & (window.ATTR_STRIKE  || 0x0100));
+    }
+    return true;
+  };
+
+  window.pokeAttrBit = function(x, y, bit, state) {
+    var ok = _setAttrBit(x, y, bit, !!state);
+    if (!ok) return false;
+    if (typeof pokeRefresh === 'function') pokeRefresh(x,y);
+    return true;
+  };
+
+  window.pokeInverse = function(x, y, state, count) {
+    if (typeof x !== 'number' || typeof y !== 'number') return false;
+    if (typeof count === 'number' && count > 1) {
+      var endX = x + count;
+      for (var xi = x; xi < endX; xi++) _setAttrBit(xi, y, window.ATTR_INVERSE, !!state);
+      if (typeof pokeRefreshRow === 'function') pokeRefreshRow(y, x, count);
+      else if (typeof pokeRefresh === 'function') for (var xr = x; xr < endX; xr++) pokeRefresh(xr, y);
+      return count;
+    }
+    _setAttrBit(x, y, window.ATTR_INVERSE, !!state);
+    if (typeof pokeRefresh === 'function') pokeRefresh(x,y);
+    return true;
+  };
+
+  window.peekAttr = function(x,y) { return (ATTR && ATTR[y]) ? ATTR[y][x] : undefined; };
+  window.peekInverse = function(x,y) {
+    if (ATTR && ATTR[y]) return !!(ATTR[y][x] & (window.ATTR_INVERSE || 0x0001));
+    if (styleBuffer && styleBuffer[y] && styleBuffer[y][x]) return !!styleBuffer[y][x].inverse;
+    return undefined;
+  };
+
+  console.log('Step2: pokeInverse/pokeAttrBit/peekAttr installed.');
+})();
+
+
+window.pokeInverse = function(x, y, state) {
+  styleBuffer[y][x].inverse = state;
+  pokeRefresh(x, y);
+  return true;
+};
+
+window.pokeRefresh = function(x, y) {
+  // - pokeRefresh()        -> refresh entire screen (fast)
+  // - pokeRefresh(x, y)    -> refresh a single cell (fast)
+  if (typeof x === 'undefined' && typeof y === 'undefined') {
+    for (var ry = 0; ry < H; ry++) {
+      var rowRefs = domCellRefs[ry];
+      var rowChars = screenBuffer[ry];
+      var rowStyles = styleBuffer[ry];
+      // local alias for performance
+      for (var rx = 0; rx < W; rx++) {
+        var el = rowRefs[rx];
+        var ch = rowChars[rx];
+        el.textContent = (ch === ' ' || ch === '\u00A0') ? '\u00A0' : ch;
+        el.className = 'qandy-cell ansi-fg-' + rowStyles[rx].color + ' ansi-bg-' + rowStyles[rx].bgcolor + (rowStyles[rx].bold ? ' ansi-bold' : '') + (rowStyles[rx].inverse ? ' ansi-inverse' : '');
+      }
+    }
+    return true;
+  }
+
+  // Single-cell refresh assume x,y are valid numbers and within bounds
+  var elCell = domCellRefs[y][x];
+  var chCell = screenBuffer[y][x];
+  elCell.textContent = (chCell === ' ' || chCell === '\u00A0') ? '\u00A0' : chCell;
+  var s = styleBuffer[y][x];
+  elCell.className = 'qandy-cell ansi-fg-' + s.color +
+                       ' ansi-bg-' + s.bgcolor +
+                       (s.bold ? ' ansi-bold' : '') +
+                       (s.inverse ? ' ansi-inverse' : '');
+  return true;
+};
+
+  window.pokeRefreshCell = function(x,y){ return window.pokeRefresh(x,y); };
+  window.pokeRefreshScreen = function(){ return window.pokeRefresh(); };
+
 
 function validateCoords(x, y) {
   return (typeof x === 'number' && typeof y === 'number' && 
@@ -1298,44 +1173,15 @@ function safeGet(arr, y, x) {
   return (arr && arr[y]) ? arr[y][x] : undefined;
 }
 
-function updateDomCellInPlace(x, y) {
-  try {
-    var elId = 'c' + y + '_' + x; // repo convention: c{row}_{col}
-    var el = document.getElementById(elId);
-    var ch = safeGet(window.screenBuffer, y, x);
-    var styleObj = safeGet(window.styleBuffer, y, x);
-
-    if (!el) return false;
-
-    // write char (use &nbsp; for space)
-    if (typeof ch === 'string') {
-      if (ch === '\u00A0' || ch === ' ') el.innerHTML = '&nbsp;';
-      else el.textContent = ch;
-    } else {
-      el.innerHTML = '&nbsp;';
-    }
-
-    if (typeof applyStyleToDom === 'function') {
-      applyStyleToDom(el, styleObj);
-    } else {
-      // fallback minimal styling if helper missing
-      if (styleObj && styleObj.inverse) {
-        el.style.backgroundColor = '#fff';
-        el.style.color = '#000';
-      } else {
-        el.style.backgroundColor = '';
-        el.style.color = '';
-      }
-      el.style.fontWeight = (styleObj && styleObj.bold) ? 'bold' : '';
-    }
-
-    return true;
-  } catch (e) {
-    console.error('updateDomCellInPlace error:', e);
-    return false;
+function cursor(a) {
+  if (a === 1) {
+    CURON = 1;
+    pokeInverse(CURX, CURY, true);
+  } else {
+    CURON = 0;
+    pokeInverse(CURX, CURY, false);  
   }
 }
-
 
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {
