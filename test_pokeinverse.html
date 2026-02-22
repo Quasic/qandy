@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>pokeInverse Test</title>
+  <style>
+    .ansi-inverse { background: white; color: black; }
+    body { background: black; color: white; font-family: monospace; }
+    .qandy-cell { display: inline-block; width: 1ch; }
+  </style>
+</head>
+<body>
+  <h1>Testing pokeInverse/pokeRefresh</h1>
+  <div id="output"></div>
+  <script src="video.js"></script>
+  <script>
+    // Wait for video.js to initialize
+    setTimeout(() => {
+      const output = document.getElementById('output');
+      
+      // Test 1: Normal case
+      output.innerHTML += '<p>Test 1: Normal case</p>';
+      pokeInverse(0, 0, true);
+      const cell1 = domCellRefs[0][0];
+      output.innerHTML += `<p>  Cell (0,0) className: ${cell1.className}</p>`;
+      output.innerHTML += `<p>  Has ansi-inverse: ${cell1.className.includes('ansi-inverse')}</p>`;
+      
+      // Test 2: Null styleBuffer row
+      output.innerHTML += '<p>Test 2: Null styleBuffer row</p>';
+      styleBuffer[20] = null;
+      output.innerHTML += `<p>  Before: styleBuffer[20] = ${styleBuffer[20]}</p>`;
+      pokeInverse(0, 20, true);
+      output.innerHTML += `<p>  After pokeInverse: styleBuffer[20] = ${styleBuffer[20]}</p>`;
+      output.innerHTML += `<p>  After pokeInverse: styleBuffer[20][0] = ${JSON.stringify(styleBuffer[20][0])}</p>`;
+      pokeRefresh(0, 20);
+      const cell2 = domCellRefs[20][0];
+      output.innerHTML += `<p>  After pokeRefresh: className = ${cell2.className}</p>`;
+      output.innerHTML += `<p>  Has ansi-inverse: ${cell2.className.includes('ansi-inverse')}</p>`;
+    }, 500);
+  </script>
+</body>
+</html>

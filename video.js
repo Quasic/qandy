@@ -1074,7 +1074,11 @@ function buildClass(s) {
     else       ATTR[y][x] &= ~bit;
 
     // Mirror to styleBuffer if present
-    if (window.styleBuffer && styleBuffer[y]) {
+    if (window.styleBuffer) {
+      // Ensure the row exists
+      if (!styleBuffer[y]) {
+        styleBuffer[y] = [];
+      }
       var sb = styleBuffer[y][x];
       if (!sb) {
         sb = { color: (window.defaultColor||37), bgcolor: (window.defaultBg||40), bold:false, inverse:false };
