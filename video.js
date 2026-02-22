@@ -1178,6 +1178,15 @@ function cursor(a) {
   }
 }
 
+// Cursor blink interval - toggles cursor on/off every 500ms
+setInterval(function() {
+  if (CURON === 1) {
+    cursor(0);
+  } else {
+    cursor(1);
+  }
+}, 500);
+
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {
   window.qandySignalReady('Video');
