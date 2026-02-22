@@ -119,7 +119,7 @@ window.pokeInverse = function(x, y, state, count) {
     }
     return true;
   }
-  styleBuffer[x][y].inverse = inverseState;
+  styleBuffer[y][x].inverse = inverseState;
   pokeRefresh(x, y);
   return true;
 };
@@ -1074,7 +1074,11 @@ function buildClass(s) {
     else       ATTR[y][x] &= ~bit;
 
     // Mirror to styleBuffer if present
-    if (window.styleBuffer && styleBuffer[y]) {
+    if (window.styleBuffer) {
+      // Ensure the row exists
+      if (!styleBuffer[y]) {
+        styleBuffer[y] = [];
+      }
       var sb = styleBuffer[y][x];
       if (!sb) {
         sb = { color: (window.defaultColor||37), bgcolor: (window.defaultBg||40), bold:false, inverse:false };
@@ -1177,6 +1181,15 @@ function cursor(a) {
     pokeInverse(CURX, CURY, false);  
   }
 }
+
+// Cursor blink interval - toggles cursor on/off every 500ms
+setInterval(function() {
+  if (CURON === 1) {
+    cursor(0);
+  } else {
+    cursor(1);
+  }
+}, 500);
 
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {
