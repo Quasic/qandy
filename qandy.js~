@@ -278,7 +278,7 @@ function button(b, event) {
             LINE = "";
             CURP = 0;
             LINEX = CURX; LINEY = CURY;
-            updateDisplay();
+            pokeRefresh();
             cursor(1); // did we disable cursor? i don't think we do anymore
           } else {
             print("\n");
@@ -304,7 +304,7 @@ function button(b, event) {
               LINEX = CURX; LINEY = CURY;
               cursor(1);
             }
-            updateDisplay();
+            pokeRefresh();
           }
         }
 
@@ -811,9 +811,7 @@ function print(txt) {
   txt = (typeof txt === 'undefined' || txt === null) ? '' : String(txt);
   var wasKeyon = !!keyon;
   //keysoff(); cursor(0);
-  alert(CURX+" "+CURY);
   pokeText(txt);
-  alert(CURX+" "+CURY);
   cursor(1);
   //if (wasKeyon) { keyson(); }
 }
