@@ -11,9 +11,6 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
 
 <script>
 
-
-
-
 // Define Global Variables
 
 var devteam=1;  // developer mode
@@ -331,7 +328,7 @@ var inInputMode = false;       // True when processing user input (prevents pagi
     helper.style.transform = 'translateX(-50%)';
     helper.style.fontSize = '12px';
     helper.style.color = '#bbb';
-    helper.textContent = 'POWER SWITCH:\n\n Press any key, click any button, or touch screen to power on.';
+    helper.textContent = 'POWER BUTTON:\n\nClick any button, press any key, or touch screen to power on.';
     overlay.appendChild(helper);
 
     document.body.appendChild(overlay);
@@ -389,12 +386,34 @@ var inInputMode = false;       // True when processing user input (prevents pagi
   }
 
   // Wait until DOM layout is available so size/position are accurate
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createPowerOverlay);
-  } else {
-    // small timeout to allow layout to stabilize (optional)
-    setTimeout(createPowerOverlay, 0);
+  // if (document.readyState === 'loading') {
+  //   document.addEventListener('DOMContentLoaded', createPowerOverlay);
+  // } else {
+  //   // small timeout to allow layout to stabilize (optional)
+  //   setTimeout(createPowerOverlay, 0);
+  // }
+  
+    // Initialization: show overlay only when SOUND === true; otherwise skip to script loading
+  function init() {
+    if (window.SOUND === true) {
+      // Wait until DOM layout is available so size/position are accurate
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', createPowerOverlay);
+      } else {
+        // small timeout to allow layout to stabilize (optional)
+        setTimeout(createPowerOverlay, 0);
+      }
+    } else {
+      // SOUND is not enabled (false or undefined); skip overlay and load scripts immediately
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startScriptLoading);
+      } else {
+        setTimeout(startScriptLoading, 0);
+      }
+    }
   }
+
+  init();
 })();
 
 </script>

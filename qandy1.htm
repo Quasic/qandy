@@ -11,9 +11,6 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
 
 <script>
 
-
-
-
 // Define Global Variables
 
 var devteam=1;  // developer mode
@@ -196,7 +193,7 @@ var RAMFILE="";       // Current filename loaded in RAM
 var RAMTYPE="";       // Current file type (js, txt, etc)
 
 // sound.js
-var SOUND=false;       // enable/disable sound card
+var SOUND=true;       // enable/disable sound card
 
 // stray code
 var paginationEnabled = true;  // Enable/disable pagination feature
@@ -389,12 +386,34 @@ var inInputMode = false;       // True when processing user input (prevents pagi
   }
 
   // Wait until DOM layout is available so size/position are accurate
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createPowerOverlay);
-  } else {
-    // small timeout to allow layout to stabilize (optional)
-    setTimeout(createPowerOverlay, 0);
+  // if (document.readyState === 'loading') {
+  //   document.addEventListener('DOMContentLoaded', createPowerOverlay);
+  // } else {
+  //   // small timeout to allow layout to stabilize (optional)
+  //   setTimeout(createPowerOverlay, 0);
+  // }
+  
+    // Initialization: show overlay only when SOUND === true; otherwise skip to script loading
+  function init() {
+    if (window.SOUND === true) {
+      // Wait until DOM layout is available so size/position are accurate
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', createPowerOverlay);
+      } else {
+        // small timeout to allow layout to stabilize (optional)
+        setTimeout(createPowerOverlay, 0);
+      }
+    } else {
+      // SOUND is not enabled (false or undefined); skip overlay and load scripts immediately
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startScriptLoading);
+      } else {
+        setTimeout(startScriptLoading, 0);
+      }
+    }
   }
+
+  init();
 })();
 
 </script>
