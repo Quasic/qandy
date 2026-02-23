@@ -262,6 +262,7 @@ function button(b, event) {
               CURX = 0; CURY = 0; CURP = 0;
               LINEX = 0; LINEY = 0;
             } else {
+              alert("here");
               executeCode(LINE);
               LINE = "";
               CURP = 0;
@@ -570,6 +571,7 @@ function applyStyleToDom(el, styleObj) {
 }
 
 function executeCode(code) {
+  alert("yes");
   try {
     var trimmed = String(code).trim();
     var simpleNameRE = /^[$A-Za-z_][$A-Za-z0-9_]*(?:\s*\.\s*[$A-Za-z_][$A-Za-z0-9_]*)*$/;
