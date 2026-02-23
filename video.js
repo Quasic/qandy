@@ -1385,14 +1385,14 @@ function cursorVarsToAttr(vars) {
 
 setInterval(function() {
   if (!CURSOR) return;
-  if (cursorBlink) {
+  //if (cursorBlink) {
     var prevWasBlock = (prevCode === 4 || prevCode === 5);
     var nowIsBlock = (CURSOR === 4 || CURSOR === 5);
     if (prevWasBlock) pokeInverse(prevX, prevY, false);
     if (nowIsBlock) pokeInverse(CURX, CURY, true);
     if (!(prevX === CURX && prevY === CURY)) { pokeRefresh(prevX, prevY); }
     pokeRefresh(CURX, CURY);
-  }
+  //}
 }, 500);
 
 // Signal that video.js is ready

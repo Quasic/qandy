@@ -9,7 +9,7 @@ let lastx=0; let lasty=0;
 window.pokeCell = function(x, y, ch) {
   if (!validateCoords(x, y)) return false;
   if (typeof ch !== 'undefined') { VIDEO[y][x] = (typeof ch === 'string') ? ch : String(ch)[0] || ' '; }
-  if (SYNC) pokeRefresh(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
@@ -44,7 +44,7 @@ window.pokeText = function(x, y, t) {
     }
     pokeCell(x, y, c); x++;
   }
-  if (SYNC) { pokeRefresh(); }
+  pokeRefresh();
   return true;
 };
 
@@ -100,7 +100,7 @@ window.pokeInput = function() {
   CURX = newX;
   CURY = newY;
   lastin = str;
-  if (SYNC) { pokeRefresh(); }        
+  pokeRefresh();        
   return true;
 };
 
@@ -129,12 +129,12 @@ window.pokeChar = function(x, y, ch, count) {
     var endX = Math.min(x + count, W);
     for (var i = x; i < endX; i++) {
       VIDEO[y][i] = char;
-      if (SYNC) { pokeRefresh(i, y); }
+      pokeRefresh(i, y);
     }
     return endX - x;
   }
   VIDEO[y][x] = char;
-  if (SYNC) { pokeRefresh(x, y); }
+  pokeRefresh(x, y);
   return true;
 };
 
