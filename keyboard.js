@@ -33,7 +33,7 @@ keyboardData.forEach(function(key) {
   // Set explicit width for custom-sized keys
   if (key.width === 40 || key.width === 81) {
    btn.style.width = key.width + 'px';
-  }
+  } 
   
   // Reduce font size for CTRL and ALT keys to fit text better
   if (key.id === 'ctrl' || key.id === 'alt') {

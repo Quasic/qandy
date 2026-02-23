@@ -1,11 +1,11 @@
 
-                          x = column
-                  Legend: y = row
-                          a = asci character
-                          c = ansi color    
-                          n = number of cells
-                          t = text string
-                          s = state (on/off) 
+  Legend: x=column
+          y=row
+          a=asci character
+          c=ansi color    
+          n=number of cells
+          t=text string
+          s=state (on/off) 
  
             pokeCell(x,y,a) — poke character(s) to a cell (fast)
           pokeChar(x,y,a,n) — poke character(s) to cells (slow)

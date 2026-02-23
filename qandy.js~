@@ -9,7 +9,6 @@ function button(b, event) {
   }
 
   if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
-  cursor(0);
   var k = "", l = "";
   switch (b) {
     case 16: // SHIFT
@@ -59,7 +58,7 @@ function button(b, event) {
   if (!k && keyMap[b]) { l = shift ? keyMap[b][1] : keyMap[b][0]; k = l; }
 
   // Ignore raw control codes (<32) that aren't already mapped
-  if (!k && b < 32) { cursor(1); return; }
+  if (!k && b < 32) { return; }
 
   // Modifier key toggles (virtual keyboard)
   if (k === "ctrl") {
@@ -109,12 +108,12 @@ function button(b, event) {
           pokeCell(CURX, CURY, " ");
           pokeInput();
         }
-        SSTART = -1; SEND = -1;
+        if (SSTART !== -1 && SEND !== -1) deleteSelection();
       } else if (k === "delete") {
         event.preventDefault();
         if (SSTART !== -1 && SEND !== -1) {
           var s = Math.max(0, Math.min(SSTART, SEND));
-          // need to fix this: len not defined
+          // @@ need to fix this: len not defined
           var e = Math.max(0, Math.min(Math.max(SSTART, SEND), len));
           if (shift && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
             navigator.clipboard.writeText(str.substring(s, e)).catch(function(err){
@@ -143,9 +142,9 @@ function button(b, event) {
                 CURX = 0; CURP = 0; SEND = 0;
               }
             }
-            pokeInverse(CURX, CURY, true);
+            pokeSelect(true);
           } else {
-            SSTART = -1; SEND = -1;
+            if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
             CURP--;
             if (CURX==0) {
               CURY--; CURX=W-1;
@@ -163,6 +162,7 @@ function button(b, event) {
             if (CURP < 0) CURP = 0;
             if (CURP > LINE.length) CURP = LINE.length;
             SEND = CURP;
+            pokeSelect(true);
           }
           SSTART = -1; SEND = -1;
           CURP++; if (CURP>LINE.length) { CURP=LINE.length; }
@@ -171,7 +171,6 @@ function button(b, event) {
       } else if (k === "home") {
         event.preventDefault();
         if (shift && CURP > 0) {
-          // SHIFT+HOME: extend selection to start of line
           if (SEND <0 ) { SEND=CURP; }
           CURP = 0; SSTART = CURP;
           pokeInverse(LINEX,LINEY,false, SEND-SSTART);
@@ -181,7 +180,7 @@ function button(b, event) {
           //
         } else {
           // Regular HOME: move cursor to start, clear selection
-          SSTART = -1; SEND = -1;
+          if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
           CURP = 0;
           var absCol = LINEX + CURP;
           CURY = LINEY + Math.floor(absCol / W);
@@ -194,7 +193,7 @@ function button(b, event) {
         }
       } else if (k === "end") {
         event.preventDefault();
-        SSTART = -1; SEND = -1;
+        if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
         var absCol  = (LINEX|0) + (LINE || "").length;;
         var newX    = absCol % W;
         var newY    = (LINEY|0) + Math.floor(absCol / W);
@@ -228,7 +227,7 @@ function button(b, event) {
       } else if (k === "enter") {
         event.preventDefault();
         // Submit the current line
-        SSTART = -1; SEND = -1;
+        if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
         if (LINE !== undefined) {
           // Save to history
           if (typeof commandHistory !== 'undefined' && LINE.trim().length > 0) {
@@ -262,7 +261,6 @@ function button(b, event) {
               CURX = 0; CURY = 0; CURP = 0;
               LINEX = 0; LINEY = 0;
             } else {
-              alert("here");
               executeCode(LINE);
               LINE = "";
               CURP = 0;
@@ -318,7 +316,7 @@ function button(b, event) {
             navigator.clipboard.readText().then(function(text) {
               if (text) {
                 if (SSTART !== -1 && SEND !== -1) deleteSelection();
-                SSTART = -1; SEND = -1;
+                if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
                 LINE = (LINE || "").substring(0, CURP) + text + (LINE || "").substring(CURP);
                 CURP += text.length;
                 pokeInput();
@@ -331,7 +329,7 @@ function button(b, event) {
           if (lc === 'a') {
             if (LINE.length > 0) {
               SSTART = 0; SEND = LINE.length;
-              // updateSelectionVisuals(SSTART, SSEND);
+              pokeSelect(true);
             }
             return;
           }
@@ -346,7 +344,7 @@ function button(b, event) {
           // deleteSelection();
           //
         }
-        SSTART = -1; SEND = -1;
+        if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
         // Insert character into line at CURP
         LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
         CURP += finalChar.length;
@@ -382,9 +380,7 @@ document.addEventListener('paste', function (event) {
    pastedText = clipboardData.getData('Text');
   }
   if (pastedText) {
-   cursor(0);
-   if (SSTART !== -1 && SEND !== -1) deleteSelection();
-   SSTART = -1; SEND = -1;
+   if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
    LINE = (LINE || "").substring(0, CURP) + pastedText + (LINE || "").substring(CURP);
    CURP += pastedText.length;
    pokeInput();
@@ -571,7 +567,6 @@ function applyStyleToDom(el, styleObj) {
 }
 
 function executeCode(code) {
-  alert("yes");
   try {
     var trimmed = String(code).trim();
     var simpleNameRE = /^[$A-Za-z_][$A-Za-z0-9_]*(?:\s*\.\s*[$A-Za-z_][$A-Za-z0-9_]*)*$/;
@@ -685,12 +680,89 @@ function resumePagination() {
   }
 }
 
+function setCursorAttr(val) {
+  // Read current global CURSOR if no val provided
+  var code = (typeof val === 'number') ? val : (typeof CURSOR === 'number' ? CURSOR : 0);
+
+  // Initialise globals if not already defined (defensive)
+  if (typeof cursorInverse === 'undefined') window.cursorInverse = 0;
+  if (typeof cursorBold    === 'undefined') window.cursorBold    = 0;
+  if (typeof cursorDim     === 'undefined') window.cursorDim     = 0;
+  if (typeof cursorItalic  === 'undefined') window.cursorItalic  = 0;
+  if (typeof cursorLine    === 'undefined') window.cursorLine    = 0;
+  if (typeof cursorBlink   === 'undefined') window.cursorBlink   = 0;
+
+  // Clear all flags
+  window.cursorInverse = 0;
+  window.cursorBold    = 0;
+  window.cursorDim     = 0;
+  window.cursorItalic  = 0;
+  window.cursorLine    = 0;
+  window.cursorBlink   = 0;
+
+  // Helper constants for fallback bitmask mapping (underline=1, blink=2, inverse=4)
+  const BM_UNDERLINE = 1;
+  const BM_BLINK     = 2;
+  const BM_INVERSE   = 4;
+
+  // ATTR constants (if your ATTR uses other masks like 0x0002 for bold, etc.)
+  const ATTR_BOLD     = (window.ATTR_BOLD     !== undefined) ? window.ATTR_BOLD     : 0x0002;
+  const ATTR_ITALIC   = (window.ATTR_ITALIC   !== undefined) ? window.ATTR_ITALIC   : 0x0008;
+  const ATTR_UNDER    = (window.ATTR_UNDERLINE !== undefined) ? window.ATTR_UNDERLINE : 0x0010;
+  const ATTR_BLINK    = (window.ATTR_BLINK    !== undefined) ? window.ATTR_BLINK    : 0x0020;
+  const ATTR_DIM      = (window.ATTR_DIM      !== undefined) ? window.ATTR_DIM      : 0x0040;
+  const ATTR_INVERSE  = (window.ATTR_INVERSE  !== undefined) ? window.ATTR_INVERSE  : 0x0001;
+
+  // If it's one of the known legacy codes, map directly
+  if (code === 0) {
+    // all zero - cursor off
+  } else if (code === 1) {
+    window.cursorLine = 1;
+  } else if (code === 3) {
+    window.cursorLine  = 1;
+    window.cursorBlink = 1;
+  } else if (code === 4) {
+    window.cursorInverse = 1;
+  } else if (code === 5) {
+    window.cursorInverse = 1;
+    window.cursorBlink   = 1;
+  } else {
+    // Treat code as a bitmask. Support both the simple 1/2/4 bitmask
+    // and the ATTR_* bitfield (so bold/dim/italic can be set if present).
+    if (code & BM_UNDERLINE) window.cursorLine = 1;
+    if (code & BM_BLINK)     window.cursorBlink = 1;
+    if (code & BM_INVERSE)   window.cursorInverse = 1;
+
+    // Also check ATTR_* style bits (useful if `code` is an ATTR mask)
+    if (code & ATTR_INVERSE) window.cursorInverse = 1;
+    if (code & ATTR_BOLD)    window.cursorBold    = 1;
+    if (code & ATTR_DIM)     window.cursorDim     = 1;
+    if (code & ATTR_ITALIC)  window.cursorItalic  = 1;
+    if (code & ATTR_UNDER)   window.cursorLine    = 1;
+    if (code & ATTR_BLINK)   window.cursorBlink   = 1;
+  }
+
+  // Return the computed flags for convenience
+  return {
+    cursorInverse: window.cursorInverse,
+    cursorBold:    window.cursorBold,
+    cursorDim:     window.cursorDim,
+    cursorItalic:  window.cursorItalic,
+    cursorLine:    window.cursorLine,
+    cursorBlink:   window.cursorBlink
+  };
+}
+
 function clearScreen() { cls(); }
+
+pokeCursorOn(CURSOR);
+
+
 
 // system ready
 
 print("\nQandy Pocket\nComputer v1.j\n\n");
-LINEX = CURX; LINEY = CURY;  
+LINEX = CURX; LINEY = CURY;   
 
 SFiles=1;
 mySearch=location.search.substr(1).split("&")

@@ -1346,6 +1346,7 @@ var prevX = -1;
 var prevY = -1;
 var prevCode = CURSOR;
 
+
 function pokeCursorOn(a) {
   ATTR[CURY][CURX]=a; 
   pokeRefresh(CURX, CURY);
@@ -1381,6 +1382,11 @@ function cursorVarsToAttr(vars) {
 
   return mask;
 }
+
+
+
+
+
 
 setInterval(function() {
   if (!CURSOR) return;

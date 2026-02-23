@@ -88,6 +88,13 @@ var CURFG = 37;     // cursor text fg color white
 var CURBG = 40;     // cursor text bg color black
 //var CURATTR = 0;    // cursor text attr
 
+var cursorInverse=1;
+var cursorBold=0;
+var cursorDim=0;
+var cursorItalic=0;
+var cursorLine=0;
+var cursorBlink=1;
+
 var LINE ="";  // input line
 var LINEX=0;   // start of input cursor x
 var LINEY=0;   // start of input cursor y
