@@ -9,7 +9,7 @@ let lastx=0; let lasty=0;
 window.pokeCell = function(x, y, ch) {
   if (!validateCoords(x, y)) return false;
   if (typeof ch !== 'undefined') { VIDEO[y][x] = (typeof ch === 'string') ? ch : String(ch)[0] || ' '; }
-  if (SYNC) pokeRefresh(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
@@ -44,7 +44,7 @@ window.pokeText = function(x, y, t) {
     }
     pokeCell(x, y, c); x++;
   }
-  if (SYNC) { pokeRefresh(); }
+  pokeRefresh();
   return true;
 };
 
@@ -67,6 +67,7 @@ window.eraseInput = function(text) {
     pokeCell(curx, cury, " "); curx++;
   }
 }
+
 window.pokeInput = function() {
   if (typeof lastin === 'undefined') { lastin="";  }
   if (lastin != "") { eraseInput(lastin); }
@@ -132,7 +133,9 @@ window.pokeChar = function(x, y, ch, count) {
     }
     return endX - x;
   }
-  VIDEO[y][x] = char; pokeRefresh(x, y); return true;
+  VIDEO[y][x] = char;
+  pokeRefresh(x, y);
+  return true;
 };
 
 window.peekChar = function(x, y) { 
@@ -161,14 +164,14 @@ window.pokeBold = function(x, y, state, count) {
     var endX = Math.min(x + count, W);
     for (var i = x; i < endX; i++) {
       COLOR[y][i].bold = boldState;
-      pokeRefresh(i, y);
+      if (SYNC) { pokeRefresh(i, y); }
     }
     return endX - x;
   }
   
   // Single cell
   COLOR[y][x].bold = boldState;
-  pokeRefresh(x, y);
+  if (SYNC) { pokeRefresh(x, y); }
   return true;
 };
 
@@ -188,14 +191,14 @@ window.pokeFG = function(x, y, color, count) {
     var endX = Math.min(x + count, W);
     for (var i = x; i < endX; i++) {
       COLOR[y][i].color = color;
-      pokeRefresh(i, y);
+      if (SYNC) { pokeRefresh(i, y); }
     }
     return endX - x;
   }
   
   // Single cell
   COLOR[y][x].color = color;
-  pokeRefresh(x, y);
+  if (SYNC) { pokeRefresh(x, y); }
   return true;
 };
 
@@ -209,7 +212,7 @@ window.pokeBG = function(x, y, color, count) {
     var endX = Math.min(x + count, W);
     for (var i = x; i < endX; i++) {
       COLOR[y][i].bgcolor = color;
-      pokeRefresh(i, y);
+      if (SYNC) { pokeRefresh(i, y); }
     }
     return endX - x;
   }
@@ -1118,8 +1121,6 @@ window.peekInverse = function(x, y) {
 })();
 
 window.pokeRefresh = function(x, y) {
-  // - pokeRefresh()        -> refresh entire screen (fast)
-  // - pokeRefresh(x, y)    -> refresh a single cell (fast)
   if (typeof x === 'undefined' && typeof y === 'undefined') {
     for (var ry = 0; ry < H; ry++) {
       var rowRefs = DOM[ry] || [];
@@ -1169,55 +1170,56 @@ window.pokeRefresh = function(x, y) {
     return true;
   }
 
-  // Single-cell refresh (x,y) where x=col, y=row
-  var elCell = (DOM[y] && DOM[y][x]);
-  if (!elCell) return false;
+  if (SYNC) {
+    var elCell = (DOM[y] && DOM[y][x]);
+    if (!elCell) return false;
 
-  var chCell = (VIDEO[y] && typeof VIDEO[y][x] !== 'undefined') ? VIDEO[y][x] : ' ';
-  var newTextCell = (chCell === ' ' || chCell === '\u00A0') ? '\u00A0' : chCell;
-  if (elCell.textContent !== newTextCell) elCell.textContent = newTextCell;
+    var chCell = (VIDEO[y] && typeof VIDEO[y][x] !== 'undefined') ? VIDEO[y][x] : ' ';
+    var newTextCell = (chCell === ' ' || chCell === '\u00A0') ? '\u00A0' : chCell;
+    if (elCell.textContent !== newTextCell) elCell.textContent = newTextCell;
 
-  var ccell = (COLOR[y] && COLOR[y][x]) || {};
-  var fg = (typeof ccell.color !== 'undefined') ? ccell.color : ((window.currentStyle && currentStyle.color) ? currentStyle.color : 37);
-  var bg = (typeof ccell.bgcolor !== 'undefined') ? ccell.bgcolor : ((window.currentStyle && currentStyle.bgcolor) ? currentStyle.bgcolor : 40);
+    var ccell = (COLOR[y] && COLOR[y][x]) || {};
+    var fg = (typeof ccell.color !== 'undefined') ? ccell.color : ((window.currentStyle && currentStyle.color) ? currentStyle.color : 37);
+    var bg = (typeof ccell.bgcolor !== 'undefined') ? ccell.bgcolor : ((window.currentStyle && currentStyle.bgcolor) ? currentStyle.bgcolor : 40);
 
-  var attrVal = (ATTR && ATTR[y] && typeof ATTR[y][x] !== 'undefined') ? ATTR[y][x] : 0;
-  var inv   = !!(attrVal & (window.ATTR_INVERSE || 0x0001));
-  var bold  = !!(attrVal & (window.ATTR_BOLD    || 0x0002));
-  var dim   = !!(attrVal & (window.ATTR_DIM     || 0x0004));
-  var italic= !!(attrVal & (window.ATTR_ITALIC  || 0x0008));
-  var under = !!(attrVal & (window.ATTR_UNDERLINE || 0x0010));
-  var blink = !!(attrVal & (window.ATTR_BLINK   || 0x0020));
+    var attrVal = (ATTR && ATTR[y] && typeof ATTR[y][x] !== 'undefined') ? ATTR[y][x] : 0;
+    var inv   = !!(attrVal & (window.ATTR_INVERSE || 0x0001));
+    var bold  = !!(attrVal & (window.ATTR_BOLD    || 0x0002));
+    var dim   = !!(attrVal & (window.ATTR_DIM     || 0x0004));
+    var italic= !!(attrVal & (window.ATTR_ITALIC  || 0x0008));
+    var under = !!(attrVal & (window.ATTR_UNDERLINE || 0x0010));
+    var blink = !!(attrVal & (window.ATTR_BLINK   || 0x0020));
 
-  var classStr = 'qandy-cell ansi-fg-' + fg + ' ansi-bg-' + bg;
-  if (bold) classStr += ' ansi-bold';
-  if (inv)  classStr += ' ansi-inverse';
-  if (italic) classStr += ' ansi-italic';
-  if (under) classStr += ' ansi-underline';
-  if (dim) classStr += ' ansi-dim';
-  if (blink) classStr += ' ansi-blink';
+    var classStr = 'qandy-cell ansi-fg-' + fg + ' ansi-bg-' + bg;
+    if (bold) classStr += ' ansi-bold';
+    if (inv)  classStr += ' ansi-inverse';
+    if (italic) classStr += ' ansi-italic';
+    if (under) classStr += ' ansi-underline';
+    if (dim) classStr += ' ansi-dim';
+    if (blink) classStr += ' ansi-blink';
 
-  if (elCell._lastClass !== classStr) {
-    elCell.className = classStr;
-    elCell._lastClass = classStr;
-  }
-  var el = document.getElementById('c' + y + '_' + x);
-  // var s = COLOR[y] && COLOR[y][x] ? COLOR[y][x] : { color:37, bgcolor:40, bold:false, inverse:false };
-  // build classes as before...
-  if (CURON && x === CURX && y === CURY) {
-    el.classList.add('qandy-cursor');
-    // Optionally set inline color based on CURATTR:
-    el.style.setProperty('--qandy-cursor-fg', mapAnsiToCss(CURATTR.color));
-    el.style.setProperty('--qandy-cursor-bg', mapAnsiToCss(CURATTR.bgcolor));
-    // Your CSS for .qandy-cursor can use these variables:
-    // .qandy-cursor { color: var(--qandy-cursor-fg); background: var(--qandy-cursor-bg); }
-  } else {
-    el.classList.remove('qandy-cursor');
-    el.style.removeProperty('--qandy-cursor-fg');
-    el.style.removeProperty('--qandy-cursor-bg');
-  }
-
-  return true;
+    if (elCell._lastClass !== classStr) {
+      elCell.className = classStr;
+      elCell._lastClass = classStr;
+    }
+    var el = document.getElementById('c' + y + '_' + x);
+    // var s = COLOR[y] && COLOR[y][x] ? COLOR[y][x] : { color:37, bgcolor:40, bold:false, inverse:false };
+    // build classes as before...
+    if (CURON && x === CURX && y === CURY) {
+      el.classList.add('qandy-cursor');
+      // Optionally set inline color based on CURATTR:
+      el.style.setProperty('--qandy-cursor-fg', mapAnsiToCss(CURATTR.color));
+      el.style.setProperty('--qandy-cursor-bg', mapAnsiToCss(CURATTR.bgcolor));
+      // Your CSS for .qandy-cursor can use these variables:
+      // .qandy-cursor { color: var(--qandy-cursor-fg); background: var(--qandy-cursor-bg); }
+    } else {
+      el.classList.remove('qandy-cursor');
+      el.style.removeProperty('--qandy-cursor-fg');
+      el.style.removeProperty('--qandy-cursor-bg');
+    }
+    return true;
+  } 
+  return false;
 }
 
 function applyCursorAttrToCell(x, y) {
@@ -1351,7 +1353,6 @@ function pokeCursorOn(a) {
   pokeRefresh(CURX, CURY);
 }
 
-// Helper to compute ATTR mask from cursor variables or an object
 function cursorVarsToAttr(vars) {
   // prefer window-defined ATTR_* constants if present, otherwise use defaults
   const ATTR_INVERSE   = (window.ATTR_INVERSE   !== undefined) ? window.ATTR_INVERSE   : 0x0001;

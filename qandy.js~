@@ -680,7 +680,7 @@ function resumePagination() {
   }
 }
 
-function setCursorAttr(val) {
+function getCursorAttr(val) {
   // Read current global CURSOR if no val provided
   var code = (typeof val === 'number') ? val : (typeof CURSOR === 'number' ? CURSOR : 0);
 
@@ -755,6 +755,8 @@ function setCursorAttr(val) {
 
 function clearScreen() { cls(); }
 
+
+attr=getCursorAttr();
 pokeCursorOn(CURSOR);
 
 
