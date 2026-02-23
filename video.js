@@ -6,38 +6,45 @@
 
 let lastx=0; let lasty=0;
 
-window.pokeCell = function(x, y, ch, styleObj) {
+window.pokeCell = function(x, y, ch) {
   if (!validateCoords(x, y)) return false;
-  // Handle parameter shifting: poke(x, y, styleObj)
-  if (typeof ch === 'object' && typeof styleObj === 'undefined') { styleObj = ch; ch = undefined; }
+  if (typeof ch !== 'undefined') { VIDEO[y][x] = (typeof ch === 'string') ? ch : String(ch)[0] || ' '; }
+  if (SYNC) pokeRefresh(x, y);
+  return true;
+};
 
-  if (typeof ch !== 'undefined') {
-    VIDEO[y][x] = (typeof ch === 'string') ? ch : String(ch)[0] || ' ';
+window.pokeCursor = function(text) {
+  if (!text) return false; var str = String(text);
+  var curx = CURX; var cury = CURY;
+  for (var i = 0; i < str.length; i++) {
+    var char = str[i];
+    if (char === '\n') { 
+     curx = 0; cury++; if (cury >= H) { return false; break; } continue;
+    }
+    if (curx >= W) { 
+     curx = 0; cury++; if (cury >= H) { return false; break; }
+    }
+    pokeCell(curx, cury, char); curx++;
+    
+
+    
   }
+  CURX=curx; CURY=cury; pokeRefresh(); return true;
+};
 
-  // Helper to read currentStyle safely
-  var cs = (window.currentStyle && typeof window.currentStyle === 'object') ? window.currentStyle : { color: 37, bgcolor: 40, bold: false, inverse: false };
-
-  // If styleObj provided -> normalize/replace using styleObj (use currentStyle as defaults)
-  if (styleObj && typeof styleObj === 'object') {
-    window.COLOR[y][x] = {
-      color: (typeof styleObj.color !== 'undefined') ? styleObj.color : (typeof cs.color !== 'undefined' ? cs.color : 37),
-      bgcolor: (typeof styleObj.bgcolor !== 'undefined') ? styleObj.bgcolor : (typeof cs.bgcolor !== 'undefined' ? cs.bgcolor : 40),
-      bold: (typeof styleObj.bold !== 'undefined') ? !!styleObj.bold : !!cs.bold,
-      inverse: (typeof styleObj.inverse !== 'undefined') ? !!styleObj.inverse : !!cs.inverse
-    };
-  } else {
-    // No styleObj -> replace the style cell with currentStyle (overwrite previous)
-    window.COLOR[y][x] = {
-      color: (typeof cs.color !== 'undefined') ? cs.color : 37,
-      bgcolor: (typeof cs.bgcolor !== 'undefined') ? cs.bgcolor : 40,
-      bold: !!cs.bold,
-      inverse: !!cs.inverse
-    };
+window.pokeText = function(x, y, t) {
+  if (!t) return false; var str = String(t);
+  for (var i = 0; i < str.length; i++) {
+    var c = str[i];
+    if (c === '\n') { 
+     x = 0; y++; if (y >= H) { return false; } continue;
+    }
+    if (x >= W) { 
+     x = 0; y++; if (y >= H) { return false; }
+    }
+    pokeCell(x, y, c); x++;
   }
-  
-  // Fast DOM update
-  pokeRefresh(x, y);
+  if (SYNC) { pokeRefresh(); }
   return true;
 };
 
@@ -45,36 +52,27 @@ window.peek = function(x, y) {
   return validateCoords(x, y) ? VIDEO[y][x] : undefined;
 };
 
-window.pokeText = function(text) {
-  if (!text) return false; var str = String(text);
-  var curx = CURX; var cury = CURY;
+
+window.eraseInput = function(text) {
+  if (typeof text === 'undefined') { text=""; }
+  var str = String(text); var curx = LINEX; var cury = LINEY;
   for (var i = 0; i < str.length; i++) {
     var char = str[i];
     if (char === '\n') { 
-     curx = 0; cury++; 
-     if (cury >= H) {
-     	return false; break;
-     }
-     continue;
+      curx = 0; cury++; if (cury >= H) { return false; } continue;
+      if (curx >= W) {
+    	  curx = 0; cury++; if (cury >= H) { return false; }
+      }
     }
-    if (curx >= W) { 
-     curx = 0; cury++; 
-     if (cury >= H) {
-     	 return false; break;
-     }
-    }
-    pokeCell(curx, cury, char); curx++;
+    pokeCell(curx, cury, " "); curx++;
   }
-  CURX=curx;
-  CURY=cury;
-  pokeRefresh(); return true;
-};
-
+}
 window.pokeInput = function() {
-  if (!LINE) return false; var str = String(LINE);
+  if (typeof lastin === 'undefined') { lastin="";  }
+  if (lastin != "") { eraseInput(lastin); }
   var curx = LINEX; var cury = LINEY;
-  for (var i = 0; i < str.length; i++) {
-    var char = str[i];
+  for (var i = 0; i < LINE.length; i++) {
+    var char = LINE[i];
     if (char === '\n') { 
      curx = 0; cury++; 
      if (cury >= H) { return false; }
@@ -86,31 +84,26 @@ window.pokeInput = function() {
     }
     pokeCell(curx, cury, char); curx++;
   }
-  pokeRefresh();
+  var str = (typeof LINE === 'string') ? LINE : String(LINE || "");
+  var targetP = (typeof CURP === 'number') ? CURP : str.length;
+  if (targetP < 0) targetP = 0;
+  if (targetP > str.length) targetP = str.length;
+  var newX, newY;
+  var absCol = (typeof LINEX === 'number' ? LINEX : 0) + targetP;
+  newY = (typeof LINEY === 'number' ? LINEY : 0) + Math.floor(absCol / W);
+  newX = absCol % W;
+  if (newY < 0) newY = 0;
+  if (newY >= H) newY = H - 1;
+  if (newX < 0) newX = 0;
+  if (newX >= W) newX = W - 1;
+  CURX = newX;
+  CURY = newY;
+  lastin = str;
+  pokeRefresh();        
   return true;
 };
 
-window.pokeInverse = function(x, y, state, count) {
-  if (typeof state === 'undefined') { state=true; }
-  if (!validateCoords(x, y)) return false;
-  var inverseState = !!state;
-  if (typeof count === 'number' && count > 1) {
-    var endX = Math.min(x + count, W);
-    for (var i = x; i < endX; i++) {
-    	// this loop does not wrap at x loc 32
-    	ATTR[y][x] |= ATTR_INVERSE;
-      //COLOR[y][i].inverse = inverseState;
-      pokeRefresh(i, y);
-    }
-    pokeRefresh();
-    return true;
-  }
-  COLOR[y][x].inverse = inverseState;
-  pokeRefresh(x, y);
-  return true;
-};
-
-window.peekInverse = function(x, y) { //@@
+window.peekInverse = function(x, y) { 
   if (typeof x !== 'number' || typeof y !== 'number') return undefined;
   // Prefer existing validator if available
   if (typeof validateCoords === 'function') {
@@ -126,7 +119,6 @@ window.peekInverse = function(x, y) { //@@
   var style = window.COLOR[y][x];
   return style ? !!style.inverse : undefined;
 };
-
 
 window.pokeChar = function(x, y, ch, count) {
   // Getter mode
@@ -197,25 +189,6 @@ window.pokeStyle = function(x, y, styleObj, count) {
 // PEEKSTYLE - Read style at position
 window.peekStyle = function(x, y) { 
   return validateCoords(x, y) ? COLOR[y][x] : undefined;
-};
-
-window.pokeInverse = function(x, y, state, count) {
-  if (typeof state === 'undefined') { return validateCoords(x, y) ? COLOR[y][x].inverse : undefined; }
-  // Validate starting position
-  if (!validateCoords(x, y)) return false;
-  var inverseState = !!state;
-  if (typeof count === 'number' && count > 1) {
-    var endX = Math.min(x + count, screenWidth);
-    for (var i = x; i < endX; i++) {
-      COLOR[y][i].inverse = inverseState;
-      pokeRefresh(i, y);
-    }
-    return endX - x;
-  }  
-  // Single cell update - direct property access (fastest)
-  COLOR[y][x].inverse = inverseState;
-  pokeRefresh(x, y);
-  return true;
 };
 
 window.toggleInverse = function(x, y) {
@@ -302,7 +275,7 @@ window.pokeBG = function(x, y, color, count) {
   
   // Single cell
   COLOR[y][x].bgcolor = color;
-  pokeFresh(x, y);
+  pokeRefresh(x, y);
   return true;
 };
 
@@ -906,6 +879,130 @@ window.COLOR = {
   BG_BRIGHT_WHITE: 107
 };
 
+// convert DOM to ATTR
+function styleToAttr(style) {
+  var a = 0;
+  if (!style) return a;
+  if (style.inverse)   a |= (window.ATTR_INVERSE || 0x0001);
+  if (style.bold)      a |= (window.ATTR_BOLD    || 0x0002);
+  if (style.dim)       a |= (window.ATTR_DIM     || 0x0004);
+  if (style.italic)    a |= (window.ATTR_ITALIC  || 0x0008);
+  if (style.underline) a |= (window.ATTR_UNDERLINE || 0x0010);
+  if (style.blink)     a |= (window.ATTR_BLINK   || 0x0020);
+  return a;
+}
+
+function _ensureAttrRow(y) { if (!window.ATTR) ATTR = []; if (!ATTR[y]) ATTR[y] = new Array(W).fill(0); }
+function _ensureColorRow(y) { if (!window.COLOR) COLOR = COLOR || []; if (!COLOR[y]) COLOR[y] = new Array(W); }
+function _mirrorAttrToColor(x, y) {
+  _ensureAttrRow(y); _ensureColorRow(y);
+  var bits = ATTR[y][x] || 0;
+  var sb = COLOR[y][x] || { color:(window.defaultColor||37), bgcolor:(window.defaultBg||40), bold:false, inverse:false, blink:false };
+  sb.inverse   = !!(bits & (window.ATTR_INVERSE || 0x0001));
+  sb.bold      = !!(bits & (window.ATTR_BOLD    || 0x0002));
+  sb.blink     = !!(bits & (window.ATTR_BLINK   || 0x0020));
+  sb.italic    = !!(bits & (window.ATTR_ITALIC  || 0x0008));
+  sb.underline = !!(bits & (window.ATTR_UNDERLINE|| 0x0010));
+  COLOR[y][x] = sb;
+}
+function _setAttrBit(x, y, bit, state) {
+  if (!validateCoords(x,y)) return false;
+  _ensureAttrRow(y);
+  if (state) ATTR[y][x] |= bit;
+  else       ATTR[y][x] &= ~bit;
+  _mirrorAttrToColor(x, y);
+  return true;
+}
+
+function updateCursorDefaultsFromSGR() {
+  if (!CURANSI) return;
+  // copy only the parts we want cursor to inherit
+  CURATTR.color  = currentStyle.color; 
+  CURATTR.bgcolor= currentStyle.bgcolor;
+  // Do not blindly copy inverse/bold/blink unless you want that behavior:
+  // keep inverse true by default for a visible cursor, but you can follow SGR if desired:
+  // CURATTR.inverse = currentStyle.inverse;
+  // CURATTR.blink   = currentStyle.blink;
+  // If you want CURATTR to reflect some SGR flags:
+  // CURATTR.bold = !!currentStyle.bold;
+}
+
+function parseANSIString(str) {
+  const tokens = [];
+  // Match ANSI escape sequences in hex (\x1b), octal (\033 = \x1b), and unicode (\u001b) formats
+  const ansiRegex = /(\x1b|\x1b|\u001b)\[([\d;]*)([A-Za-z])/g;
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = ansiRegex.exec(str)) !== null) {
+    // Add text before the ANSI code
+    if (match.index > lastIndex) {
+      const text = str.substring(lastIndex, match.index);
+      for (let i = 0; i < text.length; i++) {
+        tokens.push({ type: 'char', value: text[i] });
+      }
+    }
+    
+    // Add the ANSI code
+    const params = match[2] ? match[2].split(';').filter(s => s !== '').map(Number) : [0];
+    const command = match[3];
+    
+    if (command === 'm') {
+      // SGR (Select Graphic Rendition) - color/style codes
+      tokens.push({ type: 'code', codes: params });
+    } else if (command === 'H' || command === 'f') {
+      // CUP (Cursor Position) - move cursor to row;col
+      // Format: \x1b[row;colH or \x1b[row;colf
+      const row = params[0] ? params[0] - 1 : 0; // Convert to 0-based
+      const col = params[1] ? params[1] - 1 : 0; // Convert to 0-based
+      tokens.push({ type: 'cursor', row: row, col: col });
+    } else if (command === 'K') {
+      // EL (Erase in Line) - clear from cursor to end of line
+      // param 0 or missing = clear from cursor to end
+      // param 1 = clear from start to cursor
+      // param 2 = clear entire line
+      const mode = params[0] || 0;
+      tokens.push({ type: 'clearline', mode: mode });
+    }
+    // Other ANSI commands are ignored for now
+    
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < str.length) {
+    const text = str.substring(lastIndex);
+    for (let i = 0; i < text.length; i++) {
+      tokens.push({ type: 'char', value: text[i] });
+    }
+  }
+  updateCursorDefaultsFromSGR();
+  return tokens;
+}
+
+function applyANSICode(codes) {
+  codes.forEach(code => {
+    if (code === 0) {
+      currentStyle.color = 37;
+      currentStyle.bgcolor = 40;
+      currentStyle.bold = false;
+      currentStyle.inverse = false;
+    } else if (code === 1) {
+      currentStyle.bold = true;
+    } else if (code === 7) {
+      currentStyle.inverse = true;
+    } else if (code === 27) {
+      currentStyle.inverse = false;
+    } else if (code >= 30 && code <= 37) {
+      currentStyle.color = code;
+    } else if (code >= 40 && code <= 47) {
+      currentStyle.bgcolor = code;
+    }
+  });
+}
+
+
+
+
+
 // shorter aliases for color constants
 // window.C = window.COLOR;
 // window.VIDEO = new Array(window.screenHeight);
@@ -1128,7 +1225,40 @@ window.pokeRefresh = function(x, y) {
     elCell.className = classStr;
     elCell._lastClass = classStr;
   }
+  var el = document.getElementById('c' + y + '_' + x);
+  // var s = COLOR[y] && COLOR[y][x] ? COLOR[y][x] : { color:37, bgcolor:40, bold:false, inverse:false };
+  // build classes as before...
+  if (CURON && x === CURX && y === CURY) {
+    el.classList.add('qandy-cursor');
+    // Optionally set inline color based on CURATTR:
+    el.style.setProperty('--qandy-cursor-fg', mapAnsiToCss(CURATTR.color));
+    el.style.setProperty('--qandy-cursor-bg', mapAnsiToCss(CURATTR.bgcolor));
+    // Your CSS for .qandy-cursor can use these variables:
+    // .qandy-cursor { color: var(--qandy-cursor-fg); background: var(--qandy-cursor-bg); }
+  } else {
+    el.classList.remove('qandy-cursor');
+    el.style.removeProperty('--qandy-cursor-fg');
+    el.style.removeProperty('--qandy-cursor-bg');
+  }
+
   return true;
+}
+
+function applyCursorAttrToCell(x, y) {
+  if (!validateCoords(x,y)) return;
+  // clear previous cursor if needed elsewhere
+  var attrValue = styleToAttr(CURATTR); // bits from CURATTR booleans
+  _ensureAttrRow(y);
+  ATTR[y][x] |= attrValue; // set bits (or set/clear as needed)
+  // Mirror colors into COLOR
+  _ensureColorRow(y);
+  COLOR[y][x] = COLOR[y][x] || { color:37, bgcolor:40, bold:false, inverse:false, blink:false };
+  COLOR[y][x].color = CURATTR.color;
+  COLOR[y][x].bgcolor = CURATTR.bgcolor;
+  COLOR[y][x].bold = !!CURATTR.bold;
+  COLOR[y][x].inverse = !!CURATTR.inverse;
+  COLOR[y][x].blink = !!CURATTR.blink;
+  if (window.SYNC) pokeRefresh(x,y);
 }
 
 // Helper: read a cell's visual properties by combining COLOR (color/bg) and ATTR (boolean flags).
@@ -1246,14 +1376,8 @@ function cursor(a) {
   }
 }
 
-// Cursor blink interval - toggles cursor on/off every 500ms
-setInterval(function() {
-  if (CURON === 1) {
-    cursor(0);
-  } else {
-    cursor(1);
-  }
-}, 500);
+//Cursor blink interval - toggles cursor on/off every 500ms
+setInterval(function() { if (CURON === 1) { cursor(0); } else { cursor(1); }}, 500);
 
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {

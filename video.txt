@@ -1,0 +1,31 @@
+
+Legend: x=column
+        y=row
+        a=asci character    
+        n=number of cells
+        t=text string
+        s=state (on/off) 
+ 
+          pokeCell(x,y,a) — poke character(s) only (fast)
+        pokeChar(x,y,a,n) — poke character(s) only (slow)
+
+            pokeCursor(t) — poke text at cursor's position
+          pokeText(x,y,t) — poke text at x,y (0,0 if not supplied)
+     pokeInverse(x,y,s,n) — set inverse attribute   
+  
+  toggleInverse — flip inverse state for a single cell
+       pokeBold — set bold attribute
+         pokeFG — set foreground color
+         pokeBG — set background color
+      pokeColor — set fg+bg together
+              pokeInput() — poke input line at cursor position
+              
+      pokeStyle — set arbitrary style properties (color/bg/bold/inverse) (appears in poke.js/video.js variants)
+    pokeRefresh — refresh screen / single cell
+ pokeRefreshRow — (used by pokeInverse span path; referenced)
+    pokeAttrBit / window._setAttrBit — helpers to set ATTR bitfield
+       pokeAttr   
+      
+       (peekAttr/pokeAttrBit) / window.peekAttr — ATTR helpers (pokeAttrBit is used)
+     setAttrBit — low-level ATTR bit setter used by pokeAttrBit/pokeInverse
+ 

@@ -106,41 +106,36 @@ function button(b, event) {
         } else if (CURP > 0) {
           LINE = LINE.substring(0, CURP - 1) + LINE.substring(CURP);
           CURP--;
-          setCursorToInputPos(CURP);
+          pokeCell(CURX, CURY, " ");
           pokeInput();
         }
         selectionStart = -1; selectionEnd = -1;
         cursor(1);
 
       } else if (k === "delete") {
-        // DELETE: forward-delete; SHIFT+DELETE: cut (copy+delete)
-        cursor(0);
-        if (shift) {
-          var cutStart, cutEnd;
-          if (selectionStart !== -1 && selectionEnd !== -1) {
-            cutStart = Math.min(selectionStart, selectionEnd);
-            cutEnd = Math.max(selectionStart, selectionEnd);
-          } else {
-            cutStart = CURP;
-            cutEnd = LINE.length;
-          }
-          if (cutStart < cutEnd) {
-            navigator.clipboard.writeText(LINE.substring(cutStart, cutEnd)).catch(function(e){ console.warn('clipboard write failed', e); });
-            LINE = LINE.substring(0, cutStart) + LINE.substring(cutEnd);
-            CURP = cutStart;
-            setCursorToInputPos(cutStart);
-          }
-        } else {
-          if (selectionStart !== -1 && selectionEnd !== -1) {
-            deleteSelection();  // <-- deleteSelection() doesn't re-render!
-          } else if (CURP < LINE.length) {
-            LINE = LINE.substring(0, CURP) + LINE.substring(CURP + 1);
-          }
-        }
-        selectionStart = -1; selectionEnd = -1;
-        pokeInput();
-        cursor(1);
+        if (SSTART !== -1 && SEND !== -1) {
+          if (SSTART>SEND) { [SSTART, SEND] = [SEND, SSTART];}
 
+    var s = Math.max(0, Math.min(SSTART, SEND));
+    var e = Math.max(0, Math.min(Math.max(SSTART, SEND), len));
+
+          if (shift && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(str.substring(s, e)).catch(function(err){
+              console.warn('clipboard write failed', err);
+            });
+          }
+
+          // remove selected portion
+          LINE = str.substring(0, s) + str.substring(e);
+          // move logical cursor to start of deleted region
+          CURP = s;
+          // clear selection
+          SSTART = -1;
+          SEND   = -1;
+        } else {
+          // delete pressed with no selection
+        }  
+        pokeInput();
       } else if (k === "left") {
         if (CURP > 0) {
           if (shift) {
@@ -158,7 +153,7 @@ function button(b, event) {
             }
             pokeInverse(CURX, CURY, true);
           } else {
-            selectionStart = -1; selectionEnd = -1;
+            SSTART = -1; SEND = -1;
             CURP--;
             if (CURX==0) {
               CURY--; CURX=W-1;
@@ -167,44 +162,33 @@ function button(b, event) {
             }
           }
         }
-        cursor(1);      
       } else if (k === "right") {
         // Move cursor right; extend selection if SHIFT held
         if (CURP < LINE.length) {
           if (shift) {
-            if (selectionStart === -1) selectionStart = CURP;
+            if (SSTART === -1) SSTART = CURP;
             CURP++;
             if (CURP < 0) CURP = 0;
             if (CURP > LINE.length) CURP = LINE.length;
-            selectionEnd = CURP;
-            // Update cursor screen coordinates from logical position
-            var sc = inputPosToScreen(CURP);
-            CURX = sc.x;
-            CURY = sc.y;
-            // reflect selection visually
-            pokeInput();
-            updateSelectionVisuals(selectionStart, selectionEnd);
-          } else {
-            selectionStart = -1; selectionEnd = -1;
-            CURP++;
-            setCursorToInputPos(CURP);
-            //renderInputLine();
+            SEND = CURP;
           }
+          SSTART = -1; SEND = -1;
+          CURP++; if (CURP>LINE.length) { CURP=LINE.length; }
+          CURX++; if (CURX>W) { CURX=0; CUY++; if (CUY>H) return false; }
         }
-        cursor(1);
       } else if (k === "home") {
         if (shift && CURP > 0) {
           // SHIFT+HOME: extend selection to start of line
-          if (selectionStart === -1) selectionStart = CURP;
-          CURP = 0;
-          selectionEnd = 0;
-          var sc = inputPosToScreen(0);
-          CURX = sc.x; CURY = sc.y;
-          pokeInput();
-          updateSelectionVisuals(selectionStart, selectionEnd);
+          if (SEND <0 ) { SEND=CURP; }
+          CURP = 0; SSTART = CURP;
+          pokeInverse(LINEX,LINEY,false, SEND-SSTART);
+          CURX=0;
+          //
+          // @@ need to figure out new CURX if wraps to last line 
+          //
         } else {
           // Regular HOME: move cursor to start, clear selection
-          selectionStart = -1; selectionEnd = -1;
+          SSTART = -1; SEND = -1;
           CURP = 0;
           var absCol = LINEX + CURP;
           CURY = LINEY + Math.floor(absCol / W);
@@ -217,12 +201,12 @@ function button(b, event) {
         }
         cursor(1);
       } else if (k === "end") {
-        // Move cursor to end of input line
-        selectionStart = -1; selectionEnd = -1;
-        setCursorToInputPos(line ? line.length : 0);
-        pokeInput();
-        cursor(1);
-
+        event.preventDefault();
+        SSTART = -1; SEND = -1;
+        var absCol  = (LINEX|0) + (LINE || "").length;;
+        var newX    = absCol % W;
+        var newY    = (LINEY|0) + Math.floor(absCol / W);
+        CURP = (LINE || "").length; CURX = newX; CURY = newY;
       } else if (k === "up") {
         // History: go to older command
         if (commandHistory && commandHistory.length > 0) {
@@ -314,30 +298,25 @@ function button(b, event) {
         var hasCtrl = !!ctrl;
         var hasAlt = !!alt;
         var hasAltFlag = !!((typeof alt !== 'undefined' && alt) || (typeof altPhysical !== 'undefined' && altPhysical) || (event && !!event.altKey))
+        var hasCtrl = !!ctrl;
         var hasCtrlFlag = !!((typeof ctrl !== 'undefined' && ctrl) || (typeof ctrlPhysical !== 'undefined' && ctrlPhysical) || (event && !!event.ctrlKey));
         var hasAltShift = hasAltFlag && !!shift;
 
-        //if (hasAltFlag) {
-        //  var baseLower = (typeof l === 'string' && l.length > 0) ? l.toLowerCase() : '';
-        //  if (hasAltShift && altShiftGraphics.hasOwnProperty(baseLower)) {
-        //    finalChar = altShiftGraphics[baseLower];
-        //  } else if (altGraphics.hasOwnProperty(baseLower)) {
-        //    finalChar = altGraphics[baseLower];
-        //  } else {
-        //    // fallback: if no alt mapping, allow normal shifted behavior (shift or caps)
-        //    if (shift && shiftedKeys.hasOwnProperty(baseLower)) finalChar = shiftedKeys[baseLower];
-        //    else if (caps && shiftedKeys.hasOwnProperty(baseLower)) finalChar = shiftedKeys[baseLower];
-        //    else finalChar = l;
-        //  }
-        //}
-        
+        if (hasAltFlag || hasAlt) {
+          var baseLower = (typeof l === 'string' && l.length > 0) ? l.toLowerCase() : '';
+          if (hasAltShift && altShiftKeys.hasOwnProperty(baseLower)) {
+            finalChar = altShiftKeys[baseLower];
+          } else if (altKeys.hasOwnProperty(baseLower)) {
+            finalChar = altKeys[baseLower];
+          }
+          
+        }
+
         if (hasCtrl) {
           ctrl = 0;
           var cel = document.getElementById("ctrl");
           if (cel) { cel.style.backgroundColor = "#222"; cel.style.color = "#fff"; }
-
           var lc = finalChar.toLowerCase();
-
           // Ctrl+C: copy selection or whole line
           if (lc === 'c') {
             var copyText = "";
@@ -388,39 +367,25 @@ function button(b, event) {
           return;
         }
 
-        if (hasAlt) {
-          alt = 0;
-          var ael = document.getElementById("alt");
-          var ael = document.getElementById("alt");
-          var ael = document.getElementById("alt");
-          if (ael) { ael.style.backgroundColor = "#222"; ael.style.color = "#fff"; }
-          // ALT combos: could be extended; for now fall through to insert
-        }
-
         // Typing clears any active selection (replacing selected text)
-        if (selectionStart !== -1 && selectionEnd !== -1) {
-          deleteSelection();
+        if (SSTART !== -1 && SEND !== -1) {
+          //
+          // @@ this routine must be rewritten to use new variable set
+          //
+          // deleteSelection();
+          //
         }
-        selectionStart = -1; selectionEnd = -1;
-
+        SSTART = -1; SEND = -1;
         // Insert character into line at CURP
         LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
         CURP += finalChar.length;
-
         // Advance CURX, wrapping to next row if we hit W (screenWidth)
         CURX += finalChar.length;
-        while (CURX >= W) {
-          CURX -= W;
-          CURY++;
-          if (CURY >= H) { CURY = H - 1; }
-        }
-
-        // Re-render the full visible input line
-
+        while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
         pokeInput();
-
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
-        cursor(1);
+        
+        
       }
 
     } // end else (not run+keydown)
@@ -663,76 +628,6 @@ function executeCode(code) {
   }
 }
 
-function parseANSIString(str) {
-  const tokens = [];
-  // Match ANSI escape sequences in hex (\x1b), octal (\033 = \x1b), and unicode (\u001b) formats
-  const ansiRegex = /(\x1b|\x1b|\u001b)\[([\d;]*)([A-Za-z])/g;
-  let lastIndex = 0;
-  let match;
-  
-  while ((match = ansiRegex.exec(str)) !== null) {
-    // Add text before the ANSI code
-    if (match.index > lastIndex) {
-      const text = str.substring(lastIndex, match.index);
-      for (let i = 0; i < text.length; i++) {
-        tokens.push({ type: 'char', value: text[i] });
-      }
-    }
-    
-    // Add the ANSI code
-    const params = match[2] ? match[2].split(';').filter(s => s !== '').map(Number) : [0];
-    const command = match[3];
-    
-    if (command === 'm') {
-      // SGR (Select Graphic Rendition) - color/style codes
-      tokens.push({ type: 'code', codes: params });
-    } else if (command === 'H' || command === 'f') {
-      // CUP (Cursor Position) - move cursor to row;col
-      // Format: \x1b[row;colH or \x1b[row;colf
-      const row = params[0] ? params[0] - 1 : 0; // Convert to 0-based
-      const col = params[1] ? params[1] - 1 : 0; // Convert to 0-based
-      tokens.push({ type: 'cursor', row: row, col: col });
-    } else if (command === 'K') {
-      // EL (Erase in Line) - clear from cursor to end of line
-      // param 0 or missing = clear from cursor to end
-      // param 1 = clear from start to cursor
-      // param 2 = clear entire line
-      const mode = params[0] || 0;
-      tokens.push({ type: 'clearline', mode: mode });
-    }
-    // Other ANSI commands are ignored for now
-    
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < str.length) {
-    const text = str.substring(lastIndex);
-    for (let i = 0; i < text.length; i++) {
-      tokens.push({ type: 'char', value: text[i] });
-    }
-  }
-  return tokens;
-}
-
-function applyANSICode(codes) {
-  codes.forEach(code => {
-    if (code === 0) {
-      currentStyle.color = 37;
-      currentStyle.bgcolor = 40;
-      currentStyle.bold = false;
-      currentStyle.inverse = false;
-    } else if (code === 1) {
-      currentStyle.bold = true;
-    } else if (code === 7) {
-      currentStyle.inverse = true;
-    } else if (code === 27) {
-      currentStyle.inverse = false;
-    } else if (code >= 30 && code <= 37) {
-      currentStyle.color = code;
-    } else if (code >= 40 && code <= 47) {
-      currentStyle.bgcolor = code;
-    }
-  });
-}
 
 function scrollScreenDown() {
   VIDEO.shift();
@@ -784,13 +679,8 @@ function showFiles() {
 
 function print(txt) {
   txt = (typeof txt === 'undefined' || txt === null) ? '' : String(txt);
-  var wasKeyon = !!keyon;
-  //keysoff(); cursor(0);
-  pokeText(txt);
-  cursor(1);
-  //if (wasKeyon) { keyson(); }
+  pokeCursor(txt);
 }
-
 
 function resumePagination() {
   // Clear the pause message by removing last few lines
@@ -830,7 +720,7 @@ function clearScreen() { cls(); }
 // system ready
 
 print("\nQandy Pocket\nComputer v1.j\n\n");
-LINEX = CURX; LINEY = CURY; cursor(1); 
+LINEX = CURX; LINEY = CURY;  
 
 SFiles=1;
 mySearch=location.search.substr(1).split("&")

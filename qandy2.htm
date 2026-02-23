@@ -13,17 +13,28 @@ if (typeof window.print === 'function' && window.print.toString().indexOf('[nati
 
 // Define Global Variables
 
+// sound.js
+var SOUND=false;       // enable/disable sound card
+var SOUND=true;       // enable/disable sound card
+
+// qandy.js
 var devteam=1;  // developer mode
 var run="";
+var commandHistory = [];  // Array to store command history
+var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)
+var maxHistorySize = 50;  // Maximum number of commands to remember
+var tempCommand = "";     // Temporary storage for command being typed when browsing history
 
 // video.js
+var W=32; // screen width
+var H=25; // screen height
 
-var W=32;
-H=25;
-var VIDEO = [];
-var COLOR = [];
-var ATTR = [];
-var DOM = []; //new Array(window.screenHeight);
+var VIDEO = []; // video memory
+var COLOR = []; // color memory
+var ATTR = [];  // attribute memory
+var DOM = [];   // DOM memory
+
+var SYNC=true; // keeps DOM in sync with video
 
 var currentStyle = {
   color: 37,      // white foreground
@@ -72,20 +83,24 @@ var CURY = 0;  // cursor y
 var CURP = 0;  // cursor p 
 var CURON = 0; // cursor on
 
+var CURANSI = true; // cursor text ANSI on
+var CURFG = 37;     // cursor text fg color white
+var CURBG = 40;     // cursor text bg color black
+var CURATTR = 0;    // cursor text attr
+
 var LINE ="";  // input line
 var LINEX=0;   // start of input cursor x
 var LINEY=0;   // start of input cursor y
 var LINEP=0;   // cursor position on line
 
-var commandHistory = [];  // Array to store command history
-var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)
-var maxHistorySize = 50;  // Maximum number of commands to remember
-var tempCommand = "";     // Temporary storage for command being typed when browsing history
+var SSTART=-1;  // selection start
+var SEND=-1;    // selection end
 
-var selectionStart = -1;  // Start position of selection (-1 = no selection)
-var selectionEnd = -1;    // End position of selection
-var selectionBgColor = '#ffffff';   // Selection background color
-var selectionFgColor = '#000000';   // Selection text color
+var selectionBgColor = '#ffffff';   // old Selection background color
+var selectionFgColor = '#000000';   // old Selection text color
+
+
+// keyboard.js
 
 var normalKeys = {
   "1":"1","2":"2","3":"3","4":"4","5":"5",
@@ -211,11 +226,6 @@ var RAM="";           // Current file content in memory
 var RAMFILE="";       // Current filename loaded in RAM
 var RAMTYPE="";       // Current file type (js, txt, etc)
 
-// sound.js
-var SOUND=false;       // enable/disable sound card
-var SOUND=true;       // enable/disable sound card
-
-
 // stray code
 var paginationEnabled = true;  // Enable/disable pagination feature
 var paginationPaused = false;  // Is print() currently paused?
@@ -329,8 +339,8 @@ var inInputMode = false;       // True when processing user input (prevents pagi
     overlay.style.zIndex = '9999';
     overlay.style.cursor = 'pointer';
     overlay.style.userSelect = 'none';
-    overlay.style.whiteSpace = 'pre-wrap'; // or 'pre'
-    overlay.textContent = 'qANDY\nPOCKET\nCOMPUTER';
+    overlay.style.whiteSpace = 'pre-wrap';
+    overlay.textContent = 'QANDY\nPOCKET\nCOMPUTER';
 
     // Center small helper text beneath main label
     var helper = document.createElement('div');
@@ -339,8 +349,8 @@ var inInputMode = false;       // True when processing user input (prevents pagi
     helper.style.left = '50%';
     helper.style.transform = 'translateX(-50%)';
     helper.style.fontSize = '12px';
-    helper.style.color = '#bbb';
-    helper.textContent = 'POWER BUTTON:\n\nClick any button, press any key, or touch screen to power on.';
+    helper.style.color = '#fff';
+    helper.textContent = 'Click any button, press any key, or touch screen to power on.';
     overlay.appendChild(helper);
 
     document.body.appendChild(overlay);
