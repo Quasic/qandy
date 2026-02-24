@@ -78,7 +78,7 @@ var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
-var CURSOR=6; // cursor type 0=off, 1=line, 3=blink line, 4=block, 5=blink block  
+var CURSOR=1; // cursor type 0=off, 1=line, 3=blink line, 4=block, 5=blink block  
 var CURX = 0;    // cursor x
 var CURY = 0;    // cursor y
 var CURP = 0;    // cursor p 
@@ -86,7 +86,7 @@ var CURP = 0;    // cursor p
 var CURANSI = true; // cursor text ANSI on
 var CURFG = 37;     // cursor text fg color white
 var CURBG = 40;     // cursor text bg color black
-//var CURATTR = 0;    // cursor text attr
+var CURATTR = { color: 37, bgcolor: 40, bold: false, inverse: false, blink: false, dim: false, italic: false, underline: false };
 
 var cursorInverse=1;
 var cursorBold=0;
@@ -94,6 +94,7 @@ var cursorDim=0;
 var cursorItalic=0;
 var cursorLine=0;
 var cursorBlink=1;
+var CURON = false;   // true when cursor is visually active
 
 var LINE ="";  // input line
 var LINEX=0;   // start of input cursor x

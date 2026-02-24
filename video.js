@@ -84,6 +84,7 @@ window.pokeInput = function() {
      if (cury >= H) { return false; }
     }
     pokeCell(curx, cury, char); curx++;
+    if (SYNC) { pokeRefresh(curx, cury); }
   }
   var str = (typeof LINE === 'string') ? LINE : String(LINE || "");
   var targetP = (typeof CURP === 'number') ? CURP : str.length;
@@ -99,8 +100,8 @@ window.pokeInput = function() {
   if (newX >= W) newX = W - 1;
   CURX = newX;
   CURY = newY;
+  
   lastin = str;
-  pokeRefresh();        
   return true;
 };
 
@@ -1070,56 +1071,6 @@ window.peekInverse = function(x, y) {
     return true;
   };
 
-  window.pokeRefreshRow = function(y, startX, count) {
-    if (typeof y !== 'number' || typeof startX !== 'number') return false;
-    count = (typeof count === 'number' && count > 0) ? (count|0) : 1;
-    startX = startX|0;
-    if (typeof H === 'number') { if (y < 0 || y >= H) return false; } else if (!DOM || !VIDEO) { return false;}
-    var endX = startX + count;
-    if (typeof W === 'number') { if (startX < 0) startX = 0; if (endX > W) endX = W; if (startX >= endX) return false; }
-    var rowRefs = (typeof DOM !== 'undefined' && DOM[y]) ? DOM[y] : [];
-    var rowChars = (typeof VIDEO !== 'undefined' && VIDEO[y]) ? VIDEO[y] : [];
-    var colorRow = (typeof COLOR !== 'undefined' && COLOR[y]) ? COLOR[y] : [];
-    var attrRow  = (typeof ATTR !== 'undefined' && ATTR[y]) ? ATTR[y] : null;
-    for (var rx = startX; rx < endX; rx++) {
-      var el = rowRefs[rx];
-      if (!el) continue;
-      var ch = (typeof rowChars[rx] !== 'undefined') ? rowChars[rx] : ' ';
-      if (el.textContent !== ch) el.textContent = ch;
-      var st = colorRow[rx] || { color: (window.defaultColor || 37), bgcolor: (window.defaultBg   || 40), bold: false, inverse: false };
-      if (attrRow) {
-        st.inverse   = !!(attrRow[rx] & (window.ATTR_INVERSE  || 0x0001));
-        st.bold      = !!(attrRow[rx] & (window.ATTR_BOLD     || 0x0002));
-        st.italic    = !!(attrRow[rx] & (window.ATTR_ITALIC   || 0x0008));
-        st.underline = !!(attrRow[rx] & (window.ATTR_UNDERLINE|| 0x0010));
-        st.blink     = !!(attrRow[rx] & (window.ATTR_BLINK    || 0x0020));
-        st.hidden    = !!(attrRow[rx] & (window.ATTR_HIDDEN   || 0x0080));
-        st.strike    = !!(attrRow[rx] & (window.ATTR_STRIKE   || 0x0100));
-      }
-      applyCellStyle(el, st);
-    }
-    return true;
-  };
-
-  window.pokeSelect = function(state) {
-    let s = Math.min(SSTART, SEND);
-    let len = Math.abs(SEND - SSTART);
-    let absCol = LINEX + s
-    sy = LINEY + Math.floor(absCol/W)
-    sx = absCol % W               
-    pokeInverse(sx,sy,state,len);
-  }
-  
-  window.peekAttr = function(x,y) { return (ATTR && ATTR[y]) ? ATTR[y][x] : undefined; };
-  window.peekInverse = function(x,y) {
-    if (ATTR && ATTR[y]) return !!(ATTR[y][x] & (window.ATTR_INVERSE || 0x0001));
-    if (COLOR && COLOR[y] && COLOR[y][x]) return !!COLOR[y][x].inverse;
-    return undefined;
-  };
-
-  console.log('Step2: pokeInverse/pokeAttrBit/peekAttr installed.');
-})();
-
 window.pokeRefresh = function(x, y) {
   if (typeof x === 'undefined' && typeof y === 'undefined') {
     for (var ry = 0; ry < H; ry++) {
@@ -1224,6 +1175,86 @@ window.pokeRefresh = function(x, y) {
   } 
   return false;
 }
+
+  window.pokeRefreshRow = function(y, startX, count) {
+    if (typeof y !== 'number' || typeof startX !== 'number') return false;
+    count = (typeof count === 'number' && count > 0) ? (count|0) : 1;
+    startX = startX|0;
+    if (typeof H === 'number') { if (y < 0 || y >= H) return false; } else if (!DOM || !VIDEO) { return false;}
+    var endX = startX + count;
+    if (typeof W === 'number') { if (startX < 0) startX = 0; if (endX > W) endX = W; if (startX >= endX) return false; }
+    var rowRefs = (typeof DOM !== 'undefined' && DOM[y]) ? DOM[y] : [];
+    var rowChars = (typeof VIDEO !== 'undefined' && VIDEO[y]) ? VIDEO[y] : [];
+    var colorRow = (typeof COLOR !== 'undefined' && COLOR[y]) ? COLOR[y] : [];
+    var attrRow  = (typeof ATTR !== 'undefined' && ATTR[y]) ? ATTR[y] : null;
+    for (var rx = startX; rx < endX; rx++) {
+      var el = rowRefs[rx];
+      if (!el) continue;
+      var ch = (typeof rowChars[rx] !== 'undefined') ? rowChars[rx] : ' ';
+      if (el.textContent !== ch) el.textContent = ch;
+      var st = colorRow[rx] || { color: (window.defaultColor || 37), bgcolor: (window.defaultBg   || 40), bold: false, inverse: false };
+      if (attrRow) {
+        st.inverse   = !!(attrRow[rx] & (window.ATTR_INVERSE  || 0x0001));
+        st.bold      = !!(attrRow[rx] & (window.ATTR_BOLD     || 0x0002));
+        st.italic    = !!(attrRow[rx] & (window.ATTR_ITALIC   || 0x0008));
+        st.underline = !!(attrRow[rx] & (window.ATTR_UNDERLINE|| 0x0010));
+        st.blink     = !!(attrRow[rx] & (window.ATTR_BLINK    || 0x0020));
+        st.hidden    = !!(attrRow[rx] & (window.ATTR_HIDDEN   || 0x0080));
+        st.strike    = !!(attrRow[rx] & (window.ATTR_STRIKE   || 0x0100));
+      }
+      applyCellStyle(el, st); // @@
+    }
+    return true;
+  };
+
+
+window.applyCellStyle = function(el, st) {
+  if (!el || typeof st !== 'object' || st === null) return;
+  var fg = (typeof st.color !== 'undefined') ? st.color : (window.defaultColor || 37);
+  var bg = (typeof st.bgcolor !== 'undefined') ? st.bgcolor : (window.defaultBg || 40);
+
+  var classStr = 'qandy-cell ansi-fg-' + fg + ' ansi-bg-' + bg;
+  if (st.bold)      classStr += ' ansi-bold';
+  if (st.inverse)   classStr += ' ansi-inverse';
+  if (st.italic)    classStr += ' ansi-italic';
+  if (st.underline) classStr += ' ansi-underline';
+  if (st.dim)       classStr += ' ansi-dim';
+  if (st.blink)     classStr += ' ansi-blink';
+  if (st.hidden)    classStr += ' ansi-hidden';
+  if (st.strike)    classStr += ' ansi-strike';
+
+  if (el._lastClass !== classStr) {
+    el.className = classStr;
+    el._lastClass = classStr;
+  }
+
+  // If the element isn't the cursor, remove any cursor-specific inline vars.
+  // pokeRefresh handles adding qandy-cursor and its CSS vars separately.
+  if (!el.classList.contains('qandy-cursor')) {
+    el.style.removeProperty('--qandy-cursor-fg');
+    el.style.removeProperty('--qandy-cursor-bg');
+  }
+};
+
+  window.pokeSelect = function(state) {
+    let s = Math.min(SSTART, SEND);
+    let len = Math.abs(SEND - SSTART);
+    let absCol = LINEX + s
+    sy = LINEY + Math.floor(absCol/W)
+    sx = absCol % W               
+    pokeInverse(sx,sy,state,len);
+  }
+  
+  window.peekAttr = function(x,y) { return (ATTR && ATTR[y]) ? ATTR[y][x] : undefined; };
+  window.peekInverse = function(x,y) {
+    if (ATTR && ATTR[y]) return !!(ATTR[y][x] & (window.ATTR_INVERSE || 0x0001));
+    if (COLOR && COLOR[y] && COLOR[y][x]) return !!COLOR[y][x].inverse;
+    return undefined;
+  };
+
+  console.log('Step2: pokeInverse/pokeAttrBit/peekAttr installed.');
+})();
+
 
 function applyCursorAttrToCell(x, y) {
   if (!validateCoords(x,y)) return;
@@ -1417,13 +1448,16 @@ function cursorVarsToAttr(vars) {
 
 setInterval(function() {
   if (!CURSOR || !CURON) return;
-  if (cursorBlink) {
+  if (cursorBlink) { pokeCursorBlink(); }
+}, 500);
+
+window.pokeCursorBlink = function(a) {
+  if (CURSOR>0) {
     // Erase the old cursor position if it has moved
     if (prevX >= 0 && prevY >= 0 && !(prevX === CURX && prevY === CURY)) {
       pokeInverse(prevX, prevY, false);
       pokeRefresh(prevX, prevY);
     }
-    // Toggle inverse at current cursor position for blink effect
     var curInv = (typeof peekInverse === 'function') ? peekInverse(CURX, CURY) : false;
     pokeInverse(CURX, CURY, !curInv);
     pokeRefresh(CURX, CURY);
@@ -1431,7 +1465,8 @@ setInterval(function() {
     prevY = CURY;
     prevCode = CURSOR;
   }
-}, 500);
+} 
+
 
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {

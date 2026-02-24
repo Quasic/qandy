@@ -10,6 +10,7 @@ function button(b, event) {
 
   if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
   var k = "", l = "";
+  if (k===32) { event.preventDefault(); }
   switch (b) {
     case 16: // SHIFT
       if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
@@ -64,7 +65,6 @@ function button(b, event) {
     ctrl = !ctrl;
     var el = document.getElementById("ctrl");
     if (el) { el.style.backgroundColor = ctrl ? "#fff" : "#222"; el.style.color = ctrl ? "#000" : "#fff"; }
-    cursor(1);
     return;
   }
   if (k === "alt") {
@@ -72,7 +72,6 @@ function button(b, event) {
     var el2 = document.getElementById("alt");
     if (el2) { el2.style.backgroundColor = alt ? "#fff" : "#222"; el2.style.color = alt ? "#000" : "#fff"; }
     updateKeyLabels();
-    cursor(1);
     return;
   }
   if (k === "caps") {
@@ -83,7 +82,6 @@ function button(b, event) {
       else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
     }
     updateKeyLabels();
-    cursor(1);
     return;
   }
 
@@ -112,8 +110,7 @@ function button(b, event) {
         event.preventDefault();
         if (SSTART !== -1 && SEND !== -1) {
           var s = Math.max(0, Math.min(SSTART, SEND));
-          // @@ need to fix this: len not defined
-          var e = Math.max(0, Math.min(Math.max(SSTART, SEND), len));
+          var e = Math.max(0, Math.min(Math.max(SSTART, SEND), maxIndex));
           if (shift && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
             navigator.clipboard.writeText(str.substring(s, e)).catch(function(err){
               console.warn('clipboard write failed', err);
@@ -351,9 +348,8 @@ function button(b, event) {
         CURX += finalChar.length;
         while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
         pokeInput();
+        pokeCursorBlink();        
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
-        
-        
       }
 
     } // end else (not run+keydown)
