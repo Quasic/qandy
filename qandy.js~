@@ -3,7 +3,7 @@ run="qandy.js";
 
 
 function button(b, event) {
-  // Resume pagination if paused
+  pokeCursorOff();// Resume pagination if paused
   if (typeof paginationPaused !== 'undefined' && paginationPaused) {
     if (typeof resumePagination === 'function') resumePagination();
     return;
@@ -354,9 +354,11 @@ function button(b, event) {
         LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
         CURP += finalChar.length;
         // Advance CURX, wrapping to next row if we hit W (screenWidth)
+        pokeCursorOff();
         CURX += finalChar.length;
         while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
         pokeInput();
+        pokeCursorOn();
         // set cursor's current position attibute to cursor's attribute        
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
       }
@@ -365,6 +367,7 @@ function button(b, event) {
   } else {
     if (run) { keydown(k || l); }
   }
+  pokeCursorOn();
 }
 
 document.addEventListener('keydown', function (event) {
@@ -648,7 +651,7 @@ function showFiles() {
 
 function print(txt) {
   txt = (typeof txt === 'undefined' || txt === null) ? '' : String(txt);
-  pokeCursor(txt);
+  pokeCursor(txt+"\n");
 }
 
 function resumePagination() {
@@ -684,93 +687,15 @@ function resumePagination() {
   }
 }
 
-function getCursorAttr(val) {
-  // Read current global CURSOR if no val provided
-  var code = (typeof val === 'number') ? val : (typeof CURSOR === 'number' ? CURSOR : 0);
-
-  // Initialise globals if not already defined (defensive)
-  if (typeof cursorInverse === 'undefined') window.cursorInverse = 0;
-  if (typeof cursorBold    === 'undefined') window.cursorBold    = 0;
-  if (typeof cursorDim     === 'undefined') window.cursorDim     = 0;
-  if (typeof cursorItalic  === 'undefined') window.cursorItalic  = 0;
-  if (typeof cursorLine    === 'undefined') window.cursorLine    = 0;
-  if (typeof cursorBlink   === 'undefined') window.cursorBlink   = 0;
-
-  // Clear all flags
-  window.cursorInverse = 0;
-  window.cursorBold    = 0;
-  window.cursorDim     = 0;
-  window.cursorItalic  = 0;
-  window.cursorLine    = 0;
-  window.cursorBlink   = 0;
-
-  // Helper constants for fallback bitmask mapping (underline=1, blink=2, inverse=4)
-  const BM_UNDERLINE = 1;
-  const BM_BLINK     = 2;
-  const BM_INVERSE   = 4;
-
-  // ATTR constants (if your ATTR uses other masks like 0x0002 for bold, etc.)
-  const ATTR_BOLD     = (window.ATTR_BOLD     !== undefined) ? window.ATTR_BOLD     : 0x0002;
-  const ATTR_ITALIC   = (window.ATTR_ITALIC   !== undefined) ? window.ATTR_ITALIC   : 0x0008;
-  const ATTR_UNDER    = (window.ATTR_UNDERLINE !== undefined) ? window.ATTR_UNDERLINE : 0x0010;
-  const ATTR_BLINK    = (window.ATTR_BLINK    !== undefined) ? window.ATTR_BLINK    : 0x0020;
-  const ATTR_DIM      = (window.ATTR_DIM      !== undefined) ? window.ATTR_DIM      : 0x0040;
-  const ATTR_INVERSE  = (window.ATTR_INVERSE  !== undefined) ? window.ATTR_INVERSE  : 0x0001;
-
-  // If it's one of the known legacy codes, map directly
-  if (code === 0) {
-    // all zero - cursor off
-  } else if (code === 1) {
-    window.cursorLine = 1;
-  } else if (code === 3) {
-    window.cursorLine  = 1;
-    window.cursorBlink = 1;
-  } else if (code === 4) {
-    window.cursorInverse = 1;
-  } else if (code === 5) {
-    window.cursorInverse = 1;
-    window.cursorBlink   = 1;
-  } else {
-    // Treat code as a bitmask. Support both the simple 1/2/4 bitmask
-    // and the ATTR_* bitfield (so bold/dim/italic can be set if present).
-    if (code & BM_UNDERLINE) window.cursorLine = 1;
-    if (code & BM_BLINK)     window.cursorBlink = 1;
-    if (code & BM_INVERSE)   window.cursorInverse = 1;
-
-    // Also check ATTR_* style bits (useful if `code` is an ATTR mask)
-    if (code & ATTR_INVERSE) window.cursorInverse = 1;
-    if (code & ATTR_BOLD)    window.cursorBold    = 1;
-    if (code & ATTR_DIM)     window.cursorDim     = 1;
-    if (code & ATTR_ITALIC)  window.cursorItalic  = 1;
-    if (code & ATTR_UNDER)   window.cursorLine    = 1;
-    if (code & ATTR_BLINK)   window.cursorBlink   = 1;
-  }
-
-  // Return the computed flags for convenience
-  return {
-    cursorInverse: window.cursorInverse,
-    cursorBold:    window.cursorBold,
-    cursorDim:     window.cursorDim,
-    cursorItalic:  window.cursorItalic,
-    cursorLine:    window.cursorLine,
-    cursorBlink:   window.cursorBlink
-  };
-}
 
 function clearScreen() { cls(); }
 
-
-//attr=getCursorAttr();
-
-CURSOR=4;
-pokeCursorOn(4);
-
 // system ready
 
-print("\nQandy Pocket\nComputer v1.j\n\n");
+CURSOR=4; pokeCursorOn();
+pokeCursor("\nQandy Pocket\nComputer v1.j\n\nPrototype Release\n\n");
 LINEX = CURX; LINEY = CURY;   
 
-SFiles=1;
 mySearch=location.search.substr(1).split("&")
 for (i=0;i<mySearch.length;i++) {
  nameVal=mySearch[i].split("=");

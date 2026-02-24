@@ -14,22 +14,53 @@ window.pokeCell = function(x, y, ch) {
 };
 
 window.pokeCursor = function(text) {
-  if (!text) return false; var str = String(text);
-  var curx = CURX; var cury = CURY;
-  for (var i = 0; i < str.length; i++) {
-    var char = str[i];
-    if (char === '\n') { 
-     curx = 0; cury++; if (cury >= H) { return false; break; } continue;
+  if (typeof text === 'undefined' || text === null) return false;
+  var str = String(text);
+  for (i=0; i < str.length; i++) {
+    var ch = str.charAt(i);
+    pokeCursorOff();
+    if (ch === '\n') {
+      CURX = 0;
+      CURY = CURY + 1;
+      if (CURY >= H) { 
+        // Re-activate cursor at last valid position if possible
+        if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W-1); }
+        pokeCursorOn();
+        return false;
+      }
+      // Activate cursor at the new position and continue
+      pokeCursorOn();
+      continue;
     }
-    if (curx >= W) { 
-     curx = 0; cury++; if (cury >= H) { return false; break; }
-    }
-    pokeCell(curx, cury, char); curx++;
-    
 
-    
+    if (CURX >= W) {
+      CURX = 0;
+      CURY = CURY + 1;
+      if (CURY >= H) {
+        CURY = H - 1; CURX = Math.min(CURX, W-1);
+        pokeCursorOn();
+        return false;
+      }
+    }
+
+    pokeCell(CURX, CURY, ch);
+
+    CURX = CURX + 1;
+    if (CURX >= W) {
+      CURX = 0;
+      CURY = CURY + 1;
+      if (CURY >= H) {
+        // reached bottom; place cursor at last cell and finish
+        CURY = H - 1;
+        CURX = Math.min(CURX, W - 1);
+        // Activate cursor at the final position
+        pokeCursorOn();
+        return false;
+      }
+    }
+    pokeCursorOn();
   }
-  CURX=curx; CURY=cury; pokeRefresh(); return true;
+  return true;
 };
 
 window.pokeText = function(x, y, t) {
@@ -1432,47 +1463,42 @@ var prevX = -1;
 var prevY = -1;
 var prevCode = CURSOR;
 
+var prevAttr=0;
+
 var _ansiCssMap = {30:'#000',31:'#c00',32:'#0c0',33:'#cc0',34:'#00c',35:'#c0c',36:'#0cc',37:'#ccc',
                    90:'#555',91:'#f55',92:'#5f5',93:'#ff5',94:'#55f',95:'#f5f',96:'#5ff',97:'#fff',
                    40:'#000',41:'#c00',42:'#0c0',43:'#cc0',44:'#00c',45:'#c0c',46:'#0cc',47:'#ccc'};
 
-window.pokeCursorOn = function(s) {
-  function ensureClass(cls) { if (classStr.indexOf(cls) === -1) classStr += ' ' + cls; }
-  var classStr = 'qandy-cell ansi-fg-' + s.color + ' ansi-bg-' + s.bgcolor;
-  if (s > 0) {
-    if (s.bold) classStr += ' ansi-bold';
-    if (s.inverse) classStr += ' ansi-inverse';
-    if (s.italic) classStr += ' ansi-italic';
-    if (s.underline) classStr += ' ansi-underline';
-    if (s.dim) classStr += ' ansi-dim';
-    if (s.blink) classStr += ' ansi-blink';
-    // 1 line, (underline)
-    // 3 = blink line (underline + blink)
-    // 4 = block (inverse)
-    // 5 = blink block (inverse + blink)
-    var mode = (typeof a === 'number') ? a : 0;
-    if (mode === 1) {
-      ensureClass('ansi-underline');
-    } else if (mode === 3) {
-      ensureClass('ansi-underline');
-      ensureClass('ansi-blink');
-    } else if (mode === 4) {
-      ensureClass('ansi-inverse');
-    } else if (mode === 5) {
-      ensureClass('ansi-inverse');
-      ensureClass('ansi-blink');
-    } else {
-      // default fallback: underline
-      ensureClass('ansi-underline');
+window.pokeCursorOn = function() {
+  if (typeof CURSOR === 'undefined' || typeof CURX === 'undefined' || typeof CURY === 'undefined') return;
+  if (CURSOR === 0) return; // cursor off
+  var sx = Math.max(0, Math.min(W-1, CURX|0));
+  var sy = Math.max(0, Math.min(H-1, CURY|0));
+  var prevAttr = (typeof peekATTR === 'function') ? peekATTR(sx, sy) : (ATTR && ATTR[sy] ? ATTR[sy][sx] : 0);  
+  try {
+    // line cursor: underline
+    if (CURSOR === 1 || CURSOR === 3) {
+      if (typeof window.ATTR_UNDERLINE !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_UNDERLINE, true);
+      if (CURSOR === 3 && typeof window.ATTR_BLINK !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_BLINK, true);
     }
-  } else {
-    // default style 
-  }
-  var el = document.getElementById('c' + CURY + '_' + CURX);
-  if (!el) return;
-  if (el._lastClass !== classStr) { el.className = classStr; }
-};
 
+    // block cursor: inverse
+    if (CURSOR === 4 || CURSOR === 5) {
+      if (typeof window.ATTR_INVERSE !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_INVERSE, true);
+      if (CURSOR === 5 && typeof window.ATTR_BLINK !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_BLINK, true);
+    }
+  } catch (e) {
+    console.warn("activateStartupCursor failed:", e);
+  }
+}
+
+window.pokeCursorOff = function() {
+  if (typeof prevAttr === 'undefined' || prevAttr === null) return false;
+  ATTR[CURY][CURX] = prevAttr;
+  pokeRefresh(CURX,CURY);
+  cursor_saved = null;
+  return true;
+}
 
 function cursorVarsToAttr(vars) {
   // prefer window-defined ATTR_* constants if present, otherwise use defaults
