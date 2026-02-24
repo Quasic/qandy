@@ -1278,7 +1278,7 @@ function applyCursorAttrToCell(x, y) {
   if (window.SYNC) pokeRefresh(x,y);
 }
 
-// Helper: read a cell's visual properties by combining COLOR (color/bg) and ATTR (boolean flags).
+
 function getCellStyle(x, y) {
   // color/bgcolor come from COLOR buffer (fallbacks provided)
   var colRow = (window.COLOR && COLOR[y]) ? COLOR[y] : undefined;
@@ -1311,15 +1311,6 @@ function getCellStyle(x, y) {
   };
 }
 
-
-
-
-//  To set inverse: ATTR[y][x] |= ATTR_INVERSE;
-//  To clear inverse: ATTR[y][x] &= ~ATTR_INVERSE;
-
-
-
-// Updated pokeRefresh uses ATTR bits + COLOR numbers for rendering
 window.pokeRefresh = function(x, y) {
   // Full-screen refresh
   if (typeof x === 'undefined' && typeof y === 'undefined') {
@@ -1336,7 +1327,6 @@ window.pokeRefresh = function(x, y) {
         if (el.textContent !== newText) el.textContent = newText;
 
         var s = getCellStyle(rx, ry);
-
         // build base class string
         var classStr = 'qandy-cell ansi-fg-' + s.color + ' ansi-bg-' + s.bgcolor;
         if (s.bold) classStr += ' ansi-bold';
@@ -1392,8 +1382,7 @@ var _ansiCssMap = {30:'#000',31:'#c00',32:'#0c0',33:'#cc0',34:'#00c',35:'#c0c',3
                    40:'#000',41:'#c00',42:'#0c0',43:'#cc0',44:'#00c',45:'#c0c',46:'#0cc',47:'#ccc'};
 
 window.pokeCursorOn = function(a) {
-  if (!CURSOR || !CURON) return;
-  // clear previous
+  function ensureClass(cls) { if (classStr.indexOf(cls) === -1) classStr += ' ' + cls; }
   if (typeof window._lastCursorPos !== 'undefined') {
     var p = window._lastCursorPos;
     if (p && (p.x !== CURX || p.y !== CURY)) {
@@ -1402,13 +1391,36 @@ window.pokeCursorOn = function(a) {
       if (typeof pokeRefresh === 'function') pokeRefresh(p.x, p.y);
     }
   }
-  var el = document.getElementById('c' + CURY + '_' + CURX);
-  if (el) {
-    el.classList.add('qandy-cursor');
-    applyCursorVars(el);
+  var s = ATTR[CURY][CURX];
+  var classStr = 'qandy-cell ansi-fg-' + s.color + ' ansi-bg-' + s.bgcolor;
+  if (s.bold) classStr += ' ansi-bold';
+  if (s.inverse) classStr += ' ansi-inverse';
+  if (s.italic) classStr += ' ansi-italic';
+  if (s.underline) classStr += ' ansi-underline';
+  if (s.dim) classStr += ' ansi-dim';
+  if (s.blink) classStr += ' ansi-blink';
+  // 1 line, (underline)
+  // 3 = blink line (underline + blink)
+  // 4 = block (inverse)
+  // 5 = blink block (inverse + blink)
+  var mode = (typeof a === 'number') ? a : 0;
+  if (mode === 1) {
+    ensureClass('ansi-underline');
+  } else if (mode === 3) {
+    ensureClass('ansi-underline');
+    ensureClass('ansi-blink');
+  } else if (mode === 4) {
+    ensureClass('ansi-inverse');
+  } else if (mode === 5) {
+    ensureClass('ansi-inverse');
+    ensureClass('ansi-blink');
+  } else {
+    // default fallback: underline
+    ensureClass('ansi-underline');
   }
-  cursorVisible = true;
-  window._lastCursorPos = { x: CURX, y: CURY };
+  var el = document.getElementById('c' + CURY + '_' + CURX);
+  if (!el) return;
+  if (el._lastClass !== classStr) { el.className = classStr; }
 };
 
 
@@ -1442,25 +1454,25 @@ function cursorVarsToAttr(vars) {
   return mask;
 }
 
-setInterval(function() {
-  if (!CURSOR) return;
-  if (cursorBlink) { pokeCursorBlink(); }
-}, 500);
+//setInterval(function() {
+//  if (!CURSOR) return;
+//  if (cursorBlink) { pokeCursorBlink(); }
+//}, 500);
 
 window.pokeCursorBlink = function(a) {
-  if (CURSOR>0) {
-    // Erase the old cursor position if it has moved
-    if (prevX >= 0 && prevY >= 0 && !(prevX === CURX && prevY === CURY)) {
-      pokeInverse(prevX, prevY, false);
-      pokeRefresh(prevX, prevY);
-    }
-    var curInv = (typeof peekInverse === 'function') ? peekInverse(CURX, CURY) : false;
-    pokeInverse(CURX, CURY, !curInv);
-    pokeRefresh(CURX, CURY);
-    prevX = CURX;
-    prevY = CURY;
-    prevCode = CURSOR;
-  }
+  //if (CURSOR>0) {
+  //  // Erase the old cursor position if it has moved
+  //  if (prevX >= 0 && prevY >= 0 && !(prevX === CURX && prevY === CURY)) {
+  //    pokeInverse(prevX, prevY, false);
+  //    pokeRefresh(prevX, prevY);
+  //  }
+  //  var curInv = (typeof peekInverse === 'function') ? peekInverse(CURX, CURY) : false;
+  //  pokeInverse(CURX, CURY, !curInv);
+  //  pokeRefresh(CURX, CURY);
+  //  prevX = CURX;
+  //  prevY = CURY;
+  //  prevCode = CURSOR;
+  //}
 } 
 
 
