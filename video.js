@@ -1236,14 +1236,19 @@ window.applyCellStyle = function(el, st) {
   }
 };
 
-  window.pokeSelect = function(state) {
-    let s = Math.min(SSTART, SEND);
-    let len = Math.abs(SEND - SSTART);
-    let absCol = LINEX + s
-    sy = LINEY + Math.floor(absCol/W)
-    sx = absCol % W               
-    pokeInverse(sx,sy,state,len);
-  }
+window.pokeSelect = function(state) {
+  if (typeof SSTART !== 'number' || typeof SEND !== 'number') return false;
+  if (SSTART < 0 || SEND < 0) return false;
+  var s = Math.min(SSTART, SEND);
+  var e = Math.max(SSTART, SEND);
+  var count = e - s;
+  if (count <= 0) return false;
+  var absCol = (typeof LINEX === 'number' ? LINEX : 0) + s;
+  var startY = (typeof LINEY === 'number' ? LINEY : 0) + Math.floor(absCol / W);
+  var startX = absCol % W;
+  // pokeInverse expects (x, y, state, count)
+  return pokeInverse(startX, startY, !!state, count);
+}
   
   window.peekAttr = function(x,y) { return (ATTR && ATTR[y]) ? ATTR[y][x] : undefined; };
   window.peekInverse = function(x,y) {
@@ -1386,35 +1391,26 @@ var _ansiCssMap = {30:'#000',31:'#c00',32:'#0c0',33:'#cc0',34:'#00c',35:'#c0c',3
                    90:'#555',91:'#f55',92:'#5f5',93:'#ff5',94:'#55f',95:'#f5f',96:'#5ff',97:'#fff',
                    40:'#000',41:'#c00',42:'#0c0',43:'#cc0',44:'#00c',45:'#c0c',46:'#0cc',47:'#ccc'};
 
-function pokeCursorOn(a) {
-  // a=0 means cursor off
-  if (!a) {
-    CURON = false;
-    pokeRefresh(CURX, CURY);
-    return;
+window.pokeCursorOn = function(a) {
+  if (!CURSOR || !CURON) return;
+  // clear previous
+  if (typeof window._lastCursorPos !== 'undefined') {
+    var p = window._lastCursorPos;
+    if (p && (p.x !== CURX || p.y !== CURY)) {
+      var prevEl = document.getElementById('c' + p.y + '_' + p.x);
+      clearCursorFrom(prevEl);
+      if (typeof pokeRefresh === 'function') pokeRefresh(p.x, p.y);
+    }
   }
-  CURON = true;
+  var el = document.getElementById('c' + CURY + '_' + CURX);
+  if (el) {
+    el.classList.add('qandy-cursor');
+    applyCursorVars(el);
+  }
+  cursorVisible = true;
+  window._lastCursorPos = { x: CURX, y: CURY };
+};
 
-  // Convert cursor global vars into a proper ATTR bitmask
-  var mask = cursorVarsToAttr();
-
-  // Decode the mask into CURATTR for pokeRefresh's CSS variable logic
-  CURATTR = {
-    color:     (typeof CURFG  !== 'undefined') ? CURFG  : 37,
-    bgcolor:   (typeof CURBG  !== 'undefined') ? CURBG  : 40,
-    bold:      !!(mask & (window.ATTR_BOLD      !== undefined ? window.ATTR_BOLD      : 0x0002)),
-    dim:       !!(mask & (window.ATTR_DIM       !== undefined ? window.ATTR_DIM       : 0x0004)),
-    italic:    !!(mask & (window.ATTR_ITALIC    !== undefined ? window.ATTR_ITALIC    : 0x0008)),
-    underline: !!(mask & (window.ATTR_UNDERLINE !== undefined ? window.ATTR_UNDERLINE : 0x0010)),
-    blink:     !!(mask & (window.ATTR_BLINK     !== undefined ? window.ATTR_BLINK     : 0x0020)),
-    inverse:   !!(mask & (window.ATTR_INVERSE   !== undefined ? window.ATTR_INVERSE   : 0x0001))
-  };
-
-  // Write the bitmask into ATTR at the cursor cell
-  if (validateCoords(CURX, CURY) && ATTR[CURY]) ATTR[CURY][CURX] = mask;
-
-  pokeRefresh(CURX, CURY);
-}
 
 function cursorVarsToAttr(vars) {
   // prefer window-defined ATTR_* constants if present, otherwise use defaults
@@ -1447,7 +1443,7 @@ function cursorVarsToAttr(vars) {
 }
 
 setInterval(function() {
-  if (!CURSOR || !CURON) return;
+  if (!CURSOR) return;
   if (cursorBlink) { pokeCursorBlink(); }
 }, 500);
 
@@ -1466,6 +1462,8 @@ window.pokeCursorBlink = function(a) {
     prevCode = CURSOR;
   }
 } 
+
+
 
 
 // Signal that video.js is ready
