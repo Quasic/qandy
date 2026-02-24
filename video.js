@@ -1207,10 +1207,13 @@ window.pokeRefresh = function(x, y) {
     // build classes as before...
     if (CURON && x === CURX && y === CURY) {
       el.classList.add('qandy-cursor');
-      // Optionally set inline color based on CURATTR:
-      el.style.setProperty('--qandy-cursor-fg', mapAnsiToCss(CURATTR.color));
-      el.style.setProperty('--qandy-cursor-bg', mapAnsiToCss(CURATTR.bgcolor));
-      // Your CSS for .qandy-cursor can use these variables:
+      // Safely set cursor color CSS variables if CURATTR is available
+      if (typeof CURATTR === 'object' && CURATTR !== null) {
+        var _fg = _ansiCssMap[CURATTR.color]   || '#ccc';
+        var _bg = _ansiCssMap[CURATTR.bgcolor] || '#000';
+        el.style.setProperty('--qandy-cursor-fg', _fg);
+        el.style.setProperty('--qandy-cursor-bg', _bg);
+      }
       // .qandy-cursor { color: var(--qandy-cursor-fg); background: var(--qandy-cursor-bg); }
     } else {
       el.classList.remove('qandy-cursor');
@@ -1348,8 +1351,37 @@ var prevX = -1;
 var prevY = -1;
 var prevCode = CURSOR;
 
+var _ansiCssMap = {30:'#000',31:'#c00',32:'#0c0',33:'#cc0',34:'#00c',35:'#c0c',36:'#0cc',37:'#ccc',
+                   90:'#555',91:'#f55',92:'#5f5',93:'#ff5',94:'#55f',95:'#f5f',96:'#5ff',97:'#fff',
+                   40:'#000',41:'#c00',42:'#0c0',43:'#cc0',44:'#00c',45:'#c0c',46:'#0cc',47:'#ccc'};
+
 function pokeCursorOn(a) {
-  ATTR[CURY][CURX]=a; 
+  // a=0 means cursor off
+  if (!a) {
+    CURON = false;
+    pokeRefresh(CURX, CURY);
+    return;
+  }
+  CURON = true;
+
+  // Convert cursor global vars into a proper ATTR bitmask
+  var mask = cursorVarsToAttr();
+
+  // Decode the mask into CURATTR for pokeRefresh's CSS variable logic
+  CURATTR = {
+    color:     (typeof CURFG  !== 'undefined') ? CURFG  : 37,
+    bgcolor:   (typeof CURBG  !== 'undefined') ? CURBG  : 40,
+    bold:      !!(mask & (window.ATTR_BOLD      !== undefined ? window.ATTR_BOLD      : 0x0002)),
+    dim:       !!(mask & (window.ATTR_DIM       !== undefined ? window.ATTR_DIM       : 0x0004)),
+    italic:    !!(mask & (window.ATTR_ITALIC    !== undefined ? window.ATTR_ITALIC    : 0x0008)),
+    underline: !!(mask & (window.ATTR_UNDERLINE !== undefined ? window.ATTR_UNDERLINE : 0x0010)),
+    blink:     !!(mask & (window.ATTR_BLINK     !== undefined ? window.ATTR_BLINK     : 0x0020)),
+    inverse:   !!(mask & (window.ATTR_INVERSE   !== undefined ? window.ATTR_INVERSE   : 0x0001))
+  };
+
+  // Write the bitmask into ATTR at the cursor cell
+  if (validateCoords(CURX, CURY) && ATTR[CURY]) ATTR[CURY][CURX] = mask;
+
   pokeRefresh(CURX, CURY);
 }
 
@@ -1384,14 +1416,20 @@ function cursorVarsToAttr(vars) {
 }
 
 setInterval(function() {
-  if (!CURSOR) return;
+  if (!CURSOR || !CURON) return;
   if (cursorBlink) {
-    var prevWasBlock = (prevCode === 4 || prevCode === 5);
-    var nowIsBlock = (CURSOR === 4 || CURSOR === 5);
-    if (prevWasBlock) pokeInverse(prevX, prevY, false);
-    if (nowIsBlock) pokeInverse(CURX, CURY, true);
-    if (!(prevX === CURX && prevY === CURY)) { pokeRefresh(prevX, prevY); }
+    // Erase the old cursor position if it has moved
+    if (prevX >= 0 && prevY >= 0 && !(prevX === CURX && prevY === CURY)) {
+      pokeInverse(prevX, prevY, false);
+      pokeRefresh(prevX, prevY);
+    }
+    // Toggle inverse at current cursor position for blink effect
+    var curInv = (typeof peekInverse === 'function') ? peekInverse(CURX, CURY) : false;
+    pokeInverse(CURX, CURY, !curInv);
     pokeRefresh(CURX, CURY);
+    prevX = CURX;
+    prevY = CURY;
+    prevCode = CURSOR;
   }
 }, 500);
 
