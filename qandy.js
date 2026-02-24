@@ -757,8 +757,7 @@ function clearScreen() { cls(); }
 
 attr=getCursorAttr();
 pokeCursorOn(CURSOR);
-
-
+pokeInverse(0,0,false); // until we figure out bug that causes this
 
 // system ready
 

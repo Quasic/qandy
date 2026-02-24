@@ -15,7 +15,6 @@ function button(b, event) {
       if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
       else shift = !shift;
       if ((alt || altPhysical) && typeof updateKeyLabels === 'function') updateKeyLabels();
-      cursor(1);
       return;
     case 17: k = "ctrl"; break;
     case 18: k = "alt"; break;
@@ -758,8 +757,7 @@ function clearScreen() { cls(); }
 
 attr=getCursorAttr();
 pokeCursorOn(CURSOR);
-
-
+pokeInverse(0,0,false);
 
 // system ready
 
