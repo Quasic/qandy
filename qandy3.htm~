@@ -78,7 +78,7 @@ var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
-var CURSOR=4; // cursor type 0=off, 1=line, 3=blink line, 4=block, 5=blink block  
+var CURSOR=5; // cursor type 0=off, 1=line, 3=blink line, 4=block, 5=blink block  
 var CURX = 0;    // cursor x
 var CURY = 0;    // cursor y
 var CURP = 0;    // cursor p 

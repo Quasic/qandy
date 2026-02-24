@@ -1,19 +1,28 @@
 
-  Legend: x=column
-          y=row
-          a=asci character
-          c=ansi color    
-          n=number of cells
-          t=text string
-          s=state (on/off) 
+
+                            video.js
+                                                 
+                     Qandy Video Driver v0
+
+                      Eperimental Release:
+              
+                  These routines have not been
+                 tested, use at your own risk!!
  
-            pokeCell(x,y,a) — poke character(s) to a cell (fast)
-          pokeChar(x,y,a,n) — poke character(s) to cells (slow)
+                     
+               x = column              a = asci character
+     Legend:   y = row                 c = ansi code
+               n = number of cells     h = hex value
+               t = text string         s = state (on/off)
+
+
+            pokeCell(x,y,a) — poke character(s) to a cell (faster)
+          pokeChar(x,y,a,n) — poke character(s) to cells (slower)
   
             pokeFG(x,y,c,n) — set foreground color
             pokeFG(x,y,c,n) — set background color
-   pokeColor(x,y,fg, bg, n) — set foreground and background color 
-       pokeBold(x, y, s, n) — set bold attribute       
+     pokeColor(x,y,fg,bg,n) — set foreground and background color 
+          pokeBold(x,y,s,n) — set bold attribute       
        pokeInverse(x,y,s,n) — set inverse attribute
 
               pokeCursor(t) — poke text at cursor's position          
@@ -23,12 +32,19 @@
               pokeSelect(s) — set inverse attribute for text selection
                   
            pokeRefresh(x,y) — update DOM cell, if x/y omited refresh entire DOM
-    pokeRefreshRow(y, x, n) — update row of DOM cells 
+      pokeRefreshRow(y,x,n) — update row of DOM cells 
              
-         pokeRefreshRow — (used by pokeInverse span path; referenced)
-    pokeAttrBit / window._setAttrBit — helpers to set ATTR bitfield
-       pokeAttr   
-      
-       (peekAttr/pokeAttrBit) / window.peekAttr — ATTR helpers (pokeAttrBit is used)
-     setAttrBit — low-level ATTR bit setter used by pokeAttrBit/pokeInverse
- 
+            pokeAttr(x,y,h) — sets attibute to hex byte
+         pokeAttrBit(x,y,c) — sets attibute bit
+
+
+
+            pokeAttr(x,y,h) — sets attribute to hex mask
+         pokeAttrBit(x,y,c) — sets attribute bit
+
+                  peek(x,y) — return character at cell (x,y)
+              peekAttr(x,y) — return numeric ATTR bitmask for cell (x,y)
+           peekInverse(x,y) — return boolean whether inverse is active at cell
+             peekColor(x,y) — return color object for cell
+
+

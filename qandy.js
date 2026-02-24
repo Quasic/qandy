@@ -349,6 +349,7 @@ function button(b, event) {
           //
         }
         if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
+        // set cursor's current position attibute to default text attribute
         // Insert character into line at CURP
         LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
         CURP += finalChar.length;
@@ -356,7 +357,7 @@ function button(b, event) {
         CURX += finalChar.length;
         while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
         pokeInput();
-        pokeCursorBlink();        
+        // set cursor's current position attibute to cursor's attribute        
         if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
       }
 
@@ -761,7 +762,6 @@ function clearScreen() { cls(); }
 
 attr=getCursorAttr();
 pokeCursorOn(CURSOR);
-pokeInverse(0,0,false); // until we figure out bug that causes this
 
 // system ready
 
