@@ -120,6 +120,7 @@ function button(b, event) {
             });
           }
         }
+        pokeSelect(false);
         LINE = str.substring(0, s) + str.substring(e);
         CURP = s;
         SSTART = -1;
