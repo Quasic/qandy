@@ -32,7 +32,7 @@
               pokeSelect(s) — set inverse attribute for text selection
                   
            pokeRefresh(x,y) — update DOM cell, if x/y omited refresh entire DOM
-      pokeRefreshRow(y,x,n) — update row of DOM cells 
+      pokeRefreshRow(x,y,n) — update row of DOM cells 
              
             pokeAttr(x,y,h) — sets attibute to hex byte
          pokeAttrBit(x,y,c) — sets attibute bit
@@ -46,5 +46,10 @@
               peekAttr(x,y) — return numeric ATTR bitmask for cell (x,y)
            peekInverse(x,y) — return boolean whether inverse is active at cell
              peekColor(x,y) — return color object for cell
+
+
+
+     * things to do: rewrite all routines
+       to use these variables names.
 
 
