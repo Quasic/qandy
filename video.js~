@@ -1446,7 +1446,7 @@ window.pokeCursorOn = function(s) {
   //    if (typeof pokeRefresh === 'function') pokeRefresh(p.x, p.y);
   //  }
   //}
-  var s = CURSOR;
+  //var s = CURSOR;
   var classStr = 'qandy-cell ansi-fg-' + s.color + ' ansi-bg-' + s.bgcolor;
   if (s.bold) classStr += ' ansi-bold';
   if (s.inverse) classStr += ' ansi-inverse';

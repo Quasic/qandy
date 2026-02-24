@@ -1,7 +1,14 @@
 
 
-Qandy Pocket Computer
-System Overview
+             The Qandy Pocket Computer
+
+               Experiemental Release:
+          
+  Some of these routines have been generated
+  with the assistance of Artifical Intelligence
+       and have not been fully tested
+  
+            Use at your own risk!
 
 
 
@@ -55,3 +62,8 @@ the Qandy will load and execute that file, ie:
   
 
 
+Control Key Combinations:
+
+  CTRL-A  Select all text
+  
+  

@@ -1117,7 +1117,7 @@ window.pokeAttr = function(x, y, spec) {
     if (typeof count === 'number' && count > 1) {
       var endX = x + count;
       for (var xi = x; xi < endX; xi++) _setAttrBit(xi, y, window.ATTR_INVERSE, !!state);
-      if (typeof pokeRefreshRow === 'function') pokeRefreshRow(y, x, count);
+      if (typeof pokeRefreshRow === 'function') pokeRefreshRow(x, y, count);
       else if (typeof pokeRefresh === 'function') for (var xr = x; xr < endX; xr++) pokeRefresh(xr, y);
       return count;
     }
@@ -1231,7 +1231,7 @@ window.pokeRefresh = function(x, y) {
   return false;
 }
 
-  window.pokeRefreshRow = function(y, startX, count) {
+  window.pokeRefreshRow = function(startX, y, count) {
     if (typeof y !== 'number' || typeof startX !== 'number') return false;
     count = (typeof count === 'number' && count > 0) ? (count|0) : 1;
     startX = startX|0;
@@ -1438,40 +1438,35 @@ var _ansiCssMap = {30:'#000',31:'#c00',32:'#0c0',33:'#cc0',34:'#00c',35:'#c0c',3
 
 window.pokeCursorOn = function(s) {
   function ensureClass(cls) { if (classStr.indexOf(cls) === -1) classStr += ' ' + cls; }
-  //if (typeof window._lastCursorPos !== 'undefined') {
-  //  var p = window._lastCursorPos;
-  //  if (p && (p.x !== CURX || p.y !== CURY)) {
-  //    var prevEl = document.getElementById('c' + p.y + '_' + p.x);
-  //    clearCursorFrom(prevEl);
-  //    if (typeof pokeRefresh === 'function') pokeRefresh(p.x, p.y);
-  //  }
-  //}
-  //var s = CURSOR;
   var classStr = 'qandy-cell ansi-fg-' + s.color + ' ansi-bg-' + s.bgcolor;
-  if (s.bold) classStr += ' ansi-bold';
-  if (s.inverse) classStr += ' ansi-inverse';
-  if (s.italic) classStr += ' ansi-italic';
-  if (s.underline) classStr += ' ansi-underline';
-  if (s.dim) classStr += ' ansi-dim';
-  if (s.blink) classStr += ' ansi-blink';
-  // 1 line, (underline)
-  // 3 = blink line (underline + blink)
-  // 4 = block (inverse)
-  // 5 = blink block (inverse + blink)
-  var mode = (typeof a === 'number') ? a : 0;
-  if (mode === 1) {
-    ensureClass('ansi-underline');
-  } else if (mode === 3) {
-    ensureClass('ansi-underline');
-    ensureClass('ansi-blink');
-  } else if (mode === 4) {
-    ensureClass('ansi-inverse');
-  } else if (mode === 5) {
-    ensureClass('ansi-inverse');
-    ensureClass('ansi-blink');
+  if (s > 0) {
+    if (s.bold) classStr += ' ansi-bold';
+    if (s.inverse) classStr += ' ansi-inverse';
+    if (s.italic) classStr += ' ansi-italic';
+    if (s.underline) classStr += ' ansi-underline';
+    if (s.dim) classStr += ' ansi-dim';
+    if (s.blink) classStr += ' ansi-blink';
+    // 1 line, (underline)
+    // 3 = blink line (underline + blink)
+    // 4 = block (inverse)
+    // 5 = blink block (inverse + blink)
+    var mode = (typeof a === 'number') ? a : 0;
+    if (mode === 1) {
+      ensureClass('ansi-underline');
+    } else if (mode === 3) {
+      ensureClass('ansi-underline');
+      ensureClass('ansi-blink');
+    } else if (mode === 4) {
+      ensureClass('ansi-inverse');
+    } else if (mode === 5) {
+      ensureClass('ansi-inverse');
+      ensureClass('ansi-blink');
+    } else {
+      // default fallback: underline
+      ensureClass('ansi-underline');
+    }
   } else {
-    // default fallback: underline
-    ensureClass('ansi-underline');
+    // default style 
   }
   var el = document.getElementById('c' + CURY + '_' + CURX);
   if (!el) return;
