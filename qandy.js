@@ -760,8 +760,10 @@ function getCursorAttr(val) {
 function clearScreen() { cls(); }
 
 
-attr=getCursorAttr();
-pokeCursorOn(CURSOR);
+//attr=getCursorAttr();
+
+CURSOR=5;
+pokeCursorOn(5);
 
 // system ready
 

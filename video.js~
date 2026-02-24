@@ -1436,17 +1436,17 @@ var _ansiCssMap = {30:'#000',31:'#c00',32:'#0c0',33:'#cc0',34:'#00c',35:'#c0c',3
                    90:'#555',91:'#f55',92:'#5f5',93:'#ff5',94:'#55f',95:'#f5f',96:'#5ff',97:'#fff',
                    40:'#000',41:'#c00',42:'#0c0',43:'#cc0',44:'#00c',45:'#c0c',46:'#0cc',47:'#ccc'};
 
-window.pokeCursorOn = function(a) {
+window.pokeCursorOn = function(s) {
   function ensureClass(cls) { if (classStr.indexOf(cls) === -1) classStr += ' ' + cls; }
-  if (typeof window._lastCursorPos !== 'undefined') {
-    var p = window._lastCursorPos;
-    if (p && (p.x !== CURX || p.y !== CURY)) {
-      var prevEl = document.getElementById('c' + p.y + '_' + p.x);
-      clearCursorFrom(prevEl);
-      if (typeof pokeRefresh === 'function') pokeRefresh(p.x, p.y);
-    }
-  }
-  var s = ATTR[CURY][CURX];
+  //if (typeof window._lastCursorPos !== 'undefined') {
+  //  var p = window._lastCursorPos;
+  //  if (p && (p.x !== CURX || p.y !== CURY)) {
+  //    var prevEl = document.getElementById('c' + p.y + '_' + p.x);
+  //    clearCursorFrom(prevEl);
+  //    if (typeof pokeRefresh === 'function') pokeRefresh(p.x, p.y);
+  //  }
+  //}
+  var s = CURSOR;
   var classStr = 'qandy-cell ansi-fg-' + s.color + ' ansi-bg-' + s.bgcolor;
   if (s.bold) classStr += ' ansi-bold';
   if (s.inverse) classStr += ' ansi-inverse';
@@ -1475,7 +1475,7 @@ window.pokeCursorOn = function(a) {
   }
   var el = document.getElementById('c' + CURY + '_' + CURX);
   if (!el) return;
-  //if (el._lastClass !== classStr) { el.className = classStr; }
+  if (el._lastClass !== classStr) { el.className = classStr; }
 };
 
 
