@@ -151,12 +151,12 @@ function unhighlightKey(elementId) {
     return;
   }
   if (elementId === 'ctrl' && (ctrl || ctrlPhysical)) {
-    element.style.backgroundColor = ctrlPhysical ? '#444' : '#fff';
+    element.style.backgroundColor = ctrlPhysical ? '#bbb' : '#fff';
     element.style.color = '#000';
     return;
   }
   if (elementId === 'alt' && (alt || altPhysical)) {
-    element.style.backgroundColor = altPhysical ? '#444' : '#fff'; @@@
+    element.style.backgroundColor = altPhysical ? '#444' : '#fff';
     element.style.color = '#000';
     return;
   }
@@ -201,5 +201,47 @@ resize(); function resize() {
 
 // Signal that keyboard.js is ready
 if (typeof window.qandySignalReady === 'function') {
+  var kb = document.getElementById('keyboard'); // replace with your keyboard container id
+  if (!kb) return;
+  // Make sure touch events on the keyboard are able to be prevented
+  kb.style.webkitUserSelect = 'none';
+  kb.style.userSelect = 'none';
+  kb.style.webkitTouchCallout = 'none';
+
+  // last tap timestamp for double-tap detection
+  var lastTap = 0;
+  var DOUBLE_TAP_MS = 300; // tune between 250..350ms to taste
+
+  // Use touchend so we do not interfere with touchstart visual feedback
+  kb.addEventListener('touchend', function (ev) {
+    var now = Date.now();
+    var dt = now - lastTap;
+
+    // If this is a quick second tap, prevent the browser zoom
+    if (dt > 0 && dt <= DOUBLE_TAP_MS) {
+      // stop default double-tap-to-zoom behavior
+      ev.preventDefault();
+      ev.stopPropagation();
+      // Optionally handle the double-tap as a normal tap: dispatch your key handler
+      var target = ev.target;
+      // If your keys are buttons with a data-key attribute, trigger the click handler:
+      while (target && target !== kb) {
+        if (target.dataset && target.dataset.key) {
+          // call your existing key-press handler; e.g.:
+          // handleVirtualKey(target.dataset.key);
+          // or simulate a click:
+          target.click();
+          break;
+        }
+        target = target.parentNode;
+      }
+    } else {
+      // normal first tap: let touchend fall through to existing handlers
+      // Some browsers require preventDefault() on touchstart to avoid a synthesized mouse click —
+      // only add that if you already handle touch completely in JS.
+    }
+
+    lastTap = now;
+  }, { passive: false }); // passive:false is crucial so preventDefault() works
   window.qandySignalReady('Keyboard');
 }

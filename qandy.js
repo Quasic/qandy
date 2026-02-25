@@ -11,6 +11,7 @@ function button(b, event) {
       if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
       else shift = !shift;
       if ((alt || altPhysical) && typeof updateKeyLabels === 'function') updateKeyLabels();
+      pokeCursorOn();
       return;
     case 17: k = "ctrl"; break;
     case 18: k = "alt"; break;
@@ -83,21 +84,21 @@ function button(b, event) {
   if (!k && keyMap[b]) { l = shift ? keyMap[b][1] : keyMap[b][0]; k = l; }
 
   // Ignore raw control codes (<32) that aren't already mapped
-  if (!k && b < 32) { return; }
+  if (!k && b < 32) { pokeCursorOn(); return; }
 
   // Modifier key toggles (virtual keyboard)
   if (k === "ctrl") {
     ctrl = !ctrl;
     var el = document.getElementById("ctrl");
     if (el) { el.style.backgroundColor = ctrl ? "#fff" : "#222"; el.style.color = ctrl ? "#000" : "#fff"; }
-    return;
+    pokeCursorOn(); return;
   }
   if (k === "alt") {
     alt = !alt;
     var el2 = document.getElementById("alt");
     if (el2) { el2.style.backgroundColor = alt ? "#fff" : "#222"; el2.style.color = alt ? "#000" : "#fff"; }
     updateKeyLabels();
-    return;
+    pokeCursorOn(); return;
   }
   if (k === "caps") {
     caps = !caps;
@@ -107,7 +108,7 @@ function button(b, event) {
       else { capsEl.style.backgroundColor = "#222"; capsEl.style.color = "#fff"; }
     }
     updateKeyLabels();
-    return;
+    pokeCursorOn(); return;
   }
 
   if (keyboard) {
@@ -132,7 +133,17 @@ function button(b, event) {
         pokeCursorOn(CURSOR);
         //if (SSTART !== -1 && SEND !== -1) deleteSelection();
       } else if (k === "insert") {
-
+          navigator.clipboard.readText().then(function(text) {
+          if (text) {
+            if (SSTART !== -1 && SEND !== -1) deleteSelection();
+              if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
+              LINE = (LINE || "").substring(0, CURP) + text + (LINE || "").substring(CURP);
+              CURP += text.length;
+              pokeInput();
+            }
+          }).catch(function(){});
+          pokeCursorOn();
+          return;
     	  } else if (k === "delete") {
           event.preventDefault();
           var str = String(LINE || "");
@@ -348,6 +359,7 @@ function button(b, event) {
               if (copyText.length > 0) {
                 navigator.clipboard.writeText(copyText).catch(function(){});
               }
+              pokeCursorOn()
               return;
             }
 
@@ -362,6 +374,7 @@ function button(b, event) {
                   pokeInput();
                 }
               }).catch(function(){});
+              pokeCursorOn()
               return;
             }
             // Ctrl+A: select all input
@@ -370,8 +383,10 @@ function button(b, event) {
                 SSTART = 0; SEND = LINE.length;
                 pokeSelect(true);
               }
+              pokeCursorOn()
               return;
             }
+            pokeCursorOn()
             return;
           }
 

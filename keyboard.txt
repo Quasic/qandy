@@ -1,15 +1,20 @@
 
-Qandy Pocket Computer
-Keyboard Driver
+
+            Qandy Pocket Computer
+         Overview of Keyboard Driver
 
 
 
-The Qandy emulates a keyboard on the screen and
-also intercepts physical keystokes and processes
-them making it it's own computer with it's own
-input/output functions. 
+The Qandy emulates a keyboard on the screen and also
+intercepts physical keystrokes and processes them making
+it it's own computer with it's own input/output functions. 
 
- 
+By pressing SHIFT or CAPS to switch to the upper case
+character/symbol set. You can also press the ALT key
+and/or SHIFT key to switch to an extended ASCII graphic
+character set. 
 
-
+Combined with the ANSI enabled display rendering the
+Qandy is an ideal device for generating and displaying
+ANSI art. 
 

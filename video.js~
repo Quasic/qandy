@@ -57,18 +57,38 @@ window.pokeCursor = function(text) {
   return true;
 };
 
-window.pokeText=function(x,y,t,n) {
-  if (!t) return false; var s=String(t);
-  n=(typeof n === 'undefined' || n === null) ? 1 : Math.max(1, parseInt(n, 10) || 1);
-  for (var j=0; j<n; i++) {
-    for (var i=0; i<s.length; i++) {
-      var c=s[i];
-      if (c === '\n') { x=0; y++; if (y >= H) { return false; } 
-      if (x >= W) {  x=0; y++; if (y >= H) { return false; }
-      pokeCell(x,y,c); x++;
+window.pokeText = function(x, y, t, n) {
+  if (typeof x !== 'number' || typeof y !== 'number') return false;
+  if (typeof t === 'undefined' || t === null) return false;
+  n = (typeof n === 'undefined' || n === null) ? 1 : parseInt(n, 10);
+  if (isNaN(n) || n < 1) n = 1;
+  var str = String(t);
+  var cx = x, cy = y;
+  for (var repeat = 0; repeat < n; repeat++) {
+    for (var i = 0; i < str.length; i++) {
+      var c = str[i];
+      if (c === '\n') {
+        cx = 0;
+        cy++;
+        if (typeof H === 'number' && cy >= H) { // reached bottom of screen
+          try { if (typeof pokeRefresh === 'function') pokeRefresh(); } catch(e) {}
+          return false;
+        }
+        continue;
+      }
+      if (typeof W === 'number' && cx >= W) {
+        cx = 0;
+        cy++;
+        if (typeof H === 'number' && cy >= H) {
+          try { if (typeof pokeRefresh === 'function') pokeRefresh(); } catch(e) {}
+          return false;
+        }
+      }
+      pokeCell(cx, cy, c);
+      cx++;
     }
   }
-  if (SYNC) { pokeRefresh(); }
+  if (SYNC) { pokeRefresh(); } 
   return true;
 };
 
@@ -385,10 +405,10 @@ window.scroll = window.scrollRegion = function(x, y, width, height, direction, d
   return true;
 };
 
-// SCROLLUP - Scroll entire screen up
-window.scrollUp = function(lines, fillChar) {
-  return scrollRegion(0, 0, W, H, 'up', lines || 1, fillChar);
-};
+window.pokeScroll(n) {
+  scrollRegion(0, 0, W, H, 'up', n || 1, " ");
+  return true;
+}
 
 // SCROLLDOWN - Scroll entire screen down
 window.scrollDown = function(lines, fillChar) {
@@ -1120,7 +1140,8 @@ function cursorVarsToAttr(vars) {
   return mask;
 }
 
-
+  window.pokeScroll = function(n) {
+  }
 
 
 // Signal that video.js is ready

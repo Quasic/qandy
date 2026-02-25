@@ -405,10 +405,6 @@ window.scroll = window.scrollRegion = function(x, y, width, height, direction, d
   return true;
 };
 
-// SCROLLUP - Scroll entire screen up
-window.scrollUp = function(lines, fillChar) {
-  return scrollRegion(0, 0, W, H, 'up', lines || 1, fillChar);
-};
 
 // SCROLLDOWN - Scroll entire screen down
 window.scrollDown = function(lines, fillChar) {
@@ -1140,7 +1136,8 @@ function cursorVarsToAttr(vars) {
   return mask;
 }
 
-
+  window.pokeScroll = function(n) {
+  }
 
 
 // Signal that video.js is ready
