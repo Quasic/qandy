@@ -48,3 +48,8 @@
              peekColor(x,y) — return color object for cell
 
 
+
+     * things to do: rewrite all routines
+       to use these variables names.
+
+

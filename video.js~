@@ -57,23 +57,20 @@ window.pokeCursor = function(text) {
   return true;
 };
 
-window.pokeText = function(x, y, t) {
-  if (!t) return false; var str = String(t);
-  for (var i = 0; i < str.length; i++) {
-    var c = str[i];
-    if (c === '\n') { 
-     x = 0; y++; if (y >= H) { return false; } continue;
+window.pokeText=function(x,y,t,n) {
+  if (!t) return false; var s=String(t);
+  n=(typeof n === 'undefined' || n === null) ? 1 : Math.max(1, parseInt(n, 10) || 1);
+  for (var j=0; j<n; i++) {
+    for (var i=0; i<s.length; i++) {
+      var c=s[i];
+      if (c === '\n') { x=0; y++; if (y >= H) { return false; } 
+      if (x >= W) {  x=0; y++; if (y >= H) { return false; }
+      pokeCell(x,y,c); x++;
     }
-    if (x >= W) { 
-     x = 0; y++; if (y >= H) { return false; }
-    }
-    pokeCell(x, y, c); x++;
   }
-  pokeRefresh();
+  if (SYNC) { pokeRefresh(); }
   return true;
 };
-
-
 
 window.peek = function(x, y) { 
   return validateCoords(x, y) ? VIDEO[y][x] : undefined;
