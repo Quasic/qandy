@@ -481,7 +481,6 @@ function button(b, event) {
       // print() may expect ANSI sequences; we simply send text and newline.
       print(out + "\n");
     } catch (e) {
-    	alert("458");
       // fallback to original console to ensure we don't swallow errors
       _origConsole.log('qandyPrintLine error: ' + safeFormat(e));
     } finally {
@@ -774,41 +773,14 @@ function print(txt) {
   pokeCursor(txt);
 }
 
-function resumePagination() {
-  // Clear the pause message by removing last few lines
-  if (VIDEO.length > 0) {
-    // Remove the "Press Any Key" message line
-    const lastLineIdx = VIDEO.length - 1;
-    for (let x = 0; x < W; x++) {
-      VIDEO[lastLineIdx][x] = ' ';
-      COLOR[lastLineIdx][x] = {
-        color: 37,
-        bgcolor: 40,
-        bold: false,
-        inverse: false
-      };
-    }
-  }
-  
-  // Reset pagination state
-  paginationPaused = false;
-  keyson();  // Re-enable keyboard input
-  
-  // Clear the screen and reset cursor
-  cls();
-  
-  // Process queued print calls
-  const bufferedText = paginationBuffer.slice();  // Copy array
-  paginationBuffer = [];  // Clear buffer
-  
-  // Print all buffered content
-  for (let i = 0; i < bufferedText.length; i++) {
-    print(bufferedText[i]);
-  }
+function clearScreen() { cls(); }
+function cls() {
+  pokeCursorOff();
+  pokeText(0,0," ",800);
+  CURX=0; CURY=0; LINEX=0; LINEY=0;
+  pokeCursorOn();  
 }
 
-
-function clearScreen() { cls(); }
 
 // system ready
 

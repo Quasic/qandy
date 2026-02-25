@@ -40,45 +40,45 @@ function button(b, event) {
     k = l;
   }
 
-var keyMap = {
-  // Top-row digits (main keyboard)
-  48: ['0', ')'], 49: ['1', '!'], 50: ['2', '@'], 51: ['3', '#'],
-  52: ['4', '$'], 53: ['5', '%'], 54: ['6', '^'], 55: ['7', '&'],
-  56: ['8', '*'], 57: ['9', '('],
+  var keyMap = {
+    // Top-row digits (main keyboard)
+    48: ['0', ')'], 49: ['1', '!'], 50: ['2', '@'], 51: ['3', '#'],
+    52: ['4', '$'], 53: ['5', '%'], 54: ['6', '^'], 55: ['7', '&'],
+    56: ['8', '*'], 57: ['9', '('],
+ 
+    // Numpad digits (NumLock on) - map to same characters
+    96: ['0', ')'], 97: ['1', '!'], 98: ['2', '@'], 99: ['3', '#'],
+    100: ['4', '$'], 101: ['5', '%'], 102: ['6', '^'], 103: ['7', '&'],
+    104: ['8', '*'], 105: ['9', '('],
 
-  // Numpad digits (NumLock on) - map to same characters
-  96: ['0', ')'], 97: ['1', '!'], 98: ['2', '@'], 99: ['3', '#'],
-  100: ['4', '$'], 101: ['5', '%'], 102: ['6', '^'], 103: ['7', '&'],
-  104: ['8', '*'], 105: ['9', '('],
+    // Punctuation / OEM keys
+    186: [';', ':'], 59: [';', ':'],        // semicolon (59 on some browsers)
+    187: ['=', '+'], 61: ['=', '+'],        // equals (61 in some browsers / layouts)
+    188: [',', '<'],
+    189: ['-', '_'], 173: ['-', '_'],       // 173 old Firefox hint for minus
+    190: ['.', '>'],
+    191: ['/', '?'],
+    192: ['`', '~'],
 
-  // Punctuation / OEM keys
-  186: [';', ':'], 59: [';', ':'],        // semicolon (59 on some browsers)
-  187: ['=', '+'], 61: ['=', '+'],        // equals (61 in some browsers / layouts)
-  188: [',', '<'],
-  189: ['-', '_'], 173: ['-', '_'],       // 173 old Firefox hint for minus
-  190: ['.', '>'],
-  191: ['/', '?'],
-  192: ['`', '~'],
+    219: ['[', '{'],
+    220: ['\\', '|'],
+    221: [']', '}'],
+    222: ["'", '"'],
 
-  219: ['[', '{'],
-  220: ['\\', '|'],
-  221: [']', '}'],
-  222: ["'", '"'],
+    // Numpad operators / fallbacks
+    106: ['*', '*'],  // Numpad *
+    107: ['+', '+'],  // Numpad +
+    109: ['-', '_'],  // Numpad -
 
-  // Numpad operators / fallbacks
-  106: ['*', '*'],  // Numpad *
-  107: ['+', '+'],  // Numpad +
-  109: ['-', '_'],  // Numpad -
+    // Numpad decimal
+    110: ['.', '>'],
 
-  // Numpad decimal
-  110: ['.', '>'],
+    // Numpad divide (some keyboards report 111)
+    111: ['/', '?'],
 
-  // Numpad divide (some keyboards report 111)
-  111: ['/', '?'],
-
-  // Space
-  32: [' ', ' ']
-};
+    // Space
+    32: [' ', ' ']
+  };
 
   if (!k && keyMap[b]) { l = shift ? keyMap[b][1] : keyMap[b][0]; k = l; }
 
@@ -481,7 +481,6 @@ var keyMap = {
       // print() may expect ANSI sequences; we simply send text and newline.
       print(out + "\n");
     } catch (e) {
-    	alert("458");
       // fallback to original console to ensure we don't swallow errors
       _origConsole.log('qandyPrintLine error: ' + safeFormat(e));
     } finally {
@@ -773,40 +772,6 @@ function print(txt) {
   txt = (typeof txt === 'undefined' || txt === null) ? '' : String(txt);
   pokeCursor(txt);
 }
-
-function resumePagination() {
-  // Clear the pause message by removing last few lines
-  if (VIDEO.length > 0) {
-    // Remove the "Press Any Key" message line
-    const lastLineIdx = VIDEO.length - 1;
-    for (let x = 0; x < W; x++) {
-      VIDEO[lastLineIdx][x] = ' ';
-      COLOR[lastLineIdx][x] = {
-        color: 37,
-        bgcolor: 40,
-        bold: false,
-        inverse: false
-      };
-    }
-  }
-  
-  // Reset pagination state
-  paginationPaused = false;
-  keyson();  // Re-enable keyboard input
-  
-  // Clear the screen and reset cursor
-  cls();
-  
-  // Process queued print calls
-  const bufferedText = paginationBuffer.slice();  // Copy array
-  paginationBuffer = [];  // Clear buffer
-  
-  // Print all buffered content
-  for (let i = 0; i < bufferedText.length; i++) {
-    print(bufferedText[i]);
-  }
-}
-
 
 function clearScreen() { cls(); }
 

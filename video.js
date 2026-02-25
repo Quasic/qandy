@@ -57,23 +57,40 @@ window.pokeCursor = function(text) {
   return true;
 };
 
-window.pokeText = function(x, y, t) {
-  if (!t) return false; var str = String(t);
-  for (var i = 0; i < str.length; i++) {
-    var c = str[i];
-    if (c === '\n') { 
-     x = 0; y++; if (y >= H) { return false; } continue;
+window.pokeText = function(x, y, t, n) {
+  if (typeof x !== 'number' || typeof y !== 'number') return false;
+  if (typeof t === 'undefined' || t === null) return false;
+  n = (typeof n === 'undefined' || n === null) ? 1 : parseInt(n, 10);
+  if (isNaN(n) || n < 1) n = 1;
+  var str = String(t);
+  var cx = x, cy = y;
+  for (var repeat = 0; repeat < n; repeat++) {
+    for (var i = 0; i < str.length; i++) {
+      var c = str[i];
+      if (c === '\n') {
+        cx = 0;
+        cy++;
+        if (typeof H === 'number' && cy >= H) { // reached bottom of screen
+          try { if (typeof pokeRefresh === 'function') pokeRefresh(); } catch(e) {}
+          return false;
+        }
+        continue;
+      }
+      if (typeof W === 'number' && cx >= W) {
+        cx = 0;
+        cy++;
+        if (typeof H === 'number' && cy >= H) {
+          try { if (typeof pokeRefresh === 'function') pokeRefresh(); } catch(e) {}
+          return false;
+        }
+      }
+      pokeCell(cx, cy, c);
+      cx++;
     }
-    if (x >= W) { 
-     x = 0; y++; if (y >= H) { return false; }
-    }
-    pokeCell(x, y, c); x++;
   }
-  pokeRefresh();
+  if (SYNC) { pokeRefresh(); } 
   return true;
 };
-
-
 
 window.peek = function(x, y) { 
   return validateCoords(x, y) ? VIDEO[y][x] : undefined;
