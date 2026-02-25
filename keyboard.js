@@ -1,6 +1,12 @@
 
-function keyson() { keyon=1; cursor(1); }
-function keysoff() { keyon=0; cursor(0); }
+function keyson() {
+  //keyon=1;
+  //cursor(1);
+}
+function keysoff() {
+  //keyon=0;
+  //cursor(0);
+}
 
 keyboardData.forEach(function(key) {
   var btn = document.createElement('div');
@@ -145,12 +151,12 @@ function unhighlightKey(elementId) {
     return;
   }
   if (elementId === 'ctrl' && (ctrl || ctrlPhysical)) {
-    element.style.backgroundColor = ctrlPhysical ? '#0a0' : '#fff';
+    element.style.backgroundColor = ctrlPhysical ? '#bbb' : '#fff';
     element.style.color = '#000';
     return;
   }
   if (elementId === 'alt' && (alt || altPhysical)) {
-    element.style.backgroundColor = altPhysical ? '#0a0' : '#fff';
+    element.style.backgroundColor = altPhysical ? '#444' : '#fff';
     element.style.color = '#000';
     return;
   }

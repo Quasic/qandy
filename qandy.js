@@ -1,17 +1,11 @@
 
-run="qandy.js";
-
+RUN="qandy.js";
 
 function button(b, event) {
-  pokeCursorOff();// Resume pagination if paused
-  if (typeof paginationPaused !== 'undefined' && paginationPaused) {
-    if (typeof resumePagination === 'function') resumePagination();
-    return;
-  }
-
+  pokeCursorOff();
   if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
   var k = "", l = "";
-  if (k===32) { event.preventDefault(); }
+  if (b===32) { event.preventDefault(); }
   switch (b) {
     case 16: // SHIFT
       if (event && typeof event.shiftKey !== 'undefined') shift = !!event.shiftKey;
@@ -24,6 +18,7 @@ function button(b, event) {
     case 27: k = "esc"; break;
     case 13: k = "enter"; break;
     case 8:  k = "back"; break;
+    case 45: k = "insert"; break;
     case 46: k = "delete"; break;
     case 37: k = "left"; break;
     case 38: k = "up"; break;
@@ -45,15 +40,44 @@ function button(b, event) {
     k = l;
   }
 
-  // Common non-letter printable key mapping
   var keyMap = {
-    48: ['0', ')'], 49: ['1','!'], 50: ['2','@'], 51: ['3','#'],
-    52: ['4','$'], 53: ['5','%'], 54: ['6','^'], 55: ['7','&'],
-    56: ['8','*'], 57: ['9','('],
-    186: [';',':'], 187: ['=','+'], 188: [',','<'], 189: ['-','_'],
-    190: ['.','>'], 191: ['/','?'], 192: ['`','~'],
-    219: ['[','{'], 220: ['\\','|'], 221: [']','}'], 222: ["'",'"'],
-    32: [' ',' ']
+    // Top-row digits (main keyboard)
+    48: ['0', ')'], 49: ['1', '!'], 50: ['2', '@'], 51: ['3', '#'],
+    52: ['4', '$'], 53: ['5', '%'], 54: ['6', '^'], 55: ['7', '&'],
+    56: ['8', '*'], 57: ['9', '('],
+ 
+    // Numpad digits (NumLock on) - map to same characters
+    96: ['0', ')'], 97: ['1', '!'], 98: ['2', '@'], 99: ['3', '#'],
+    100: ['4', '$'], 101: ['5', '%'], 102: ['6', '^'], 103: ['7', '&'],
+    104: ['8', '*'], 105: ['9', '('],
+
+    // Punctuation / OEM keys
+    186: [';', ':'], 59: [';', ':'],        // semicolon (59 on some browsers)
+    187: ['=', '+'], 61: ['=', '+'],        // equals (61 in some browsers / layouts)
+    188: [',', '<'],
+    189: ['-', '_'], 173: ['-', '_'],       // 173 old Firefox hint for minus
+    190: ['.', '>'],
+    191: ['/', '?'],
+    192: ['`', '~'],
+
+    219: ['[', '{'],
+    220: ['\\', '|'],
+    221: [']', '}'],
+    222: ["'", '"'],
+
+    // Numpad operators / fallbacks
+    106: ['*', '*'],  // Numpad *
+    107: ['+', '+'],  // Numpad +
+    109: ['-', '_'],  // Numpad -
+
+    // Numpad decimal
+    110: ['.', '>'],
+
+    // Numpad divide (some keyboards report 111)
+    111: ['/', '?'],
+
+    // Space
+    32: [' ', ' ']
   };
 
   if (!k && keyMap[b]) { l = shift ? keyMap[b][1] : keyMap[b][0]; k = l; }
@@ -88,7 +112,7 @@ function button(b, event) {
 
   if (keyboard) {
     // If program is running and has keydown, send it there first
-    if (run && typeof keydown !== 'undefined') {
+    if (RUN && typeof keydown !== 'undefined') {
       try { keydown(k || l); } catch (e) {
         print("ERROR: keydown();\n\n");
       }
@@ -107,281 +131,430 @@ function button(b, event) {
         }
         pokeCursorOn(CURSOR);
         //if (SSTART !== -1 && SEND !== -1) deleteSelection();
-      } else if (k === "delete") {
-        event.preventDefault();
-        var str = String(LINE || "");
-        var maxLen = str.length;
-        var s = Math.max(0, Math.min(SSTART, SEND));
-        var e = Math.max(0, Math.min(Math.max(SSTART, SEND), maxLen));
-        if (s < e) {
-          // copy to clipboard only when shift-requested and available
-          if (shift && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-            navigator.clipboard.writeText(str.substring(s, e)).catch(function(err){
-              console.warn('clipboard write failed', err);
-            });
+      } else if (k === "insert") {
+
+    	  } else if (k === "delete") {
+          event.preventDefault();
+          var str = String(LINE || "");
+          var maxLen = str.length;
+          var s = Math.max(0, Math.min(SSTART, SEND));
+          var e = Math.max(0, Math.min(Math.max(SSTART, SEND), maxLen));
+          if (s < e) {
+            // copy to clipboard only when shift-requested and available
+            if (shift && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+              navigator.clipboard.writeText(str.substring(s, e)).catch(function(err){
+                console.warn('clipboard write failed', err);
+              });
+            }
           }
-        }
-        pokeSelect(false);
-        LINE = str.substring(0, s) + str.substring(e);
-        CURP = s;
-        SSTART = -1;
-        SEND = -1;
-        pokeInput();
-      } else if (k === "left") {
-        event.preventDefault();
-        if (CURP > 0) {
+          pokeSelect(false);
+          LINE = str.substring(0, s) + str.substring(e);
+          CURP = s;
+          SSTART = -1;
+          SEND = -1;
+          pokeInput();
+        } else if (k === "left") {
+          event.preventDefault();
+          if (CURP > 0) {
+            if (shift) {
+              if (SSTART === -1) SSTART = CURP;   // anchor at the starting cursor pos
+              CURP = Math.max(0, CURP - 1);
+              SEND = CURP;
+              // update visual cursor coordinates (wrap-aware)
+              var absCol = LINEX + CURP;
+              CURY = LINEY + Math.floor(absCol / W);
+              CURX = absCol % W;
+              pokeSelect(true);
+            } else {
+              // non-shift behavior clears selection
+              if (SSTART > -1) { pokeSelect(false); SSTART = -1; SEND = -1; }
+              CURP = Math.max(0, CURP - 1);
+              var absCol = LINEX + CURP;
+              CURY = LINEY + Math.floor(absCol / W);
+              CURX = absCol % W;
+            }
+          }
+        } else if (k === "right") {
+          event.preventDefault();
+          if (CURP < LINE.length) {
+            if (shift) {
+              if (SSTART === -1) SSTART = CURP;
+              CURP = Math.min(LINE.length, CURP + 1);
+              SEND = CURP;
+              var absCol = LINEX + CURP;
+              CURY = LINEY + Math.floor(absCol / W);
+              CURX = absCol % W;
+              pokeSelect(true);
+            } else {
+              if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
+              CURP = Math.min(LINE.length, CURP + 1);
+              var absCol = LINEX + CURP;
+              CURY = LINEY + Math.floor(absCol / W);
+              CURX = absCol % W;
+            }
+          }
+        } else if (k === "home") {
+          event.preventDefault();
           if (shift) {
-            if (SSTART === -1) SSTART = CURP;   // anchor at the starting cursor pos
-            CURP = Math.max(0, CURP - 1);
-            SEND = CURP;
-            // update visual cursor coordinates (wrap-aware)
+            if (SSTART === -1) SSTART = CURP; // anchor
+            SEND = 0;
+            CURP = 0;
             var absCol = LINEX + CURP;
             CURY = LINEY + Math.floor(absCol / W);
             CURX = absCol % W;
             pokeSelect(true);
           } else {
-            // non-shift behavior clears selection
+            // non-shift home: clear selection and move cursor to start
             if (SSTART > -1) { pokeSelect(false); SSTART = -1; SEND = -1; }
-            CURP = Math.max(0, CURP - 1);
+            CURP = 0;
             var absCol = LINEX + CURP;
             CURY = LINEY + Math.floor(absCol / W);
             CURX = absCol % W;
-          }
-        }
-      } else if (k === "right") {
-        event.preventDefault();
-        if (CURP < LINE.length) {
+          }        
+        } else if (k === "end") {
+          event.preventDefault();
           if (shift) {
             if (SSTART === -1) SSTART = CURP;
-            CURP = Math.min(LINE.length, CURP + 1);
-            SEND = CURP;
+            SEND = LINE.length;
+            CURP = LINE.length;
             var absCol = LINEX + CURP;
             CURY = LINEY + Math.floor(absCol / W);
             CURX = absCol % W;
             pokeSelect(true);
           } else {
-            if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
-            CURP = Math.min(LINE.length, CURP + 1);
+            if (SSTART > -1) { pokeSelect(false); SSTART = -1; SEND = -1; }
+            CURP = LINE.length;
             var absCol = LINEX + CURP;
             CURY = LINEY + Math.floor(absCol / W);
             CURX = absCol % W;
+          }        
+        } else if (k === "up") {
+          event.preventDefault();
+          if (commandHistory && commandHistory.length > 0) {
+            // On first history navigation, save current typing to restore later
+            if (historyIndex === -1) {
+              tempCommand = LINE || "";
+              historyIndex = commandHistory.length;
+            }
+            // Move back through history if possible
+            if (historyIndex > 0) {
+              historyIndex--;
+              LINE = commandHistory[historyIndex] || "";
+            } else {
+              LINE = commandHistory[0] || "";
+            }
+            CURP = LINE.length;
+            var absCol = LINEX + CURP;
+            CURY = LINEY + Math.floor(absCol / W);
+            CURX = absCol % W;
+            pokeInput();
           }
-        }
-      } else if (k === "home") {
-        event.preventDefault();
-        if (shift) {
-          if (SSTART === -1) SSTART = CURP; // anchor
-          SEND = 0;
-          CURP = 0;
-          var absCol = LINEX + CURP;
-          CURY = LINEY + Math.floor(absCol / W);
-          CURX = absCol % W;
-          pokeSelect(true);
-        } else {
-          // non-shift home: clear selection and move cursor to start
-          if (SSTART > -1) { pokeSelect(false); SSTART = -1; SEND = -1; }
-          CURP = 0;
-          var absCol = LINEX + CURP;
-          CURY = LINEY + Math.floor(absCol / W);
-          CURX = absCol % W;
-        }        
-      } else if (k === "end") {
-        event.preventDefault();
-        if (shift) {
-          if (SSTART === -1) SSTART = CURP;
-          SEND = LINE.length;
-          CURP = LINE.length;
-          var absCol = LINEX + CURP;
-          CURY = LINEY + Math.floor(absCol / W);
-          CURX = absCol % W;
-          pokeSelect(true);
-        } else {
-          if (SSTART > -1) { pokeSelect(false); SSTART = -1; SEND = -1; }
-          CURP = LINE.length;
-          var absCol = LINEX + CURP;
-          CURY = LINEY + Math.floor(absCol / W);
-          CURX = absCol % W;
-        }        
-      } else if (k === "up") {
-        event.preventDefault();
-        if (commandHistory && commandHistory.length > 0) {
-          // On first history navigation, save current typing to restore later
-          if (historyIndex === -1) {
-            tempCommand = LINE || "";
-            historyIndex = commandHistory.length;
+        } else if (k === "down") {
+          event.preventDefault();
+          if (historyIndex !== -1) {
+            if (historyIndex < commandHistory.length - 1) {
+              historyIndex++;
+              LINE = commandHistory[historyIndex] || "";
+            } else {
+              // Past the newest history entry: restore the saved current edit
+              historyIndex = -1;
+              LINE = tempCommand || "";
+            }
+            // Put cursor at end of the current LINE
+            CURP = LINE.length;
+            var absCol2 = LINEX + CURP;
+            CURY = LINEY + Math.floor(absCol2 / W);
+            CURX = absCol2 % W;
+            pokeInput();
           }
-          // Move back through history if possible
-          if (historyIndex > 0) {
-            historyIndex--;
-            LINE = commandHistory[historyIndex] || "";
-          } else {
-            LINE = commandHistory[0] || "";
-          }
-          CURP = LINE.length;
-          var absCol = LINEX + CURP;
-          CURY = LINEY + Math.floor(absCol / W);
-          CURX = absCol % W;
-          pokeInput();
-        }
-      } else if (k === "down") {
-        event.preventDefault();
-        if (historyIndex !== -1) {
-          if (historyIndex < commandHistory.length - 1) {
-            historyIndex++;
-            LINE = commandHistory[historyIndex] || "";
-          } else {
-            // Past the newest history entry: restore the saved current edit
+        } else if (k === "enter") {
+          event.preventDefault();
+          // Submit the current line
+          if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
+          if (LINE !== undefined) {
+            // Save to history
+            if (typeof commandHistory !== 'undefined' && LINE.trim().length > 0) {
+              if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== LINE) {
+                commandHistory.push(LINE);
+                if (typeof maxHistorySize !== 'undefined' && commandHistory.length > maxHistorySize) {
+                  commandHistory.shift();
+                }
+              }
+            }
             historyIndex = -1;
-            LINE = tempCommand || "";
-          }
-          // Put cursor at end of the current LINE
-          CURP = LINE.length;
-          var absCol2 = LINEX + CURP;
-          CURY = LINEY + Math.floor(absCol2 / W);
-          CURX = absCol2 % W;
-          pokeInput();
-        }
-      } else if (k === "enter") {
-        event.preventDefault();
-        // Submit the current line
-        if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
-        if (LINE !== undefined) {
-          // Save to history
-          if (typeof commandHistory !== 'undefined' && LINE.trim().length > 0) {
-            if (commandHistory.length === 0 || commandHistory[commandHistory.length - 1] !== LINE) {
-              commandHistory.push(LINE);
-              if (typeof maxHistorySize !== 'undefined' && commandHistory.length > maxHistorySize) {
-                commandHistory.shift();
-              }
-            }
-          }
-          historyIndex = -1;
-          tempCommand = "";
-          if (run != "qandy.js") {
-            print("\n");
-            try { input(LINE); } catch (e) { /* ignore */ }
-            LINE = ""; CURP = 0; LINEX = CURX; LINEY = CURY;
-            pokeRefresh();
-          } else {
-            print("\n");
-            if (LINE.slice(-3) === ".js") {
-              keysoff();
-              var prg = document.createElement('script');
-              prg.src = LINE;
-              prg.onload = function() { keyson(); };
-              prg.onerror = function() { print("Error loading program\n"); keyson(); };
-              document.head.appendChild(prg);
+            tempCommand = "";
+            if (RUN != "qandy.js") {
+              print("\n");
+              try { input(LINE); } catch (e) { /* ignore */ }
               LINE = ""; CURP = 0; LINEX = CURX; LINEY = CURY;
-            } else if (LINE.substr(0,3) === "cls") {
-              if (typeof initScreen === 'function') initScreen(); else cls();
-              LINE = "";
-              CURX = 0; CURY = 0; CURP = 0;
-              LINEX = 0; LINEY = 0;
+              pokeRefresh()
             } else {
-              executeCode(LINE);
-              LINE = "";
-              CURP = 0;
-              LINEX = CURX; LINEY = CURY;
-            }
-            pokeRefresh();
-          }
-        }
-
-      } else if (l) {
-        // Insert printable character(s)
-        var finalChar = l;
-        var hasCtrl = !!ctrl;
-        var hasAlt = !!alt;
-        var hasAltFlag = !!((typeof alt !== 'undefined' && alt) || (typeof altPhysical !== 'undefined' && altPhysical) || (event && !!event.altKey))
-        var hasCtrl = !!ctrl;
-        var hasCtrlFlag = !!((typeof ctrl !== 'undefined' && ctrl) || (typeof ctrlPhysical !== 'undefined' && ctrlPhysical) || (event && !!event.ctrlKey));
-        var hasAltShift = hasAltFlag && !!shift;
-
-        if (hasAltFlag || hasAlt) {
-          var baseLower = (typeof l === 'string' && l.length > 0) ? l.toLowerCase() : '';
-          if (hasAltShift && altShiftKeys.hasOwnProperty(baseLower)) {
-            finalChar = altShiftKeys[baseLower];
-          } else if (altKeys.hasOwnProperty(baseLower)) {
-            finalChar = altKeys[baseLower];
-          }
-          
-        }
-
-        if (hasCtrl) {
-          ctrl = 0;
-          var cel = document.getElementById("ctrl");
-          if (cel) { cel.style.backgroundColor = "#222"; cel.style.color = "#fff"; }
-          var lc = finalChar.toLowerCase();
-          // Ctrl+C: copy selection or whole line
-          if (lc === 'c') {
-            var copyText = "";
-            if (SSTART !== -1 && SEND !== -1) {
-              var cs = Math.min(SSTART, SEND);
-              var ce = Math.max(SSTART, SEND);
-              copyText = LINE.substring(cs, ce);
-            } else {
-              copyText = LINE;
-            }
-            if (copyText.length > 0) {
-              navigator.clipboard.writeText(copyText).catch(function(){});
-            }
-            return;
-          }
-
-          // Ctrl+V: paste from clipboard
-          if (lc === 'v') {
-            navigator.clipboard.readText().then(function(text) {
-              if (text) {
-                if (SSTART !== -1 && SEND !== -1) deleteSelection();
-                if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
-                LINE = (LINE || "").substring(0, CURP) + text + (LINE || "").substring(CURP);
-                CURP += text.length;
-                pokeInput();
+              print("\n");
+              if (LINE.slice(-3) === ".js") {
+                //keysoff();
+                var prg = document.createElement('script');
+                prg.src = LINE;
+                prg.onload = function() { keyson(); };
+                prg.onerror = function() { print("Error loading program\n"); keyson(); };
+                document.head.appendChild(prg);
+                LINE = ""; CURP = 0; LINEX = CURX; LINEY = CURY;
+              } else if (LINE.substr(0,3) === "cls") {
+                if (typeof initScreen === 'function') initScreen(); else cls();
+                LINE = "";
+                CURX = 0; CURY = 0; CURP = 0;
+                LINEX = 0; LINEY = 0;
+              } else {
+                executeCode(LINE);
+                LINE = "";
+                CURP = 0;
+                LINEX = CURX; LINEY = CURY;
               }
-            }).catch(function(){});
-            return;
+              pokeRefresh();
+            }
           }
+        } else if (l) {
+          // Insert printable character(s)
+          var finalChar = l;
+          var hasCtrl = !!ctrl;
+          var hasAlt = !!alt;
+          var hasAltFlag = !!((typeof alt !== 'undefined' && alt) || (typeof altPhysical !== 'undefined' && altPhysical) || (event && !!event.altKey))
+          var hasCtrl = !!ctrl;
+          var hasCtrlFlag = !!((typeof ctrl !== 'undefined' && ctrl) || (typeof ctrlPhysical !== 'undefined' && ctrlPhysical) || (event && !!event.ctrlKey));
+          var hasAltShift = hasAltFlag && !!shift;
 
-          // Ctrl+A: select all input
-          if (lc === 'a') {
-            if (LINE.length > 0) {
-              SSTART = 0; SEND = LINE.length;
-              pokeSelect(true);
+          if (hasAltFlag || hasAlt) {
+            var baseLower = (typeof l === 'string' && l.length > 0) ? l.toLowerCase() : '';
+            if (hasAltShift && altShiftKeys.hasOwnProperty(baseLower)) {
+              finalChar = altShiftKeys[baseLower];
+            } else if (altKeys.hasOwnProperty(baseLower)) {
+              finalChar = altKeys[baseLower];
+            }
+          }
+          if (hasCtrl) {
+            ctrl = 0;
+            var cel = document.getElementById("ctrl");
+            if (cel) { cel.style.backgroundColor = "#222"; cel.style.color = "#fff"; }
+            var lc = finalChar.toLowerCase();
+            // Ctrl+C: copy selection or whole line
+            if (lc === 'c') {
+              var copyText = "";
+              if (SSTART !== -1 && SEND !== -1) {
+                var cs = Math.min(SSTART, SEND);
+                var ce = Math.max(SSTART, SEND);
+                copyText = LINE.substring(cs, ce);
+              } else {
+                copyText = LINE;
+              }
+              if (copyText.length > 0) {
+                navigator.clipboard.writeText(copyText).catch(function(){});
+              }
+              return;
+            }
+
+            // Ctrl+V: paste from clipboard
+            if (lc === 'v') {
+              navigator.clipboard.readText().then(function(text) {
+                if (text) {
+                  if (SSTART !== -1 && SEND !== -1) deleteSelection();
+                  if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
+                  LINE = (LINE || "").substring(0, CURP) + text + (LINE || "").substring(CURP);
+                  CURP += text.length;
+                  pokeInput();
+                }
+              }).catch(function(){});
+              return;
+            }
+            // Ctrl+A: select all input
+            if (lc === 'a') {
+              if (LINE.length > 0) {
+                SSTART = 0; SEND = LINE.length;
+                pokeSelect(true);
+              }
+              return;
             }
             return;
           }
-          return;
-        }
 
-        // Typing clears any active selection (replacing selected text)
-        if (SSTART !== -1 && SEND !== -1) {
-          //
-          // @@ this routine must be rewritten to use new variable set
-          //
-          // deleteSelection();
-          //
+          // Typing clears any active selection (replacing selected text)
+          if (SSTART !== -1 && SEND !== -1) {
+            //
+            // @@ this routine must be rewritten to use new variable set
+            //
+            // deleteSelection();
+            //
+          }
+          if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
+          // Insert character into line at CURP (cursor position)
+          // insert mode, need overwrite mode
+          LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
+          CURP += finalChar.length;
+          CURX += finalChar.length;
+          while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
+          pokeInput();
+          if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
         }
-        if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
-        // set cursor's current position attibute to default text attribute
-        // Insert character into line at CURP
-        LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
-        CURP += finalChar.length;
-        // Advance CURX, wrapping to next row if we hit W (screenWidth)
-        pokeCursorOff();
-        CURX += finalChar.length;
-        while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
-        pokeInput();
-        pokeCursorOn();
-        // set cursor's current position attibute to cursor's attribute        
-        if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
-      }
-
     } // end else (not run+keydown)
   } else {
-    if (run) { keydown(k || l); }
+    if (RUN) { keydown(k || l); }
   }
   pokeCursorOn();
 }
+
+// Qandy Console: route console messages and uncaught errors/rejections into the Qandy display.
+// Insert after system ready so `print()` is present.
+(function installQandyConsole() {
+  if (window.__QANDY_CONSOLE_INSTALLED__) return;
+  window.__QANDY_CONSOLE_INSTALLED__ = true;
+
+  // Config
+  var QANDY_CONSOLE_ENABLED = true;         // flip to false to disable routing
+  var MAX_MSG_LENGTH = 2000;                // truncate long messages
+  var MAX_STACK_LINES = 8;                  // limit stack lines printed
+  var SHOW_STACK_FOR_ERRORS = true;
+
+  // keep originals
+  var _origConsole = {
+    log: console.log.bind(console),
+    info: console.info ? console.info.bind(console) : console.log.bind(console),
+    warn: console.warn ? console.warn.bind(console) : console.log.bind(console),
+    error: console.error ? console.error.bind(console) : console.log.bind(console)
+  };
+
+  // Safe formatting for values (objects, errors)
+  function safeFormat(val) {
+    try {
+      if (val instanceof Error) {
+        return val.stack || val.toString();
+      }
+      if (typeof val === 'string') return val;
+      if (typeof val === 'object' && val !== null) {
+        // Try JSON, fallback to toString
+        try {
+          return JSON.stringify(val, replacer, 2);
+        } catch (e) {
+          try { return String(val); } catch (e2) { return '[object]'; }
+        }
+      }
+      return String(val);
+    } catch (e) {
+      return '[unprintable]';
+    }
+  }
+
+  // JSON replacer that avoids circular references
+  function replacer() {
+    var seen = new WeakSet();
+    return function(k, v) {
+      if (typeof v === 'object' && v !== null) {
+        if (seen.has(v)) return '[Circular]';
+        seen.add(v);
+      }
+      if (typeof v === 'function') return '[Function]';
+      return v;
+    };
+  }
+
+  // Truncate long messages
+  function truncate(s) {
+    if (typeof s !== 'string') s = String(s);
+    if (s.length <= MAX_MSG_LENGTH) return s;
+    return s.slice(0, MAX_MSG_LENGTH) + '... [truncated ' + (s.length - MAX_MSG_LENGTH) + ' chars]';
+  }
+
+  // Avoid reentrancy if print() itself triggers errors
+  var inQandyPrint = false;
+
+  // Send to Qandy display (safe wrapper)
+  function qandyPrintLine(prefix, msg) {
+    if (!QANDY_CONSOLE_ENABLED || typeof print !== 'function') return;
+    try {
+      if (inQandyPrint) {
+        // In reentrant situation, fallback to native console to avoid infinite loop
+        _origConsole.log(prefix + ' ' + msg);
+        return;
+      }
+      inQandyPrint = true;
+      // Use print() but keep it text-only (no HTML). Append newline to mimic console.
+      // trim trailing spaces/newlines for neatness
+      var out = prefix ? (prefix + ' ' + msg) : msg;
+      out = out.replace(/\r/g, '');
+      // print() may expect ANSI sequences; we simply send text and newline.
+      print(out + "\n");
+    } catch (e) {
+    	alert("458");
+      // fallback to original console to ensure we don't swallow errors
+      _origConsole.log('qandyPrintLine error: ' + safeFormat(e));
+    } finally {
+      inQandyPrint = false;
+    }
+  }
+
+  // Wrap console methods
+  function wrapConsoleMethod(name, prefix) {
+    console[name] = function() {
+      try {
+        // still call original console for developer tools
+        _origConsole[name].apply(console, arguments);
+      } catch (e) {}
+      if (!QANDY_CONSOLE_ENABLED) return;
+
+      // format args
+      var parts = [];
+      for (var i = 0; i < arguments.length; i++) parts.push(safeFormat(arguments[i]));
+      var msg = parts.join(' ');
+      msg = truncate(msg);
+      qandyPrintLine('[' + prefix + ']', msg);
+    };
+  }
+
+  wrapConsoleMethod('log',  'LOG');
+  wrapConsoleMethod('info', 'INFO');
+  wrapConsoleMethod('warn', 'WARN');
+  wrapConsoleMethod('error','ERROR');
+
+  // window.onerror for uncaught exceptions
+  window.addEventListener('error', function(evt) {
+    try {
+      // evt: ErrorEvent { message, filename, lineno, colno, error }
+      var message = String(evt.message || 'Error');
+      var file = evt.filename || '';
+      var pos = ((typeof evt.lineno === 'number') ? (':' + evt.lineno + (evt.colno ? ':' + evt.colno : '')) : '');
+      var header = '[UNCAUGHT ERROR] ' + message + (file ? (' @ ' + file + pos) : '');
+      // prefer stack if available
+      var stack = (evt.error && evt.error.stack) ? String(evt.error.stack) : '';
+      if (!stack && evt.error) stack = safeFormat(evt.error);
+      if (stack) {
+        // limit stack lines
+        var lines = stack.split(/\r?\n/).slice(0, MAX_STACK_LINES).join('\n');
+        qandyPrintLine('ERROR', truncate(header + '\n' + lines));
+      } else {
+        qandyPrintLine('ERROR', truncate(header));
+      }
+    } catch (e) {
+      _origConsole.error('qandy error handler failed', e);
+    }
+  });
+
+  // unhandled promise rejections
+  window.addEventListener('unhandledrejection', function(evt) {
+    try {
+      var reason = evt && evt.reason ? evt.reason : 'unknown reason';
+      var msg = '[UNHANDLED REJECTION] ' + safeFormat(reason);
+      msg = truncate(msg);
+      qandyPrintLine('ERROR', msg);
+    } catch (e) {
+      _origConsole.error('qandy rejection handler failed', e);
+    }
+  });
+
+  // expose small control API
+  window.qandyConsole = {
+    enable: function() { QANDY_CONSOLE_ENABLED = true; },
+    disable: function() { QANDY_CONSOLE_ENABLED = false; },
+    installed: true
+  };
+})();
+
 
 document.addEventListener('keydown', function (event) {
  if (event.keycode === 32) { event.preventDefault(); }
@@ -536,53 +709,9 @@ function pressup(event) {
   }
  
   // Route keyup to active script if run is set
-  if (run && typeof keyup !== 'undefined') {
+  if (RUN && typeof keyup !== 'undefined') {
     var k = String.fromCharCode(event.keyCode);
     keyup(k);
-  }
-}
-
-function ensureBuffersAndRow(y) {
-  console.log("old ensureBuffersAndRow function called");
-}
-
-function safeGet(arr, y, x) {
-  if (!arr) return undefined;
-  if (typeof y !== 'number' || typeof x !== 'number') return undefined;
-  if (!arr[y]) return undefined;
-  return arr[y][x];
-}
-
-// Remove existing ansi-fg-* and ansi-bg-* classes from el
-function removeAnsiColorClasses(el) {
-  if (!el || !el.classList) return;
-  var toRemove = [];
-  el.classList.forEach(function (c) {
-    if (/^ansi-fg-\d+$/.test(c) || /^ansi-bg-\d+$/.test(c)) toRemove.push(c);
-  });
-  toRemove.forEach(function (c) { el.classList.remove(c); });
-}
-
-function applyStyleToDom(el, styleObj) {
-  if (!el) return;
-  removeAnsiColorClasses(el);
-  if (styleObj && typeof styleObj.color !== 'undefined') {
-    el.classList.add('ansi-fg-' + String(styleObj.color));
-  }
-  if (styleObj && typeof styleObj.bgcolor !== 'undefined') {
-    el.classList.add('ansi-bg-' + String(styleObj.bgcolor));
-  }
-  if (styleObj && styleObj.bold) {
-    el.style.fontWeight = 'bold';
-    el.classList.add('ansi-bold');
-  } else {
-    el.style.fontWeight = '';
-    el.classList.remove('ansi-bold');
-  }
-  if (styleObj && styleObj.inverse) {
-    el.classList.add('ansi-inverse');
-  } else {
-    el.classList.remove('ansi-inverse');
   }
 }
 
@@ -613,28 +742,6 @@ function executeCode(code) {
   }
 }
 
-
-function scrollScreenDown() {
-  VIDEO.shift();
-  COLOR.shift();
-  
-  const newLine = [];
-  const newStyleLine = [];
-  for (let j = 0; j < W; j++) {
-    newLine[j] = ' ';
-    newStyleLine[j] = {
-      color: currentStyle.color,
-      bgcolor: currentStyle.bgcolor,
-      bold: currentStyle.bold,
-      inverse: currentStyle.inverse
-    };
-  }
-  VIDEO.push(newLine);
-  COLOR.push(newStyleLine);
-}
-
-// Helper functions
-
 function showFiles() {
   print("ascii.js\n");
   print("sound.js\n");
@@ -664,7 +771,7 @@ function showFiles() {
 
 function print(txt) {
   txt = (typeof txt === 'undefined' || txt === null) ? '' : String(txt);
-  pokeCursor(txt+"\n");
+  pokeCursor(txt);
 }
 
 function resumePagination() {
@@ -707,7 +814,6 @@ function clearScreen() { cls(); }
 
 CURSOR=4; pokeCursorOn();
 pokeCursor("\nQandy Pocket\nComputer v1.j\n\nPrototype Release\n\n");
-LINEX = CURX; LINEY = CURY;   
 
 mySearch=location.search.substr(1).split("&")
 for (i=0;i<mySearch.length;i++) {
