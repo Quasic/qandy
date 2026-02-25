@@ -1136,9 +1136,92 @@ function cursorVarsToAttr(vars) {
   return mask;
 }
 
-  window.pokeScroll = function(n) {
+window.pokeScroll = function(n) {
+  if (typeof n === 'undefined') n = 0;
+  n = Number(n) || 0;
+  if (n === 0) return true;
+  var distance = Math.max(-H, Math.min(H, n));
+  var defAttr = defaultAttrMask();
+
+  if (distance > 0) {
+    // Scroll up: rows move toward smaller y (top), pulling from y+distance
+    for (var y = 0; y < H; y++) {
+      var src = y + distance;
+      if (src < H) {
+        for (var x = 0; x < W; x++) {
+          // copy character
+          VIDEO[y][x] = VIDEO[src][x];
+          COLOR[y][x] = COLOR[src][x];
+          ATTR[y][x] = ATTR[src][x];
+          if (SYNC) pokeRefresh(x, y);
+        }
+      } else {
+        // fill remainder lines at bottom with spaces + default style
+        for (var x2 = 0; x2 < W; x2++) {
+          VIDEO[y][x2] = " ";
+          COLOR[y][x2] = @@@
+          ATTR[y][x2] = defAttr;
+          if (SYNC) pokeRefresh(x2, y);
+        }
+      }
+    }
+  } else {
+    // distance < 0 => scroll down by -distance
+    var d = -distance;
+    for (var y2 = H - 1; y2 >= 0; y2--) {
+      var src2 = y2 - d;
+      if (src2 >= 0) {
+        for (var x3 = 0; x3 < W; x3++) {
+          VIDEO[y2][x3] = VIDEO[src2][x3];
+
+          var srcColor2 = (COLOR[src2] && COLOR[src2][x3]) ? COLOR[src2][x3] : null;
+          var tgtColor2 = ensureColorObj(y2, x3);
+          if (srcColor2) {
+            tgtColor2.color = srcColor2.color;
+            tgtColor2.bgcolor = srcColor2.bgcolor;
+            tgtColor2.bold = !!srcColor2.bold;
+            tgtColor2.inverse = !!srcColor2.inverse;
+          } else {
+            tgtColor2.color = (currentStyle && currentStyle.color) || 37;
+            tgtColor2.bgcolor = (currentStyle && currentStyle.bgcolor) || 40;
+            tgtColor2.bold = !!(currentStyle && currentStyle.bold);
+            tgtColor2.inverse = !!(currentStyle && currentStyle.inverse);
+          }
+
+          ATTR[y2][x3] = (ATTR[src2] && typeof ATTR[src2][x3] !== 'undefined') ? ATTR[src2][x3] : defAttr;
+          if (SYNC) pokeRefresh(x3, y2);
+        }
+      } else {
+        // fill remainder lines at top with spaces + default style
+        for (var x4 = 0; x4 < W; x4++) {
+          VIDEO[y2][x4] = " ";
+          var tgtCol3 = ensureColorObj(y2, x4);
+          tgtCol3.color = (currentStyle && currentStyle.color) || 37;
+          tgtCol3.bgcolor = (currentStyle && currentStyle.bgcolor) || 40;
+          tgtCol3.bold = !!(currentStyle && currentStyle.bold);
+          tgtCol3.inverse = !!(currentStyle && currentStyle.inverse);
+          ATTR[y2][x4] = defAttr;
+          if (SYNC) pokeRefresh(x4, y2);
+        }
+      }
+    }
   }
 
+  // Move cursor and input-line anchors by the same offset (subtract distance).
+  // distance positive means screen moved up; cursor row should reduce by distance.
+  function clampRow(r) {
+    if (typeof r !== 'number' || isNaN(r)) return 0;
+    if (r < 0) return 0;
+    if (r >= H) return H - 1;
+    return r;
+  }
+  CURY  = clampRow((typeof CURY === 'number' ? CURY : 0) - distance);
+  LINEY = clampRow((typeof LINEY === 'number' ? LINEY : 0) - distance);
+  CURX  = Math.max(0, Math.min(W - 1, (typeof CURX === 'number' ? CURX : 0)));
+  LINEX = Math.max(0, Math.min(W - 1, (typeof LINEX === 'number' ? LINEX : 0)));
+
+  return true;
+};
 
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {
