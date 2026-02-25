@@ -1141,16 +1141,7 @@ window.pokeScroll = function(n) {
   n = Number(n) || 0;
   if (n === 0) return true;
   var distance = Math.max(-H, Math.min(H, n));
-  // helper to build default attribute mask from currentStyle
-  function defaultAttrMask() {
-    var mask = 0;
-    if (currentStyle && currentStyle.inverse) mask |= ATTR_INVERSE;
-    if (currentStyle && currentStyle.bold)    mask |= ATTR_BOLD;
-    return mask;
-  }
   var defAttr = defaultAttrMask();
-  // helper to ensure COLOR cell object exists and be mutated rather than replaced
-  function ensureColorObj(y, x) { return COLOR[y][x]; }
 
   if (distance > 0) {
     // Scroll up: rows move toward smaller y (top), pulling from y+distance
@@ -1168,11 +1159,7 @@ window.pokeScroll = function(n) {
         // fill remainder lines at bottom with spaces + default style
         for (var x2 = 0; x2 < W; x2++) {
           VIDEO[y][x2] = " ";
-          var tgtCol = ensureColorObj(y, x2);
-          tgtCol.color = (currentStyle && currentStyle.color) || 37;
-          tgtCol.bgcolor = (currentStyle && currentStyle.bgcolor) || 40;
-          tgtCol.bold = !!(currentStyle && currentStyle.bold);
-          tgtCol.inverse = !!(currentStyle && currentStyle.inverse);
+          // COLOR[y][x2] = @@@
           ATTR[y][x2] = defAttr;
           if (SYNC) pokeRefresh(x2, y);
         }

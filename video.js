@@ -21,7 +21,11 @@ window.pokeCursor = function(text) {
       CURX = 0;
       CURY = CURY + 1;
       if (CURY >= H) { 
-        if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W-1); }
+        if (CURY >= H) {
+        	 // call pokeScroll(4) here
+          CURY = H - 1;
+          CURX = Math.min(CURX, W-1);
+        }
         pokeCursorOn();
         return false;
       }
@@ -1159,7 +1163,7 @@ window.pokeScroll = function(n) {
         // fill remainder lines at bottom with spaces + default style
         for (var x2 = 0; x2 < W; x2++) {
           VIDEO[y][x2] = " ";
-          COLOR[y][x2] = @@@
+          // COLOR[y][x2] = @@@
           ATTR[y][x2] = defAttr;
           if (SYNC) pokeRefresh(x2, y);
         }

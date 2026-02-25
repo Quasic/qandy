@@ -130,7 +130,7 @@ var altShiftKeys = {
   "1":"↑", "2":"↓", "3":"←", "4":"→", "5":"↔", "6":"↕", "7":"★", "8":"☆", "9":"◆", "0":"◇",
   "q":"╭", "w":"╌", "e":"╮", "r":"╞", "t":"╡", "y":"╰", "u":"╴", "i":"╯", "o":"╎", "p":"╪",
   "a":"┏", "s":"━", "d":"┓", "f":"┣", "g":"┫", "h":"┗", "j":"┻", "k":"┛", "l":"┃", "'":"′",
-  "z":"▔", "x":"▁", "c":"▪", "v":"▸", "b":"◂", "n":"▴", "m":"▾", ";":"╋",
+  "zhttps://quintrix.github.io/qandy/":"▔", "x":"▁", "c":"▪", "v":"▸", "b":"◂", "n":"▴", "m":"▾", ";":"╋",
   " ":"·", ",":"◊", ".":"●", "/":"○"
 };
 var keyboardData = [
@@ -214,31 +214,53 @@ var inInputMode = false;       // True when processing user input (prevents pagi
 (function() {
   // backing storage
   var _run = "";
-  if (typeof window.run !== 'undefined') { try { _run = window.run; } catch (e) { /* ignore */ }}
-  Object.defineProperty(window, 'RUN', {
-    configurable: true,
-    enumerable: true,
-    get: function() { return _run; },
-    set: function(v) {
-      _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
-      // Keep legacy run in sync if it still exists as a plain property
-      try { window.run = _run; } catch (e) { /* ignore */ }
-    }
-  });
+  try { if (typeof window.run !== 'undefined') { _run = window.run; } } catch (e) { /* ignore */ }
+
+  // Try to create window.RUN only if it's safe to do so
   try {
-    delete window.run;
-    Object.defineProperty(window, 'run', {
-      configurable: true,
-      enumerable: true,
-      get: function() { return _run; },
-      set: function(v) {
-        _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
-        // keep RUN in sync (setting RUN will also set _run so this is fine)
-        try { window.RUN = _run; } catch (e) { /* ignore */ }
-      }
-    });
+    var existingRunDesc = Object.getOwnPropertyDescriptor(window, 'RUN');
+    if (!existingRunDesc || existingRunDesc.configurable) {
+      Object.defineProperty(window, 'RUN', {
+        configurable: true,
+        enumerable: true,
+        get: function() { return _run; },
+        set: function(v) {
+          _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
+          // Keep legacy run in sync if it still exists as a plain property
+          try { window.run = _run; } catch (e) { /* ignore */ }
+        }
+      });
+    } else {
+      // non-configurable existing property: try to read its value to seed _run
+      try { _run = window.RUN; } catch (e) { /* ignore */ }
+    }
+  } catch (e) {
+    // defineProperty failed for some reason — fall back to plain assignment
+    try { window.RUN = _run; } catch (e2) { /* ignore */ }
+  }
+
+  // Try to create a mirrored reactive window.run if safe
+  try {
+    var runDesc = Object.getOwnPropertyDescriptor(window, 'run');
+    if (!runDesc || runDesc.configurable) {
+      try { delete window.run; } catch (ignore) {}
+      Object.defineProperty(window, 'run', {
+        configurable: true,
+        enumerable: true,
+        get: function() { return _run; },
+        set: function(v) {
+          _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
+          // keep RUN in sync (if it's defined as an accessor this will update it)
+          try { window.RUN = _run; } catch (e) { /* ignore */ }
+        }
+      });
+    } else {
+      // run exists and is non-configurable — seed/keep sync
+      try { _run = window.run; } catch (e) { /* ignore */ }
+      try { window.RUN = _run; } catch (e) { /* ignore */ }
+    }
   } catch (err) {
-    // If we couldn't delete/redefine run (rare), ensure RUN reflects the existing run value.
+    // If all else fails, ensure RUN reflects existing run if possible
     try { window.RUN = window.run; } catch (e) { /* ignore */ }
   }
 })();
@@ -404,7 +426,7 @@ var inInputMode = false;       // True when processing user input (prevents pagi
 
     // Position/size to match the txt element
     overlay.style.position = 'absolute';
-    overlay.style.left = (rect.left + window.X) + 'px';
+    overlay.style.left = (rect.left + window.scrollX) + 'px';
     overlay.style.top = (rect.top + window.scrollY) + 'px';
     overlay.style.width = rect.width + 'px';
     overlay.style.height = rect.height + 'px';

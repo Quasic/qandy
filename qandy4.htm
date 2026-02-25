@@ -91,7 +91,7 @@ var LINEY=0;   // start of input cursor y
 var LINEP=0;   // cursor position on line
 
 var SSTART=-1;  // selection start
-var https://quintrix.github.io/qandy/SEND=-1;    // selection end
+var SEND=-1;    // selection end
 
 var selectionBgColor = '#ffffff';   // old Selection background color
 var selectionFgColor = '#000000';   // old Selection text color
@@ -143,7 +143,7 @@ var keyboardData = [
   {id:"dash", label:"-", keyCode:173, x:218, y:446, width:28},
   {id:"equal", label:"=", keyCode:61, x:247, y:446, width:28},
   {id:"back", label:"BACK", keyCode:8, x:275, y:446, width:52},
-  /https://quintrix.github.io/qandy// Row 1: Number keys 1-0 (y=480)
+  // Row 1: Number keys 1-0 (y=480)
   {id:"n1", label:"1", keyCode:49, x:47, y:480, width:28},
   {id:"n2", label:"2", keyCode:50, x:75, y:480, width:28},
   {id:"n3", label:"3", keyCode:51, x:103, y:480, width:28},
@@ -214,31 +214,53 @@ var inInputMode = false;       // True when processing user input (prevents pagi
 (function() {
   // backing storage
   var _run = "";
-  if (typeof window.run !== 'undefined') { try { _run = window.run; } catch (e) { /* ignore */ }}
-  Object.defineProperty(window, 'RUN', {
-    configurable: true,
-    enumerable: true,
-    get: function() { return _run; },
-    set: function(v) {
-      _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
-      // Keep legacy run in sync if it still exists as a plain property
-      try { window.run = _run; } catch (e) { /* ignore */ }
-    }
-  });
+  try { if (typeof window.run !== 'undefined') { _run = window.run; } } catch (e) { /* ignore */ }
+
+  // Try to create window.RUN only if it's safe to do so
   try {
-    delete window.run;
-    Object.defineProperty(window, 'run', {
-      configurable: true,
-      enumerable: true,
-      get: function() { return _run; },
-      set: function(v) {
-        _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
-        // keep RUN in sync (setting RUN will also set _run so this is fine)
-        try { window.RUN = _run; } catch (e) { /* ignore */ }
-      }
-    });
+    var existingRunDesc = Object.getOwnPropertyDescriptor(window, 'RUN');
+    if (!existingRunDesc || existingRunDesc.configurable) {
+      Object.defineProperty(window, 'RUN', {
+        configurable: true,
+        enumerable: true,
+        get: function() { return _run; },
+        set: function(v) {
+          _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
+          // Keep legacy run in sync if it still exists as a plain property
+          try { window.run = _run; } catch (e) { /* ignore */ }
+        }
+      });
+    } else {
+      // non-configurable existing property: try to read its value to seed _run
+      try { _run = window.RUN; } catch (e) { /* ignore */ }
+    }
+  } catch (e) {
+    // defineProperty failed for some reason — fall back to plain assignment
+    try { window.RUN = _run; } catch (e2) { /* ignore */ }
+  }
+
+  // Try to create a mirrored reactive window.run if safe
+  try {
+    var runDesc = Object.getOwnPropertyDescriptor(window, 'run');
+    if (!runDesc || runDesc.configurable) {
+      try { delete window.run; } catch (ignore) {}
+      Object.defineProperty(window, 'run', {
+        configurable: true,
+        enumerable: true,
+        get: function() { return _run; },
+        set: function(v) {
+          _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
+          // keep RUN in sync (if it's defined as an accessor this will update it)
+          try { window.RUN = _run; } catch (e) { /* ignore */ }
+        }
+      });
+    } else {
+      // run exists and is non-configurable — seed/keep sync
+      try { _run = window.run; } catch (e) { /* ignore */ }
+      try { window.RUN = _run; } catch (e) { /* ignore */ }
+    }
   } catch (err) {
-    // If we couldn't delete/redefine run (rare), ensure RUN reflects the existing run value.
+    // If all else fails, ensure RUN reflects existing run if possible
     try { window.RUN = window.run; } catch (e) { /* ignore */ }
   }
 })();
@@ -404,7 +426,7 @@ var inInputMode = false;       // True when processing user input (prevents pagi
 
     // Position/size to match the txt element
     overlay.style.position = 'absolute';
-    overlay.style.left = (rect.left + window.X) + 'px';
+    overlay.style.left = (rect.left + window.scrollX) + 'px';
     overlay.style.top = (rect.top + window.scrollY) + 'px';
     overlay.style.width = rect.width + 'px';
     overlay.style.height = rect.height + 'px';
