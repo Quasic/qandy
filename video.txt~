@@ -16,18 +16,18 @@
                t = text string         s = state (on/off)
 
 
+              pokeCursor(t) — poke text at cursor's position          
+          pokeText(x,y,t,n) — poke text at x,y repeating n times
+
             pokeCell(x,y,a) — poke character(s) to a cell (faster)
+
           pokeChar(x,y,a,n) — poke character(s) to cells (slower)
-  
+     pokeColor(x,y,fg,bg,n) — set foreground and background color
             pokeFG(x,y,c,n) — set foreground color
             pokeFG(x,y,c,n) — set background color
-     pokeColor(x,y,fg,bg,n) — set foreground and background color 
           pokeBold(x,y,s,n) — set bold attribute       
        pokeInverse(x,y,s,n) — set inverse attribute
 
-              pokeCursor(t) — poke text at cursor's position          
-            pokeText(x,y,t) — poke text at x,y (0,0 if not supplied)
-  
                 pokeInput() — poke input line at cursor position
               pokeSelect(s) — set inverse attribute for text selection
                   

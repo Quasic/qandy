@@ -54,9 +54,11 @@ print("\n");
 print("ASCII Character Chart:\n");
 print("\n");
 
-print("ascii() to display all ASCII Characters\n\n");
-print("ansi() to display graphic characters\n\n");
-print("alpha() to display alpha-numeric characers\n\n");
+ascii();
+
+//print("ascii() to display all ASCII Characters\n\n");
+//print("ansi() to display graphic characters\n\n");
+//print("alpha() to display alpha-numeric characers\n\n");
 
 keyon = 1;
 
