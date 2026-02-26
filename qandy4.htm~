@@ -38,7 +38,7 @@ var CURANSI = true; // cursor text ANSI on
 var CURFG = 37;     // cursor text fg color white
 var CURBG = 40;     // cursor text bg color black
 var CURATTR = 0;    // cursor text attr (not including color)
-var CURBAUD = 300;    // baud rate to display text
+var CURBAUD = 2400;    // baud rate to display text
 
 // video.js
 var W=32; // screen width
@@ -263,78 +263,6 @@ var inInputMode = false;       // True when processing user input (prevents pagi
   } catch (err) {
     // If all else fails, ensure RUN reflects existing run if possible
     try { window.RUN = window.run; } catch (e) { /* ignore */ }
-  }
-})();
-
-// Executes if RUN= is changed by guest script
-(function installRunOutWatcher() {
-  // configuration
-  var txtVisibleLeft = "54px";   // position when txt should be visible (desktop/text mode)
-  var txtHiddenLeft  = "350px";  // position when txt should be pushed right to reveal gfx (phone/hide)
-  var txtId = "txt";
-
-  // helper to apply the display change
-  function applyRunOut(mode) {
-    try {
-      var txtEl = document.getElementById(txtId);
-      if (!txtEl) return;
-
-      // For smoothness, ensure inline transition is present (optional)
-      if (!txtEl.style.transition) txtEl.style.transition = "left 220ms ease";
-
-      if (mode === "gfx") {
-        // push the text window right (same as your current method)
-        txtEl.style.left = txtHiddenLeft;
-        // update runtime mode and call resize if present
-        if (typeof window.mode !== "undefined") window.mode = "gfx";
-      } else {
-        // show text window (default)
-        txtEl.style.left = txtVisibleLeft;
-        if (typeof window.mode !== "undefined") window.mode = "txt";
-      }
-
-      // call resize or any other layout updates so keyboard/overlays reposition
-      if (typeof resize === "function") try { resize(); } catch (e) { /* ignore */ }
-
-    } catch (e) {
-      console.warn("applyRunOut failed:", e);
-    }
-  }
-
-  // Try to define a reactive property for RUNOUT
-  var installed = false;
-  try {
-    // remove existing global if possible, but only if it's configurable
-    try { delete window.RUNOUT; } catch (ignore) {}
-    var _val = (typeof window.RUNOUT !== "undefined") ? window.RUNOUT : "";
-
-    Object.defineProperty(window, "RUNOUT", {
-      configurable: true,
-      enumerable: true,
-      get: function () { return _val; },
-      set: function (v) {
-        _val = v == null ? "" : String(v);
-        // apply immediately
-        applyRunOut(_val);
-      }
-    });
-
-    // apply initial state
-    applyRunOut(_val);
-    installed = true;
-  } catch (err) {
-    // If defineProperty failed (rare), fall back to polling
-    console.warn("RUNOUT watcher defineProperty failed, falling back to polling:", err);
-  }
-
-  if (!installed) {
-    var last = window.RUNOUT || "";
-    setInterval(function () {
-      if ((window.RUNOUT || "") !== last) {
-        last = window.RUNOUT || "";
-        try { applyRunOut(last); } catch (e) {}
-      }
-    }, 300);
   }
 })();
 

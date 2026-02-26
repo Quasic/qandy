@@ -63,6 +63,59 @@ var ATTR_HIDDEN     = 0x0080;
 var ATTR_STRIKE     = 0x0100;
 var ATTR_OVERLINE   = 0x0200; // optional
 
+// Foreground (normal)
+var ANSIblack = "\x1b[30m";
+var ANSIred = "\x1b[31m";
+var ANSIgreen = "\x1b[32m";
+var ANSIyellow = "\x1b[33m";
+var ANSIblue = "\x1b[34m";
+var ANSImagenta = "\x1b[35m";
+var ANSIcyan = "\x1b[36m";
+var ANSIwhite = "\x1b[37m";
+
+// rest of ANSI color variables not implemented yet
+var ANSIreset = "\x1b[0m";
+
+// Foreground (bright / high-intensity)
+var ANSIblack_bright = "\x1b[90m";
+var ANSIred_bright = "\x1b[91m";
+var ANSIgreen_bright = "\x1b[92m";
+var ANSIyellow_bright = "\x1b[93m";
+var ANSIblue_bright = "\x1b[94m";
+var ANSImagenta_bright = "\x1b[95m";
+var ANSIcyan_bright = "\x1b[96m";
+var ANSIwhite_bright = "\x1b[97m";
+
+// Background (normal)
+var ANSIbgblack = "\x1b[40m";
+var ANSIbgred = "\x1b[41m";
+var ANSIbggreen = "\x1b[42m";
+var ANSIbgyellow = "\x1b[43m";
+var ANSIbgblue = "\x1b[44m";
+var ANSIbgmagenta = "\x1b[45m";
+var ANSIbgcyan = "\x1b[46m";
+var ANSIbgwhite = "\x1b[47m";
+
+// Background (bright)
+var ANSIbgblack_bright = "\x1b[100m";
+var ANSIbgred_bright = "\x1b[101m";
+var ANSIbggreen_bright = "\x1b[102m";
+var ANSIbgyellow_bright = "\x1b[103m";
+var ANSIbgblue_bright = "\x1b[104m";
+var ANSIbgmagenta_bright = "\x1b[105m";
+var ANSIbgcyan_bright = "\x1b[106m";
+var ANSIbgwhite_bright = "\x1b[107m";
+
+// Useful attribute helpers
+var ANSIbold = "\x1b[1m";
+var ANSIdim = "\x1b[2m";
+var ANSIitalic = "\x1b[3m";
+var ANSIunderline = "\x1b[4m";
+var ANSIinverse = "\x1b[7m";
+var ANSIhidden = "\x1b[8m";
+var ANSIstrikethrough = "\x1b[9m";
+var ANSIresetAll = "\x1b[0m"; // same as ANSIreset
+
 // gfx.js
 var txt="";
 var mode="txt"; // gfx or txt display
@@ -263,78 +316,6 @@ var inInputMode = false;       // True when processing user input (prevents pagi
   } catch (err) {
     // If all else fails, ensure RUN reflects existing run if possible
     try { window.RUN = window.run; } catch (e) { /* ignore */ }
-  }
-})();
-
-// Executes if RUN= is changed by guest script
-(function installRunOutWatcher() {
-  // configuration
-  var txtVisibleLeft = "54px";   // position when txt should be visible (desktop/text mode)
-  var txtHiddenLeft  = "350px";  // position when txt should be pushed right to reveal gfx (phone/hide)
-  var txtId = "txt";
-
-  // helper to apply the display change
-  function applyRunOut(mode) {
-    try {
-      var txtEl = document.getElementById(txtId);
-      if (!txtEl) return;
-
-      // For smoothness, ensure inline transition is present (optional)
-      if (!txtEl.style.transition) txtEl.style.transition = "left 220ms ease";
-
-      if (mode === "gfx") {
-        // push the text window right (same as your current method)
-        txtEl.style.left = txtHiddenLeft;
-        // update runtime mode and call resize if present
-        if (typeof window.mode !== "undefined") window.mode = "gfx";
-      } else {
-        // show text window (default)
-        txtEl.style.left = txtVisibleLeft;
-        if (typeof window.mode !== "undefined") window.mode = "txt";
-      }
-
-      // call resize or any other layout updates so keyboard/overlays reposition
-      if (typeof resize === "function") try { resize(); } catch (e) { /* ignore */ }
-
-    } catch (e) {
-      console.warn("applyRunOut failed:", e);
-    }
-  }
-
-  // Try to define a reactive property for RUNOUT
-  var installed = false;
-  try {
-    // remove existing global if possible, but only if it's configurable
-    try { delete window.RUNOUT; } catch (ignore) {}
-    var _val = (typeof window.RUNOUT !== "undefined") ? window.RUNOUT : "";
-
-    Object.defineProperty(window, "RUNOUT", {
-      configurable: true,
-      enumerable: true,
-      get: function () { return _val; },
-      set: function (v) {
-        _val = v == null ? "" : String(v);
-        // apply immediately
-        applyRunOut(_val);
-      }
-    });
-
-    // apply initial state
-    applyRunOut(_val);
-    installed = true;
-  } catch (err) {
-    // If defineProperty failed (rare), fall back to polling
-    console.warn("RUNOUT watcher defineProperty failed, falling back to polling:", err);
-  }
-
-  if (!installed) {
-    var last = window.RUNOUT || "";
-    setInterval(function () {
-      if ((window.RUNOUT || "") !== last) {
-        last = window.RUNOUT || "";
-        try { applyRunOut(last); } catch (e) {}
-      }
-    }, 300);
   }
 })();
 

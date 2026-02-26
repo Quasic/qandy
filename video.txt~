@@ -1,5 +1,4 @@
 
-
                             video.js
                                                  
                      Qandy Video Driver v0
@@ -10,11 +9,12 @@
                  tested, use at your own risk!!
  
                      
-               x = column              a = asci character
-     Legend:   y = row                 c = ansi code
-               n = number of cells     h = hex value
-               t = text string         s = state (on/off)
-
+               x = column              c = ansi color code
+     Legend:   y = row                 f = foreground color
+               n = number of cells     b = background color
+               t = text string         h = hex value
+               a = asci character      s = state (on/off)
+               
 
               pokeCursor(t) — poke text at cursor's position          
           pokeText(x,y,t,n) — poke text at x,y repeating n times
@@ -22,9 +22,9 @@
             pokeCell(x,y,a) — poke character(s) to a cell (faster)
 
           pokeChar(x,y,a,n) — poke character(s) to cells (slower)
-     pokeColor(x,y,fg,bg,n) — set foreground and background color
-            pokeFG(x,y,c,n) — set foreground color
-            pokeFG(x,y,c,n) — set background color
+       pokeColor(x,y,f,b,n) — set foreground and background color
+            pokeFG(x,y,f,n) — set foreground color
+            pokeFG(x,y,b,n) — set background color
           pokeBold(x,y,s,n) — set bold attribute       
        pokeInverse(x,y,s,n) — set inverse attribute
 

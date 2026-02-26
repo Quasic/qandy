@@ -790,13 +790,26 @@ function cls() {
   pokeCursorOn();  
 }
 
-CURSOR=4; pokeCursorOn();
-text="\n[blue]Qandy Pocket\nComputer v1.j\n\n[yellow]Prototype Release\n[white]\n";
+CURBAUD=9600; CURSOR=4; pokeCursorOn();
+
+text="\n[cyan]Qandy Pocket\nComputer v1.j\n\n[yellow]Prototype Release\n[white]\n";
 print(text);
 
-function print(text) {
-  t=ansiize(text);
-  pokeCursor(t);
+function print(t) {
+  // 
+  // matches [color] tags
+  // word wrap
+  //
+  text = text.replace(/\[blue\]/g, ANSIblue);
+  text = text.replace(/\[black]/g, ANSIblack); 
+  text = text.replace(/\[red]/g, ANSIred);
+  text = text.replace(/\[green]/g, ANSIgreen);
+  text = text.replace(/\[yellow]/g, ANSIyellow);
+  text = text.replace(/\[blue]/g, ANSIblue);
+  text = text.replace(/\[magenta]/g, ANSImagenta);
+  text = text.replace(/\[cyan]/g, ANSIcyan);
+  text = text.replace(/\[white]/g, ANSIwhite);
+  pokeCursor(text);
 }
 
 // system ready
