@@ -782,11 +782,6 @@ function showFiles() {
   }
 }
 
-function print(txt) {
-  txt = (typeof txt === 'undefined' || txt === null) ? '' : String(txt);
-  pokeCursor(ansiize(txt));
-}
-
 function clearScreen() { cls(); }
 function cls() {
   pokeCursorOff();
@@ -795,11 +790,16 @@ function cls() {
   pokeCursorOn();  
 }
 
+CURSOR=4; pokeCursorOn();
+text="\n[blue]Qandy Pocket\nComputer v1.j\n\n[yellow]Prototype Release\n[white]\n";
+print(text);
+
+function print(text) {
+  t=ansiize(text);
+  pokeCursor(t);
+}
 
 // system ready
-
-CURSOR=4; pokeCursorOn();
-print("\nQandy Pocket\nComputer v1.j\n\nPrototype Release\n\n");
 
 mySearch=location.search.substr(1).split("&")
 for (i=0;i<mySearch.length;i++) {

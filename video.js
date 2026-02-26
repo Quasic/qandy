@@ -4,32 +4,15 @@
 
 let lastx=0; let lasty=0;
 
-window.pokeCursor = function(text) {
-  if (typeof text === 'undefined' || text === null) return false;
+window.pokeCursor = function(t) {
+  if (typeof t === 'undefined' || t === null) return false;
   // Cancel any existing paced output and start fresh
   if (window._pokeCursor_state && window._pokeCursor_state.timer) {
     clearTimeout(window._pokeCursor_state.timer);
   }
   window._pokeCursor_state = null;
 
-  var str = String(text);
-
-  // helper: ensure VIDEO row exists
-  function ensureVideoRow(y) {
-    if (!VIDEO[y]) VIDEO[y] = new Array(W).fill(' ');
-  }
-  // helper: ensure COLOR row exists (uses existing helper if present)
-  function ensureColorRow(y) {
-    if (typeof _ensureColorRow === 'function') return _ensureColorRow(y);
-    if (!COLOR[y]) COLOR[y] = new Array(W);
-  }
-  // helper: ensure ATTR row exists
-  function ensureAttrRow(y) {
-    if (typeof _ensureAttrRow === 'function') return _ensureAttrRow(y);
-    if (!ATTR[y]) ATTR[y] = new Uint16Array(W);
-  }
-
-  // apply current cursor style to a single cell and refresh it once
+  var str = String(t);
 
   pokeCell(CURX, CURY, CURFG, CURBG, CURATTR);
 
@@ -49,36 +32,26 @@ window.pokeCursor = function(text) {
           var p = params[pi] | 0;
           switch (p) {
             case 0: // reset
-              CURFG = 37; CURBG = 40; CURATTR = 0;
-              break;
+              CURFG = 37; CURBG = 40; CURATTR = 0; break;
             case 1: // bold
-              CURATTR = (CURATTR | (window.ATTR_BOLD || 0x0002));
-              break;
+              CURATTR = (CURATTR | (window.ATTR_BOLD || 0x0002)); break;
             case 2: // dim
-              CURATTR = (CURATTR | (window.ATTR_DIM || 0x0004));
-              break;
+              CURATTR = (CURATTR | (window.ATTR_DIM || 0x0004)); break;
             case 3: // italic
-              CURATTR = (CURATTR | (window.ATTR_ITALIC || 0x0008));
-              break;
+              CURATTR = (CURATTR | (window.ATTR_ITALIC || 0x0008)); break;
             case 4: // underline
-              CURATTR = (CURATTR | (window.ATTR_UNDERLINE || 0x0010));
-              break;
+              CURATTR = (CURATTR | (window.ATTR_UNDERLINE || 0x0010)); break;
             case 22: // normal intensity (clear bold & dim)
               CURATTR &= ~(window.ATTR_BOLD || 0x0002);
-              CURATTR &= ~(window.ATTR_DIM  || 0x0004);
-              break;
+              CURATTR &= ~(window.ATTR_DIM  || 0x0004); break;
             case 23: // clear italic
-              CURATTR &= ~(window.ATTR_ITALIC || 0x0008);
-              break;
+              CURATTR &= ~(window.ATTR_ITALIC || 0x0008); break;
             case 24: // clear underline
-              CURATTR &= ~(window.ATTR_UNDERLINE || 0x0010);
-              break;
+              CURATTR &= ~(window.ATTR_UNDERLINE || 0x0010); break;
             case 7: // inverse
-              CURATTR = (CURATTR | (window.ATTR_INVERSE || 0x0001));
-              break;
+              CURATTR = (CURATTR | (window.ATTR_INVERSE || 0x0001)); break;
             case 27: // clear inverse
-              CURATTR &= ~(window.ATTR_INVERSE || 0x0001);
-              break;
+              CURATTR &= ~(window.ATTR_INVERSE || 0x0001); break;
             default:
               if (p >= 30 && p <= 37) { CURFG = p; break; }
               if (p >= 90 && p <= 97) { CURFG = p; break; }
@@ -153,7 +126,6 @@ window.pokeCursor = function(text) {
 
   // If delay is 0, run synchronously (old behavior)
   if (!delayMs) {
-    // synchronous processing (identical to previous function)
     for (var j = 0; j < str.length; j++) {
       var ch = str.charAt(j);
 
@@ -246,8 +218,10 @@ window.pokeCursor = function(text) {
       CURX = 0;
       CURY = CURY + 1;
       if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W - 1); }
+      LINEX = CURX; LINEY = CURY;
       state.idx++;
       scheduleNext();
+      pokeCursorOn();
       return;
     }
 
@@ -257,6 +231,7 @@ window.pokeCursor = function(text) {
         CURY = H - 1; CURX = Math.min(CURX, W - 1);
         pokeCursorOn();
         window._pokeCursor_state = null;
+        pokeCursorOn();
         return;
       }
     }
@@ -323,6 +298,7 @@ var ATTR_MAP = {
   reset: 0, default:0, 0:0,
   bold: 1, dim: 2, italic: 3, underline: 4, inverse: 7
 };
+
 window.ansiize = function(text) {
   if (typeof text !== 'string') text = String(text || '');
   // Replace tokens like [bg=yellow], [yellow], [bold], [reset]
@@ -369,6 +345,7 @@ window.ansiize = function(text) {
     return full;
   });
 };
+
 window.ansi = window.ansi || {};
 window.ansi.fg = function(name) { var c = _lookupFg(name); return (typeof c !== 'undefined') ? '\x1b['+c+'m' : ''; };
 window.ansi.bg = function(name) { var c = _lookupBg(name); return (typeof c !== 'undefined') ? '\x1b['+c+'m' : ''; };
