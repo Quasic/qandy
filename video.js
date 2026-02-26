@@ -14,8 +14,6 @@ window.pokeCursor = function(t) {
 
   var str = String(t);
 
-  // pokeCell(CURX, CURY, CURFG, CURBG, CURATTR);
-
   // parse numeric params into array of numbers (empty => [])
   function parseParams(paramStr) {
     if (!paramStr || paramStr.length === 0) return [];
@@ -131,7 +129,7 @@ window.pokeCursor = function(t) {
 
       if (CURANSI && ch === '\x1b') {
         var st = str.slice(j);
-        var m = /^\x1b\[([0-9;]*)?([@A-Za-z])/.exec(rest);
+        var m = /^\x1b\[([0-9;]*)?([@A-Za-z])/.exec(st);
         if (m) {
           handleCSI(m[1] || '', m[2]);
           j += m[0].length - 1;
@@ -142,28 +140,24 @@ window.pokeCursor = function(t) {
       }
 
       pokeCursorOff();
-
       if (ch === '\n') {
-        CURX = 0;
-        CURY = CURY + 1;
+        CURX = 0; CURY = CURY + 1;
         if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W - 1); }
         continue;
       }
-
       if (CURX >= W) {
         CURX = 0; CURY = CURY + 1;
         if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W - 1); pokeCursorOn(); return false; }
       }
-
-      pokeCell(CURX, CURY, ch);
+      
+      pokeCell(CURX, CURY, ch, CURFG, CURBG, CURATTR); 
 
       CURX = CURX + 1;
       if (CURX >= W) {
         CURX = 0; CURY = CURY + 1;
         if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W - 1); pokeCursorOn(); return false; }
       }
-      pokeCursorOn();
-      LINEX = CURX; LINEY = CURY;
+      LINEX = CURX; LINEY = CURY; pokeCursorOn();
     }
     return true;
   }
@@ -236,7 +230,8 @@ window.pokeCursor = function(t) {
       }
     }
 
-    pokeCell(CURX, CURY, ch);
+    pokeCell(CURX, CURY, ch, CURFG, CURBG, CURATTR);
+    if (SOUND) { beep(900, 25, .01); }
 
     CURX = CURX + 1;
     if (CURX >= W) {
@@ -336,7 +331,6 @@ window.pokeCell = function(x, y, ch, fg, bg, attr) {
   if (!validateCoords(x, y)) return false;
   var charToWrite = (ch === null) ? ' ' : (typeof ch === 'string' ? (ch.length ? ch.charAt(0) : ' ') : String(ch).charAt(0));
   VIDEO[y][x] = charToWrite;
-  
   function _normalizeColorArg(val, which) {
     if (typeof val === 'number' && !isNaN(val)) return val;
     if (typeof val === 'string') {
@@ -351,6 +345,9 @@ window.pokeCell = function(x, y, ch, fg, bg, attr) {
   }
   var fgCode = _normalizeColorArg(fg, 'fg');
   var bgCode = _normalizeColorArg(bg, 'bg');
+
+  if (typeof fgCode !== 'undefined') COLOR[y][x].color = fgCode;
+  if (typeof bgCode !== 'undefined') COLOR[y][x].bgcolor = bgCode;
 
   // ATTR handling: if provided overwrite; if omitted leave unchanged
   if (typeof attr !== 'undefined' && attr !== null) {
