@@ -1,179 +1,179 @@
-// QANDY ASCII CHARACTER DISPLAY UTILITY
-// Displays all 256 ASCII characters or curated "nice" drawing characters
+// ASCII Chart viewer for Qandy (32x25)
+// Two columns × ~20 rows = 40 entries/page (covers ASCII 0..127 in four pages)
+// Controls: n = next, p = prev, g = goto page, q or ESC = quit
 
-var controlCharNames = {
-  0: "NUL", 1: "SOH", 2: "STX", 3: "ETX", 4: "EOT", 5: "ENQ",
-  6: "ACK", 7: "BEL", 8: "BS", 9: "TAB", 10: "LF", 11: "VT",
-  12: "FF", 13: "CR", 14: "SO", 15: "SI", 16: "DLE", 17: "DC1",
-  18: "DC2", 19: "DC3", 20: "DC4", 21: "NAK", 22: "SYN", 23: "ETB",
-  24: "CAN", 25: "EM", 26: "SUB", 27: "ESC", 28: "FS", 29: "GS",
-  30: "RS", 31: "US"
-};
 
-// CP437 to Unicode mapping for extended ASCII (128-255)
-// Maps IBM PC (DOS) box-drawing and special characters to Unicode equivalents
-var cp437ToUnicode = {
-  // 128-159: Various symbols and accented characters
-  128: "\u00C7", 129: "\u00FC", 130: "\u00E9", 131: "\u00E2", 132: "\u00E4", 133: "\u00E0", 134: "\u00E5", 135: "\u00E7",
-  136: "\u00EA", 137: "\u00EB", 138: "\u00E8", 139: "\u00EF", 140: "\u00EE", 141: "\u00EC", 142: "\u00C4", 143: "\u00C5",
-  144: "\u00C9", 145: "\u00E6", 146: "\u00C6", 147: "\u00F4", 148: "\u00F6", 149: "\u00F2", 150: "\u00FB", 151: "\u00F9",
-  152: "\u00FF", 153: "\u00D6", 154: "\u00DC", 155: "\u00A2", 156: "\u00A3", 157: "\u00A5", 158: "\u20A7", 159: "\u0192",
-  // 160-175: More accented chars and symbols
-  160: "\u00E1", 161: "\u00ED", 162: "\u00F3", 163: "\u00FA", 164: "\u00F1", 165: "\u00D1", 166: "\u00AA", 167: "\u00BA",
-  168: "\u00BF", 169: "\u2310", 170: "\u00AC", 171: "\u00BD", 172: "\u00BC", 173: "\u00A1", 174: "\u00AB", 175: "\u00BB",
-  // 176-180: Block elements (light to dark shading)
-  176: "\u2591", 177: "\u2592", 178: "\u2593", 179: "\u2502", 180: "\u2524",
-  // 181-185: Box drawing - right side connections
-  181: "\u2561", 182: "\u2562", 183: "\u2556", 184: "\u2555", 185: "\u2563",
-  // 186-190: Box drawing - double and single lines
-  186: "\u2551", 187: "\u2557", 188: "\u255D", 189: "\u255C", 190: "\u255B",
-  // 191-195: Box drawing - corners and tees
-  191: "\u2510", 192: "\u2514", 193: "\u2534", 194: "\u252C", 195: "\u251C",
-  // 196-200: Box drawing - horizontal, vertical, and crosses
-  196: "\u2500", 197: "\u253C", 198: "\u255E", 199: "\u255F", 200: "\u255A",
-  // 201-205: Box drawing - double line corners and sides
-  201: "\u2554", 202: "\u2569", 203: "\u2566", 204: "\u2560", 205: "\u2550",
-  // 206-210: Box drawing - double line crosses
-  206: "\u256C", 207: "\u2567", 208: "\u2568", 209: "\u2564", 210: "\u2565",
-  // 211-215: Box drawing - more connections
-  211: "\u2559", 212: "\u2558", 213: "\u2552", 214: "\u2553", 215: "\u256B",
-  // 216-220: Box drawing - corners and connections
-  216: "\u256A", 217: "\u2518", 218: "\u250C", 219: "\u2588", 220: "\u2584",
-  // 221-223: Block elements
-  221: "\u258C", 222: "\u2590", 223: "\u2580",
-  // 224-239: Greek letters and math symbols
-  224: "\u03B1", 225: "\u00DF", 226: "\u0393", 227: "\u03C0", 228: "\u03A3", 229: "\u03C3", 230: "\u00B5", 231: "\u03C4",
-  232: "\u03A6", 233: "\u0398", 234: "\u03A9", 235: "\u03B4", 236: "\u221E", 237: "\u03C6", 238: "\u03B5", 239: "\u2229",
-  // 240-254: Math symbols and shapes
-  240: "\u2261", 241: "\u00B1", 242: "\u2265", 243: "\u2264", 244: "\u2320", 245: "\u2321", 246: "\u00F7", 247: "\u2248",
-  248: "\u00B0", 249: "\u2219", 250: "\u00B7", 251: "\u221A", 252: "\u207F", 253: "\u00B2", 254: "\u25A0", 255: "\u00A0"
-};
+  // Configuration
+  var COLS = 32, ROWS = 25;
+  var HEADER_LINES = 2;
+  var FOOTER_LINES = 3;
+  var CONTENT_ROWS = ROWS - HEADER_LINES - FOOTER_LINES; // e.g. 20
+  var COLUMNS_PER_ROW = 2;
+  var ENTRIES_PER_PAGE = CONTENT_ROWS * COLUMNS_PER_ROW; // 40 by default
+  var MAX_CODE = 127; // show 0..127 by default
 
-cls();
-print("\n");
-print("ASCII Character Chart:\n");
-print("\n");
+  // Short names for control characters
+  var CONTROL_NAMES = {
+    0: 'NUL', 1: 'SOH', 2: 'STX', 3: 'ETX', 4: 'EOT', 5: 'ENQ', 6: 'ACK', 7: 'BEL',
+    8: 'BS', 9: 'TAB', 10: 'LF', 11: 'VT', 12: 'FF', 13: 'CR', 14: 'SO', 15: 'SI',
+    16: 'DLE',17:'DC1',18:'DC2',19:'DC3',20:'DC4',21:'NAK',22:'SYN',23:'ETB',
+    24:'CAN',25:'EM',26:'SUB',27:'ESC',28:'FS',29:'GS',30:'RS',31:'US',
+    127:'DEL'
+  };
 
-print("ascii() to display all ASCII Characters\n\n");
-print("ansi() to display graphic characters\n\n");
-print("alpha() to display alpha-numeric characers\n\n");
-
-keyon = 1;
-
-function ascii() {
-  cls();
-  print("\x1b[1;36m\n");
-  print("ASCII Character Table:\n\n");
-    
-  // Control characters (0-31)
-  // Display in columns (top to bottom): 11 rows × 3 columns
-  print("\x1b[1;33mControl Characters (0-31):\x1b[0m\n");
-  var rows = 11;  // 32 items / 3 columns = 10.67, round up to 11
-  for (var row = 0; row < rows; row++) {
-    for (var col = 0; col < 3; col++) {
-      var i = row + (col * rows);
-      if (i < 32) {
-        var name = controlCharNames[i] || "?";
-        var hex = i.toString(16);
-        if (hex.length === 1) hex = "0" + hex;
-        // Pad name to 3 characters for alignment
-        print(String(i).padStart(3) + " " + name.padEnd(3));
-        if (col < 2) print("  ");  // Add spacing between columns
-      }
+  // Helpers to format an entry into a fixed-width cell (16 chars)
+  function fmtEntry(code) {
+    var dec = ('' + code).padStart(3, '0');
+    var hex = '0x' + code.toString(16).toUpperCase().padStart(2, '0');
+    var glyph;
+    if (code in CONTROL_NAMES) {
+      glyph = CONTROL_NAMES[code];
+    } else if (code === 32) {
+      glyph = 'SP';
+    } else {
+      var ch = String.fromCharCode(code);
+      // For safety, show a visible representation for whitespace-like chars
+      glyph = (ch === ' ') ? 'SP' : ch;
     }
-    print("\n");
+    // make sure glyph fits in up to 6 chars; trim if needed
+    if (glyph.length > 6) glyph = glyph.slice(0, 6);
+    var s = dec + ' ' + hex + ' ' + glyph;
+    // pad to 16 chars (left aligned)
+    return s.padEnd(16, ' ');
   }
-  print("\n\f\n");
-  // Printable ASCII (32-126) - excluding 127 (DEL)
-  // Display in columns (top to bottom): 19 rows × 5 columns
-  print("\x1b[1;33mPrintable ASCII (32-126):\x1b[0m\n");
-  var printableCount = 95;  // 32 to 126 inclusive
-  var printableCols = 5;
-  var printableRows = Math.ceil(printableCount / printableCols);  // 19 rows
-  for (var row = 0; row < printableRows; row++) {
-    for (var col = 0; col < printableCols; col++) {
-      var i = 32 + row + (col * printableRows);
-      if (i <= 126) {  // Stop at 126, not 127
-        var char = String.fromCharCode(i);
-        var hex = i.toString(16);
-        if (hex.length === 1) hex = "0" + hex;
-        print(String(i).padStart(3) + " " + char);
-        var nextI = 32 + row + ((col + 1) * printableRows);
-        if (col < printableCols - 1 && nextI <= 126) print(" ");  // Add spacing between columns
-      }
-    }
-    print("\n");
-  }
-  print("\n\f\n");
-  
-  // Extended ASCII (128-255)
-  // Display in columns (top to bottom): 26 rows × 5 columns
-  // Using CP437 to Unicode mapping for proper display of box-drawing characters
-  print("\x1b[1;33mExtended ASCII (128-255):\x1b[0m\n");
-  print("\x1b[0;37m(CP437 characters mapped to Unicode equivalents)\x1b[0m\n");
-  var extendedCount = 128;  // 128 to 255 inclusive
-  var extendedCols = 5;
-  var extendedRows = Math.ceil(extendedCount / extendedCols);  // 26 rows
-  for (var row = 0; row < extendedRows; row++) {
-    for (var col = 0; col < extendedCols; col++) {
-      var i = 128 + row + (col * extendedRows);
-      if (i <= 255) {
-        // Use CP437 to Unicode mapping if available, otherwise use the character directly
-        var char = cp437ToUnicode[i] || String.fromCharCode(i);
-        var hex = i.toString(16);
-        if (hex.length === 1) hex = "0" + hex;
-        print(String(i).padStart(3) + " " + char);
-        var nextI = 128 + row + ((col + 1) * extendedRows);
-        if (col < extendedCols - 1 && nextI <= 255) print(" ");  // Add spacing between columns
-      }
-    }
-    print("\n");
-  }
-  
-  keyon = 1;
-}
 
-function ansi() {
-  cls();
-  print("\x1b[1;36m");
-  print("NICE DRAWING CHARACTERS\n");
-  print("═══════════════════════════════════\x1b[0m\n\n");
-  
-  print("\x1b[1;33mBox Drawing - Single Line:\x1b[0m\n");
-  print("┌ ─ ┬ ┐   ┤ ├ ┼ │   └ ┴ ┘\n");
-  print("Corners: ┌ ┐ └ ┘   Tees: ├ ┤ ┬ ┴   Cross: ┼   Straight: ─ │\n\n");
-  
-  print("\x1b[1;33mBox Drawing - Double Line:\x1b[0m\n");
-  print("╔ ═ ╦ ╗   ╣ ╠ ╬ ║   ╚ ╩ ╝\n");
-  print("Corners: ╔ ╗ ╚ ╝   Tees: ╠ ╣ ╦ ╩   Cross: ╬   Straight: ═ ║\n\n");
-  
-  print("\x1b[1;33mArrows:\x1b[0m\n");
-  print("↑ (up)  ↓ (down)  ← (left)  → (right)  ↔ (horiz)  ↕ (vert)\n");
-  print("⇑ (up2) ⇓ (down2) ⇐ (left2) ⇒ (right2)\n\n");
-  
-  print("\x1b[1;33mShapes & Symbols:\x1b[0m\n");
-  print("■ (filled square)  □ (empty square)  ◆ (diamond)\n");
-  print("● (filled circle)  ○ (empty circle)  ★ (filled star)  ☆ (empty star)\n");
-  print("✓ (checkmark)  ✗ (x mark)\n\n");
-  
-  print("\x1b[1;33mMath Symbols:\x1b[0m\n");
-  print("+ (plus)  × (multiply)  ÷ (divide)  = (equals)  ≠ (not equal)\n");
-  print("± (plus-minus)  ≤ (less-equal)  ≥ (greater-equal)\n\n");
-  
-  print("\x1b[1;33mCard Suits & Misc:\x1b[0m\n");
-  print("♠ (spade)  ♥ (heart)  ♦ (diamond)  ♣ (club)\n");
-  print("© (copyright)  ® (registered)  ™ (trademark)  ° (degree)  § (section)  ¶ (pilcrow)\n\n");
-  
-  print("\x1b[32mPress (A) for All, (N) for Nice, (Q) to Quit\x1b[0m\n");
-  keyon = 1;
-}
+  // Build entries array for 0..MAX_CODE
+  var entries = [];
+  for (var c = 0; c <= MAX_CODE; c++) {
+    entries.push({ code: c, text: fmtEntry(c) });
+  }
 
-function keydown(k) {
-  var key = k.toUpperCase();
-  
-  if (key === "Q") {
+  // Build pages: each page is an array of lines (strings)
+  var pages = [];
+  for (var i = 0; i < entries.length; i += ENTRIES_PER_PAGE) {
+    var pageEntries = entries.slice(i, i + ENTRIES_PER_PAGE);
+    // Build page lines: CONTENT_ROWS lines, each line contains COLUMNS_PER_ROW entries
+    var lines = [];
+    for (var r = 0; r < CONTENT_ROWS; r++) {
+      var line = '';
+      for (var col = 0; col < COLUMNS_PER_ROW; col++) {
+        var idx = r * COLUMNS_PER_ROW + col;
+        var e = pageEntries[idx];
+        if (e) line += e.text;
+        else line += ''.padEnd(16, ' ');
+      }
+      lines.push(line);
+    }
+    pages.push(lines);
+  }
+
+  var currentPage = 0;
+  var totalPages = pages.length;
+
+  // Rendering
+  function renderPage(pg) {
+    if (pg < 0) pg = 0;
+    if (pg >= totalPages) pg = totalPages - 1;
+    currentPage = pg;
+
     cls();
-    keyon = 1;
-    print("Returned to input mode\n");
+
+    // Header
+    print("\x1b[1;33mASCII Chart\x1b[0m\n");
+    print("\x1b[36mRange: " + (pg*ENTRIES_PER_PAGE) + " - " +
+          Math.min(MAX_CODE, (pg+1)*ENTRIES_PER_PAGE - 1) +
+          "    Page " + (pg+1) + "/" + totalPages + "\x1b[0m\n");
+
+    // Content
+    var pageLines = pages[pg];
+    for (var i = 0; i < pageLines.length; i++) {
+      // Use print so ANSI colors (if any) are honored
+      print(pageLines[i] + "\n");
+    }
+
+    // Footer
+    print("\n");
+    print("\x1b[1;32mNavigation:\x1b[0m n=next  p=prev  g=goto  q=quit\n");
   }
-}
+
+  // Navigation handlers
+  function nextPage() { if (currentPage < totalPages-1) renderPage(currentPage+1); else renderPage(0); }
+  function prevPage() { if (currentPage > 0) renderPage(currentPage-1); else renderPage(totalPages-1); }
+
+  function gotoPagePrompt() {
+    // Simple prompt using print/ input() style if available — fallback: ask user to call gotoPage(n)
+    try {
+      // try to use qandy input if available: input(prompt) style (some qandy examples have input/LINe)
+      var p = prompt ? prompt("Goto page (1-" + totalPages + "):") : null;
+      if (p !== null && p !== undefined) {
+        var n = parseInt(p, 10);
+        if (!isNaN(n) && n >= 1 && n <= totalPages) renderPage(n-1);
+      }
+    } catch (e) {
+      // ignore; not every qandy environment has prompt()
+    }
+  }
+
+  // Safe keyboard integration (idempotent)
+  if (!window._ascii_chart_installed) {
+    window._ascii_chart_installed = true;
+
+    function onKey(e) {
+      // Accept both keydown events and direct key strings (some qandy scripts call keydown(key))
+      var key = null;
+      if (typeof e === 'string') key = e;
+      else if (e && e.key) key = e.key;
+      else if (e && e.which) key = String.fromCharCode(e.which);
+
+      if (!key) return;
+
+      key = key.toLowerCase();
+
+      if (key === 'n' || key === 'pagedown' || key === 'arrowright') { nextPage(); haltEvent(e); }
+      else if (key === 'p' || key === 'pageup' || key === 'arrowleft') { prevPage(); haltEvent(e); }
+      else if (key === 'g') { gotoPagePrompt(); haltEvent(e); }
+      else if (key === 'q' || key === 'escape') { cleanupAndExit(); haltEvent(e); }
+    }
+
+    function haltEvent(e) {
+      if (!e) return;
+      try { if (e.preventDefault) e.preventDefault(); if (e.stopPropagation) e.stopPropagation(); } catch (err) {}
+    }
+
+    // Prefer addEventListener so we don't clobber qandy's globals. Also expose wrapper for qandy's global key hooks.
+    window.addEventListener && window.addEventListener('keydown', onKey, true);
+
+    // Also provide global keydown for environments that call keydown(key) directly
+    window._ascii_prev_keydown = (typeof window.keydown === 'function') ? window.keydown : null;
+    window.keydown = function(k) {
+      // call our handler first
+      onKey(k);
+      // then the previous one if any
+      if (typeof window._ascii_prev_keydown === 'function') {
+        try { window._ascii_prev_keydown(k); } catch (e) { console.error(e); }
+      }
+    };
+  }
+
+  function cleanupAndExit() {
+    // remove listeners we installed (best-effort)
+    try { window.removeEventListener && window.removeEventListener('keydown', onKey, true); } catch (e) {}
+    // restore previous keydown if present
+    if (window._ascii_prev_keydown) window.keydown = window._ascii_prev_keydown;
+    // Optionally clear the screen or return to caller
+    cls();
+    print("ASCII chart exited.\n");
+  }
+
+  // Start viewer
+  renderPage(0);
+
+  // expose handy API
+  window.asciiChart = {
+    renderPage: renderPage,
+    next: nextPage,
+    prev: prevPage,
+    pages: totalPages,
+    entriesPerPage: ENTRIES_PER_PAGE
+  };
+

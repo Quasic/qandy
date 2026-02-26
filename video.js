@@ -6,42 +6,373 @@ let lastx=0; let lasty=0;
 
 window.pokeCursor = function(text) {
   if (typeof text === 'undefined' || text === null) return false;
+  // Cancel any existing paced output and start fresh
+  if (window._pokeCursor_state && window._pokeCursor_state.timer) {
+    clearTimeout(window._pokeCursor_state.timer);
+  }
+  window._pokeCursor_state = null;
+
   var str = String(text);
-  for (i=0; i < str.length; i++) {
-    var ch = str.charAt(i);
-    pokeCursorOff();
-    if (ch === '\n') {
-      CURX = 0; CURY = CURY + 1;
-      if (CURY >= H) { 
-        if (CURY >= H) {
-        	 // call pokeScroll(4) here
-          CURY = H - 1; CURX = Math.min(CURX, W-1);
+
+  // helper: ensure VIDEO row exists
+  function ensureVideoRow(y) {
+    if (!VIDEO[y]) VIDEO[y] = new Array(W).fill(' ');
+  }
+  // helper: ensure COLOR row exists (uses existing helper if present)
+  function ensureColorRow(y) {
+    if (typeof _ensureColorRow === 'function') return _ensureColorRow(y);
+    if (!COLOR[y]) COLOR[y] = new Array(W);
+  }
+  // helper: ensure ATTR row exists
+  function ensureAttrRow(y) {
+    if (typeof _ensureAttrRow === 'function') return _ensureAttrRow(y);
+    if (!ATTR[y]) ATTR[y] = new Uint16Array(W);
+  }
+
+  // apply current cursor style to a single cell and refresh it once
+
+  pokeCell(CURX, CURY, CURFG, CURBG, CURATTR);
+
+  // parse numeric params into array of numbers (empty => [])
+  function parseParams(paramStr) {
+    if (!paramStr || paramStr.length === 0) return [];
+    return paramStr.split(';').map(function(p){ var v = parseInt(p,10); return isNaN(v) ? 0 : v; });
+  }
+
+  // handle CSI sequences: paramsStr (string), cmd (final byte)
+  function handleCSI(paramsStr, cmd) {
+    var params = parseParams(paramsStr);
+    switch (cmd) {
+      case 'm': // SGR - set graphics rendition (colors/attributes)
+        if (!params.length) params = [0];
+        for (var pi = 0; pi < params.length; pi++) {
+          var p = params[pi] | 0;
+          switch (p) {
+            case 0: // reset
+              CURFG = 37; CURBG = 40; CURATTR = 0;
+              break;
+            case 1: // bold
+              CURATTR = (CURATTR | (window.ATTR_BOLD || 0x0002));
+              break;
+            case 2: // dim
+              CURATTR = (CURATTR | (window.ATTR_DIM || 0x0004));
+              break;
+            case 3: // italic
+              CURATTR = (CURATTR | (window.ATTR_ITALIC || 0x0008));
+              break;
+            case 4: // underline
+              CURATTR = (CURATTR | (window.ATTR_UNDERLINE || 0x0010));
+              break;
+            case 22: // normal intensity (clear bold & dim)
+              CURATTR &= ~(window.ATTR_BOLD || 0x0002);
+              CURATTR &= ~(window.ATTR_DIM  || 0x0004);
+              break;
+            case 23: // clear italic
+              CURATTR &= ~(window.ATTR_ITALIC || 0x0008);
+              break;
+            case 24: // clear underline
+              CURATTR &= ~(window.ATTR_UNDERLINE || 0x0010);
+              break;
+            case 7: // inverse
+              CURATTR = (CURATTR | (window.ATTR_INVERSE || 0x0001));
+              break;
+            case 27: // clear inverse
+              CURATTR &= ~(window.ATTR_INVERSE || 0x0001);
+              break;
+            default:
+              if (p >= 30 && p <= 37) { CURFG = p; break; }
+              if (p >= 90 && p <= 97) { CURFG = p; break; }
+              if (p >= 40 && p <= 47) { CURBG = p; break; }
+              if (p >= 100 && p <= 107) { CURBG = p; break; }
+              // Note: extended colors (38;5;.., 38;2;.. ) not implemented here
+              break;
+          }
+        }
+        break;
+
+      case 'H': // Cursor position (row;col) — 1-based
+      case 'f':
+        var row = (params.length >= 1 && params[0] > 0) ? (params[0] - 1) : 0;
+        var col = (params.length >= 2 && params[1] > 0) ? (params[1] - 1) : 0;
+        if (typeof row === 'number') CURY = Math.max(0, Math.min(H - 1, row));
+        if (typeof col === 'number') CURX = Math.max(0, Math.min(W - 1, col));
+        break;
+      case 'A': // Cursor up
+        var nA = (params.length >= 1 && params[0] > 0) ? params[0] : 1;
+        CURY = Math.max(0, CURY - nA);
+        break;
+      case 'B': // Cursor down
+        var nB = (params.length >= 1 && params[0] > 0) ? params[0] : 1;
+        CURY = Math.min(H - 1, CURY + nB);
+        break;
+      case 'C': // Cursor forward
+        var nC = (params.length >= 1 && params[0] > 0) ? params[0] : 1;
+        CURX = Math.min(W - 1, CURX + nC);
+        break;
+      case 'D': // Cursor backward
+        var nD = (params.length >= 1 && params[0] > 0) ? params[0] : 1;
+        CURX = Math.max(0, CURX - nD);
+        break;
+      case 'J': // Erase in Display
+        if (params.length === 0 || params[0] === 0) {
+          // not implemented (cursor to end)
+        } else if (params[0] === 1) {
+          // not implemented (start to cursor)
+        } else if (params[0] === 2) {
+          // clear entire screen
+          try {
+            if (typeof cls === 'function') cls();
+            else if (typeof initScreen === 'function') initScreen();
+            else {
+              for (var ry = 0; ry < H; ry++) {
+                ensureVideoRow(ry);
+                ensureColorRow(ry);
+                ensureAttrRow(ry);
+                for (var rx = 0; rx < W; rx++) {
+                  VIDEO[ry][rx] = ' ';
+                  COLOR[ry][rx] = COLOR[ry][rx] || { color: (window.defaultColor || 37), bgcolor: (window.defaultBg || 40) };
+                  ATTR[ry][rx] = 0;
+                }
+              }
+              if (typeof pokeRefresh === 'function') pokeRefresh();
+            }
+          } catch (e) { /* ignore */ }
+        }
+        break;
+      default:
+        // unsupported CSI — ignore
+        break;
+    }
+  }
+
+  // compute per-character delay in ms based on CURBAUD (10 bits/char)
+  var delayMs = 0;
+  if (typeof CURBAUD === 'number' && CURBAUD > 0) {
+    delayMs = Math.max(0, Math.round(10000 / CURBAUD)); // ms between characters
+  }
+
+  // If delay is 0, run synchronously (old behavior)
+  if (!delayMs) {
+    // synchronous processing (identical to previous function)
+    for (var j = 0; j < str.length; j++) {
+      var ch = str.charAt(j);
+
+      if (CURANSI && ch === '\x1b') {
+        var rest = str.slice(j);
+        var m = /^\x1b\[([0-9;]*)?([@A-Za-z])/.exec(rest);
+        if (m) {
+          handleCSI(m[1] || '', m[2]);
+          j += m[0].length - 1;
+          continue;
+        } else {
+          continue;
         }
       }
+
+      pokeCursorOff();
+
+      if (ch === '\n') {
+        CURX = 0;
+        CURY = CURY + 1;
+        if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W - 1); }
+        continue;
+      }
+
+      if (CURX >= W) {
+        CURX = 0; CURY = CURY + 1;
+        if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W - 1); pokeCursorOn(); return false; }
+      }
+
+      pokeCell(CURX, CURY, ch);
+
+      CURX = CURX + 1;
+      if (CURX >= W) {
+        CURX = 0; CURY = CURY + 1;
+        if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W - 1); pokeCursorOn(); return false; }
+      }
+      pokeCursorOn();
+      LINEX = CURX; LINEY = CURY;
+    }
+    return true;
+  }
+
+  // paced/asynchronous processing
+  var state = {
+    str: str,
+    idx: 0,
+    timer: null,
+    stopped: false
+  };
+  window._pokeCursor_state = state;
+
+  function scheduleNext() {
+    if (!state || state.stopped) return;
+    state.timer = setTimeout(processStep, delayMs);
+  }
+
+  function processStep() {
+    if (!state || state.stopped) return;
+
+    // end condition
+    if (state.idx >= state.str.length) {
+      window._pokeCursor_state = null;
+      return;
+    }
+
+    var ch = state.str.charAt(state.idx);
+
+    // handle CSI atomically (no intra-sequence delay)
+    if (CURANSI && ch === '\x1b') {
+      var rest = state.str.slice(state.idx);
+      var m = /^\x1b\[([0-9;]*)?([@A-Za-z])/.exec(rest);
+      if (m) {
+        handleCSI(m[1] || '', m[2]);
+        state.idx += m[0].length;
+        // schedule next after same delay
+        scheduleNext();
+        return;
+      } else {
+        // unknown escape — skip it
+        state.idx++;
+        scheduleNext();
+        return;
+      }
+    }
+
+    // printable char processing (counts toward baud)
+    pokeCursorOff();
+
+    if (ch === '\n') {
+      CURX = 0;
+      CURY = CURY + 1;
+      if (CURY >= H) { CURY = H - 1; CURX = Math.min(CURX, W - 1); }
+      state.idx++;
+      scheduleNext();
+      return;
     }
 
     if (CURX >= W) {
       CURX = 0; CURY = CURY + 1;
       if (CURY >= H) {
-        // call pokeScroll(4) here
-        CURY = H - 1; CURX = Math.min(CURX, W-1);
-        pokeCursorOn(); return false;
+        CURY = H - 1; CURX = Math.min(CURX, W - 1);
+        pokeCursorOn();
+        window._pokeCursor_state = null;
+        return;
       }
     }
 
-    pokeCell(CURX, CURY, ch); // @@@
+    pokeCell(CURX, CURY, ch);
 
     CURX = CURX + 1;
     if (CURX >= W) {
       CURX = 0; CURY = CURY + 1;
       if (CURY >= H) {
-        CURY = H - 1; CURX = Math.min(CURX, W - 1); pokeCursorOn(); return false;
+        CURY = H - 1; CURX = Math.min(CURX, W - 1);
+        pokeCursorOn();
+        window._pokeCursor_state = null;
+        return;
       }
     }
-    pokeCursorOn(); LINEX = CURX; LINEY = CURY;
+
+    pokeCursorOn();
+    LINEX = CURX; LINEY = CURY;
+
+    state.idx++;
+    scheduleNext();
+  }
+
+  // start paced output
+  scheduleNext();
+  return true;
+};
+
+window._pokeCursor_state = window._pokeCursor_state || null;
+window.pokeCursorStop = function() {
+  if (window._pokeCursor_state) {
+    if (window._pokeCursor_state.timer) {
+      clearTimeout(window._pokeCursor_state.timer);
+      window._pokeCursor_state.timer = null;
+    }
+    window._pokeCursor_state = null;
   }
   return true;
 };
+var FALLBACK_FG = {
+  black:30, red:31, green:32, yellow:33, blue:34, magenta:35, cyan:36, white:37,
+  bright_black:90, bright_red:91, bright_green:92, bright_yellow:93, bright_blue:94, bright_magenta:95, bright_cyan:96, bright_white:97
+};
+var FALLBACK_BG = {
+  black:40, red:41, green:42, yellow:43, blue:44, magenta:45, cyan:46, white:47,
+  bright_black:100, bright_red:101, bright_green:102, bright_yellow:103, bright_blue:104, bright_magenta:105, bright_cyan:106, bright_white:107
+};
+function _lookupFg(name) {
+  if (!name) return undefined;
+  var key = String(name).toLowerCase();
+  if (window && window.ANSI_NAME_TO_FG && typeof window.ANSI_NAME_TO_FG[key] !== 'undefined') return window.ANSI_NAME_TO_FG[key];
+  if (FALLBACK_FG[key]) return FALLBACK_FG[key];
+  return undefined;
+}
+function _lookupBg(name) {
+  if (!name) return undefined;
+  var key = String(name).toLowerCase();
+  if (window && window.ANSI_NAME_TO_BG && typeof window.ANSI_NAME_TO_BG[key] !== 'undefined') return window.ANSI_NAME_TO_BG[key];
+  if (FALLBACK_BG[key]) return FALLBACK_BG[key];
+  return undefined;
+}
+var ATTR_MAP = {
+  reset: 0, default:0, 0:0,
+  bold: 1, dim: 2, italic: 3, underline: 4, inverse: 7
+};
+window.ansiize = function(text) {
+  if (typeof text !== 'string') text = String(text || '');
+  // Replace tokens like [bg=yellow], [yellow], [bold], [reset]
+  // Regex captures optional "bg=" prefix and the name inside the brackets
+  return text.replace(/\[([^\]]+)\]/g, function(full, token) {
+    token = token.trim();
+    // allow tokens like "/": not used here; we prefer explicit [reset]
+    // token forms:
+    //  bg=NAME
+    //  NAME
+    //  attr names
+    var parts = token.split(/\s*=\s*/);
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bg') {
+      var code = _lookupBg(parts[1]);
+      if (typeof code !== 'undefined') return '\x1b[' + code + 'm';
+      return full; // unknown -> leave as-is
+    }
+    // direct attribute like bg:yellow (alternate) support
+    var colonParts = token.split(':');
+    if (colonParts.length === 2 && colonParts[0].toLowerCase() === 'bg') {
+      var code2 = _lookupBg(colonParts[1]);
+      if (typeof code2 !== 'undefined') return '\x1b[' + code2 + 'm';
+      return full;
+    }
+    // check attr names or numeric reset
+    var low = token.toLowerCase();
+    if (ATTR_MAP.hasOwnProperty(low)) {
+      return '\x1b[' + ATTR_MAP[low] + 'm';
+    }
+    // numeric token like [31] or [0]
+    if (/^\d+$/.test(token)) {
+      return '\x1b[' + token + 'm';
+    }
+     // try bg shorthand (bgNAME) - not required but supported
+    if (/^bg[A-Za-z_]/i.test(low)) {
+      var nm = low.slice(2);
+      var code3 = _lookupBg(nm);
+      if (typeof code3 !== 'undefined') return '\x1b[' + code3 + 'm';
+    }
+    // Otherwise treat as fg color name
+    var fg = _lookupFg(token);
+    if (typeof fg !== 'undefined') return '\x1b[' + fg + 'm';
+     // unknown token -> leave it unchanged (so it remains visible to the author)
+    return full;
+  });
+};
+window.ansi = window.ansi || {};
+window.ansi.fg = function(name) { var c = _lookupFg(name); return (typeof c !== 'undefined') ? '\x1b['+c+'m' : ''; };
+window.ansi.bg = function(name) { var c = _lookupBg(name); return (typeof c !== 'undefined') ? '\x1b['+c+'m' : ''; };
+window.ansi.attr = function(name) { var a = ATTR_MAP[name] || ( /^\d+$/.test(String(name)) ? parseInt(name,10): undefined ); return (typeof a !== 'undefined') ? '\x1b['+a+'m' : ''; };
 
 window.pokeText = function(x, y, t, n) {
   if (typeof x !== 'number' || typeof y !== 'number') return false;
@@ -78,12 +409,34 @@ window.pokeText = function(x, y, t, n) {
   return true;
 };
 
-window.pokeCell = function(x, y, ch) {
+window.pokeCell = function(x, y, ch, fg, bg, attr) {
+  if (typeof ch === 'undefined') { ch=" "; } 
   if (!validateCoords(x, y)) return false;
-  if (typeof ch !== 'undefined') {
-  	 VIDEO[y][x] = (typeof ch === 'string') ? ch : String(ch)[0] || ' ';
+  var charToWrite = (ch === null) ? ' ' : (typeof ch === 'string' ? (ch.length ? ch.charAt(0) : ' ') : String(ch).charAt(0));
+  VIDEO[y][x] = charToWrite;
+  
+  function _normalizeColorArg(val, which) {
+    if (typeof val === 'number' && !isNaN(val)) return val;
+    if (typeof val === 'string') {
+      var key = val.toLowerCase();
+      if (which === 'fg' && window.ANSI_NAME_TO_FG && typeof window.ANSI_NAME_TO_FG[key] !== 'undefined') return window.ANSI_NAME_TO_FG[key];
+      if (which === 'bg' && window.ANSI_NAME_TO_BG && typeof window.ANSI_NAME_TO_BG[key] !== 'undefined') return window.ANSI_NAME_TO_BG[key];
+      // try parse numeric string
+      var maybe = parseInt(val, 10);
+      if (!isNaN(maybe)) return maybe;
+    }
+    return undefined;
   }
+  var fgCode = _normalizeColorArg(fg, 'fg');
+  var bgCode = _normalizeColorArg(bg, 'bg');
+
+  // ATTR handling: if provided overwrite; if omitted leave unchanged
+  if (typeof attr !== 'undefined' && attr !== null) {
+    try { ATTR[y][x] = (attr | 0); } catch (e) { ATTR[y][x] = attr; }
+  }
+
   if (SYNC) { pokeRefresh(x, y); }
+
   return true;
 };
 

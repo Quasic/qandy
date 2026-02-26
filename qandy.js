@@ -416,7 +416,6 @@ function button(b, event) {
 }
 
 // Qandy Console: route console messages and uncaught errors/rejections into the Qandy display.
-// Insert after system ready so `print()` is present.
 (function installQandyConsole() {
   if (window.__QANDY_CONSOLE_INSTALLED__) return;
   window.__QANDY_CONSOLE_INSTALLED__ = true;
@@ -785,7 +784,7 @@ function showFiles() {
 
 function print(txt) {
   txt = (typeof txt === 'undefined' || txt === null) ? '' : String(txt);
-  pokeCursor(txt);
+  pokeCursor(ansiize(txt));
 }
 
 function clearScreen() { cls(); }
@@ -800,7 +799,7 @@ function cls() {
 // system ready
 
 CURSOR=4; pokeCursorOn();
-pokeCursor("\nQandy Pocket\nComputer v1.j\n\nPrototype Release\n\n");
+print("\nQandy Pocket\nComputer v1.j\n\nPrototype Release\n\n");
 
 mySearch=location.search.substr(1).split("&")
 for (i=0;i<mySearch.length;i++) {
