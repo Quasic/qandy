@@ -94,6 +94,7 @@
     // Footer
     print("\n");
     print("\x1b[1;32mNavigation:\x1b[0m n=next  p=prev  g=goto  q=quit\n");
+    print("Press the navigation key...");
   }
 
   // Navigation handlers

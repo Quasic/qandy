@@ -19,11 +19,26 @@ var SOUND=true;       // enable/disable sound card
 
 // qandy.js
 var devteam=1;  // developer mode
-var run="";
+var RUN="";     // current script running starting with qandy.js 
+var RUNIN="";   // input mode set by running script, line or key
+var RUNOUT="";  // output display set by running script, gfx or txt
+
+var runInputMode="";      // type of input qandy sends run= (line, key, or none)
 var commandHistory = [];  // Array to store command history
 var historyIndex = -1;    // Current position in history (-1 = not browsing, typing new command)
 var maxHistorySize = 50;  // Maximum number of commands to remember
 var tempCommand = "";     // Temporary storage for command being typed when browsing history
+
+var CURSOR=5; // cursor type 0=off, 1=line, 3=blink line, 4=block, 5=blink block  
+var CURX = 0;    // cursor x
+var CURY = 0;    // cursor y
+var CURP = 0;    // cursor p 
+
+var CURANSI = true; // cursor text ANSI on
+var CURFG = 37;     // cursor text fg color white
+var CURBG = 40;     // cursor text bg color black
+var CURATTR = 0;    // cursor text attr (not including color)
+var CURBAUD = 300;    // baud rate to display text
 
 // video.js
 var W=32; // screen width
@@ -35,13 +50,6 @@ var ATTR = [];  // attribute memory
 var DOM = [];   // DOM memory
 
 var SYNC=true; // keeps DOM in sync with video
-
-var currentStyle = {
-  color: 37,      // white foreground
-  bgcolor: 40,    // black background
-  bold: false,
-  inverse: false
-};
 
 // Attribute bit constants (16-bit)
 var ATTR_INVERSE    = 0x0001;
@@ -78,24 +86,6 @@ var ctrlPhysical=false;  // track if ctrl was activated by physical keyboard
 var altPhysical=false;   // track if alt was activated by physical keyboard
 var keyboard=1; // turn keyboard input on/off
 
-var CURSOR=5; // cursor type 0=off, 1=line, 3=blink line, 4=block, 5=blink block  
-var CURX = 0;    // cursor x
-var CURY = 0;    // cursor y
-var CURP = 0;    // cursor p 
-
-var CURANSI = true; // cursor text ANSI on
-var CURFG = 37;     // cursor text fg color white
-var CURBG = 40;     // cursor text bg color black
-var CURATTR = { color: 37, bgcolor: 40, bold: false, inverse: false, blink: false, dim: false, italic: false, underline: false };
-
-var cursorInverse=1;
-var cursorBold=0;
-var cursorDim=0;
-var cursorItalic=0;
-var cursorLine=0;
-var cursorBlink=1;
-var CURON = false;   // true when cursor is visually active
-
 var LINE ="";  // input line
 var LINEX=0;   // start of input cursor x
 var LINEY=0;   // start of input cursor y
@@ -107,63 +97,43 @@ var SEND=-1;    // selection end
 var selectionBgColor = '#ffffff';   // old Selection background color
 var selectionFgColor = '#000000';   // old Selection text color
 
-
 // keyboard.js
 
 var normalKeys = {
-  "1":"1","2":"2","3":"3","4":"4","5":"5",
-  "6":"6","7":"7","8":"8","9":"9","0":"0",
-  "q":"q","w":"w","e":"e","r":"r","t":"t",
-  "y":"y","u":"u","i":"i","o":"o","p":"p",
-  "a":"a","s":"s","d":"d","f":"f","g":"g",
-  "h":"h","j":"j","k":"k","l":"l",
-  "z":"z","x":"x","c":"c","v":"v","b":"b",
-  "n":"n","m":"m",
-  "[":"[", "]":"]", ";":";", "'":"'",
-  ",":",", ".":".", "/":"/", "=":"=", "-":"-",
-  "\\":"\\", "`":"`"
+           "`":"`","\\":"\\","[":"[", "]":"]", "-":"-", "=":"=", 
+  "1":"1", "2":"2", "3":"3", "4":"4", "5":"5", "6":"6", "7":"7", "8":"8", "9":"9", "0":"0",
+  "q":"q", "w":"w", "e":"e", "r":"r", "t":"t", "y":"y", "u":"u", "i":"i", "o":"o", "p":"p",
+  "a":"a", "s":"s", "d":"d", "f":"f", "g":"g", "h":"h", "j":"j", "k":"k", "l":"l", "'":"'",
+  "z":"z", "x":"x", "c":"c", "v":"v", "b":"b", "n":"n", "m":"m", ";":";",
+                    " ":" ",                   ",":",", ".":".", "/":"/"
 };
 
 var shiftedKeys = {
-  "1":"!","2":"@","3":"#","4":"$","5":"%",
-  "6":"^","7":"&","8":"*","9":"(","0":")",
-  "q":"Q","w":"W","e":"E","r":"R","t":"T",
-  "y":"Y","u":"U","i":"I","o":"O","p":"P",
-  "a":"A","s":"S","d":"D","f":"F","g":"G",
-  "h":"H","j":"J","k":"K","l":"L",
-  "z":"Z","x":"X","c":"C","v":"V","b":"B",
-  "n":"N","m":"M",
-  "[":"{", "]":"}", ";":":", "'":"\"",
-  ",":"<", ".":">", "/":"?", "=":"+", "-":"_",
-  "\\":"|", "`":"~"
+           "`":"~","\\":"|", "[":"{", "]":"}", "-":"_", "=":"+",
+  "1":"!", "2":"@", "3":"#", "4":"$", "5":"%", "6":"^", "7":"&", "8":"*", "9":"(", "0":")",
+  "q":"Q", "w":"W", "e":"E", "r":"R", "t":"T", "y":"Y", "u":"U", "i":"I", "o":"O", "p":"P",
+  "a":"A", "s":"S", "d":"D", "f":"F", "g":"G", "h":"H", "j":"J", "k":"K", "l":"L", "'":'"',
+  "z":"Z", "x":"X", "c":"C", "v":"V", "b":"B", "n":"N", "m":"M", ";":":", 
+                    " ":" ",                   ",":"<", ".":">", "/":"?"
 };
 
 var altKeys = {
-  "q":"┌","w":"─","e":"┐","r":"├","t":"┤",
-  "y":"└","u":"┴","i":"┘","o":"│","p":"┼",
-  "a":"╔","s":"═","d":"╗","f":"╠","g":"╣",
-  "h":"╚","j":"╩","k":"╝","l":"║",";":"╬",
-  "z":"▀","x":"▄","c":"█","v":"▌","b":"▐",
-  "n":"░","m":"▒",",":"▓",".":"■","/":"□",
-  "1":"☺","2":"☻","3":"♥","4":"♦","5":"♣",
-  "6":"♠","7":"•","8":"◘","9":"○","0":"◙",
-  "[":"«", "]":"»", "-":"─", "=":"═",
-  "\\":" ","`":"°", "'":"″"
+           "`":"°","\\":"¦", "[":"«", "]":"»", "-":"─", "=":"═",
+  "1":"☺", "2":"☻", "3":"♥", "4":"♦", "5":"♣", "6":"♠", "7":"•", "8":"◘", "9":"○", "0":"◙",
+  "q":"┌", "w":"─", "e":"┐", "r":"├", "t":"┤", "y":"└", "u":"┴", "i":"┘", "o":"│", "p":"┼",
+  "a":"╔", "s":"═", "d":"╗", "f":"╠", "g":"╣", "h":"╚", "j":"╩", "k":"╝", "l":"║", "'":"″",
+  "z":"▀", "x":"▄", "c":"█", "v":"▌", "b":"▐", "n":"░", "m":"▒", ";":"╬",
+                    " ":"·",                   ",":"▓", ".":"■", "/":"□"
 };
 
 var altShiftKeys = {
-  "q":"╭","w":"╌","e":"╮","r":"╞","t":"╡",
-  "y":"╰","u":"╴","i":"╯","o":"╎","p":"╪",
-  "a":"┏","s":"━","d":"┓","f":"┣","g":"┫",
-  "h":"┗","j":"┻","k":"┛","l":"┃",";":"╋",
-  "z":"▔","x":"▁","c":"▪","v":"▸","b":"◂",
-  "n":"▴","m":"▾",",":"◊",".":"●","/":"○",
-  "1":"↑","2":"↓","3":"←","4":"→","5":"↔",
-  "6":"↕","7":"★","8":"☆","9":"◆","0":"◇",
-  "[":"‹", "]":"›", "-":"―", "=":"≡",
-  "\\":" ","`":"¬", "'":"′"
+  "`":"¬","\\":"¦", "[":"‹", "]":"›", "-":"―", "=":"≡",
+  "1":"↑", "2":"↓", "3":"←", "4":"→", "5":"↔", "6":"↕", "7":"★", "8":"☆", "9":"◆", "0":"◇",
+  "q":"╭", "w":"╌", "e":"╮", "r":"╞", "t":"╡", "y":"╰", "u":"╴", "i":"╯", "o":"╎", "p":"╪",
+  "a":"┏", "s":"━", "d":"┓", "f":"┣", "g":"┫", "h":"┗", "j":"┻", "k":"┛", "l":"┃", "'":"′",
+  "zhttps://quintrix.github.io/qandy/":"▔", "x":"▁", "c":"▪", "v":"▸", "b":"◂", "n":"▴", "m":"▾", ";":"╋",
+  " ":"·", ",":"◊", ".":"●", "/":"○"
 };
-
 var keyboardData = [
   // Row 0: ESC, BACKTICK, BACKSLASH, OPEN, CLOSE, DASH, EQUAL, BACK (y=446)
   {id:"esc", label:"ESC", keyCode:27, x:47, y:446, width:52},
@@ -240,6 +210,134 @@ var paginationPaused = false;  // Is print() currently paused?
 var paginationBuffer = [];     // Queued text waiting to be printed
 var paginationLinesBeforePause = 25;  // Lines to show before pausing
 var inInputMode = false;       // True when processing user input (prevents pagination)
+
+// run= RUN=
+(function() {
+  // backing storage
+  var _run = "";
+  try { if (typeof window.run !== 'undefined') { _run = window.run; } } catch (e) { /* ignore */ }
+
+  // Try to create window.RUN only if it's safe to do so
+  try {
+    var existingRunDesc = Object.getOwnPropertyDescriptor(window, 'RUN');
+    if (!existingRunDesc || existingRunDesc.configurable) {
+      Object.defineProperty(window, 'RUN', {
+        configurable: true,
+        enumerable: true,
+        get: function() { return _run; },
+        set: function(v) {
+          _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
+          // Keep legacy run in sync if it still exists as a plain property
+          try { window.run = _run; } catch (e) { /* ignore */ }
+        }
+      });
+    } else {
+      // non-configurable existing property: try to read its value to seed _run
+      try { _run = window.RUN; } catch (e) { /* ignore */ }
+    }
+  } catch (e) {
+    // defineProperty failed for some reason — fall back to plain assignment
+    try { window.RUN = _run; } catch (e2) { /* ignore */ }
+  }
+
+  // Try to create a mirrored reactive window.run if safe
+  try {
+    var runDesc = Object.getOwnPropertyDescriptor(window, 'run');
+    if (!runDesc || runDesc.configurable) {
+      try { delete window.run; } catch (ignore) {}
+      Object.defineProperty(window, 'run', {
+        configurable: true,
+        enumerable: true,
+        get: function() { return _run; },
+        set: function(v) {
+          _run = (typeof v === 'undefined' || v === null) ? '' : String(v);
+          // keep RUN in sync (if it's defined as an accessor this will update it)
+          try { window.RUN = _run; } catch (e) { /* ignore */ }
+        }
+      });
+    } else {
+      // run exists and is non-configurable — seed/keep sync
+      try { _run = window.run; } catch (e) { /* ignore */ }
+      try { window.RUN = _run; } catch (e) { /* ignore */ }
+    }
+  } catch (err) {
+    // If all else fails, ensure RUN reflects existing run if possible
+    try { window.RUN = window.run; } catch (e) { /* ignore */ }
+  }
+})();
+
+// Executes if RUN= is changed by guest script
+(function installRunOutWatcher() {
+  // configuration
+  var txtVisibleLeft = "54px";   // position when txt should be visible (desktop/text mode)
+  var txtHiddenLeft  = "350px";  // position when txt should be pushed right to reveal gfx (phone/hide)
+  var txtId = "txt";
+
+  // helper to apply the display change
+  function applyRunOut(mode) {
+    try {
+      var txtEl = document.getElementById(txtId);
+      if (!txtEl) return;
+
+      // For smoothness, ensure inline transition is present (optional)
+      if (!txtEl.style.transition) txtEl.style.transition = "left 220ms ease";
+
+      if (mode === "gfx") {
+        // push the text window right (same as your current method)
+        txtEl.style.left = txtHiddenLeft;
+        // update runtime mode and call resize if present
+        if (typeof window.mode !== "undefined") window.mode = "gfx";
+      } else {
+        // show text window (default)
+        txtEl.style.left = txtVisibleLeft;
+        if (typeof window.mode !== "undefined") window.mode = "txt";
+      }
+
+      // call resize or any other layout updates so keyboard/overlays reposition
+      if (typeof resize === "function") try { resize(); } catch (e) { /* ignore */ }
+
+    } catch (e) {
+      console.warn("applyRunOut failed:", e);
+    }
+  }
+
+  // Try to define a reactive property for RUNOUT
+  var installed = false;
+  try {
+    // remove existing global if possible, but only if it's configurable
+    try { delete window.RUNOUT; } catch (ignore) {}
+    var _val = (typeof window.RUNOUT !== "undefined") ? window.RUNOUT : "";
+
+    Object.defineProperty(window, "RUNOUT", {
+      configurable: true,
+      enumerable: true,
+      get: function () { return _val; },
+      set: function (v) {
+        _val = v == null ? "" : String(v);
+        // apply immediately
+        applyRunOut(_val);
+      }
+    });
+
+    // apply initial state
+    applyRunOut(_val);
+    installed = true;
+  } catch (err) {
+    // If defineProperty failed (rare), fall back to polling
+    console.warn("RUNOUT watcher defineProperty failed, falling back to polling:", err);
+  }
+
+  if (!installed) {
+    var last = window.RUNOUT || "";
+    setInterval(function () {
+      if ((window.RUNOUT || "") !== last) {
+        last = window.RUNOUT || "";
+        try { applyRunOut(last); } catch (e) {}
+      }
+    }, 300);
+  }
+})();
+
 </script>
 
 <script>
