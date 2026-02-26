@@ -238,6 +238,7 @@ window.pokeCursor = function(t) {
       CURX = 0; CURY = CURY + 1;
       if (CURY >= H) {
         CURY = H - 1; CURX = Math.min(CURX, W - 1);
+        LINEX = CURX; LINEY = CURY;
         pokeCursorOn();
         window._pokeCursor_state = null;
         return;
