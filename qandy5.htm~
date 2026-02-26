@@ -47,7 +47,7 @@ var H=25; // screen height
 var VIDEO = [];  // video memory
 var COLOR = [];  // color memory
 var FCOLOR = []; // foreground color memory
-var BCOLOR = [];  // background color memory
+var BOLOR = [];  // background color memory
 var ATTR = [];   // attribute memory
 var DOM = [];    // DOM memory
 

@@ -1,0 +1,18 @@
+
+RUN="bbs.js";
+bbs();
+
+async function bbs() {
+  welcome="\x1b[2J\x1b[H\n\x1b[1;44m\x1b[37m  ___________________________________________________________  \x1b[0m\n\x1b[1;44m\x1b[37m /                                                           \ \x1b[0m\n\x1b[1;44m\x1b[37m|   \x1b[1;33mWelcome to \x1b[1;35mQandyland!\x1b[1;33m — Home of the Qandy Pocket Computer\x1b[1;44m\x1b[37m | \x1b[0m\n\x1b[1;44m\x1b[37m|                                                           | \x1b[0m\n\x1b[1;46m\x1b[30m|  \x1b[1;32m▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  \x1b[0m\n\x1b[1;46m\x1b[30m|  \x1b[1;37m▌\x1b[1;36m  QANDY POCKET COMPUTER  \x1b[1;37m▐  \x1b[1;33mANSI RENDER DEMO\x1b[0m\n\x1b[1;46m\x1b[30m|  \x1b[1;37m▌\x1b[0m\x1b[1;32m ██████████████████████████████████████ \x1b[1;37m▐  \x1b[0m\n\x1b[1;46m\x1b[30m|  \x1b[1;37m▌\x1b[0m\x1b[1;32m █  \x1b[1;31m★\x1b[1;32m  COLORS  ░░  BOXES  ▒▒  SPRITES  ▓▓  \x1b[1;37m▐  \x1b[0m\n\x1b[1;46m\x1b[30m|  \x1b[1;37m▌\x1b[0m\x1b[1;32m █  \x1b[1;35mSCROLLING TEXT  \x1b[1;32m  •  RETRO SPEEDS   \x1b[1;37m▐  \x1b[0m\n\x1b[1;46m\x1b[30m|  \x1b[1;37m▌\x1b[0m\x1b[1;32m ██████████████████████████████████████ \x1b[1;37m▐  \x1b[0m\n\x1b[1;46m\x1b[30m|                                                              \x1b[0m\n\x1b[1;44m\x1b[37m|   \x1b[1;36m[ DEMO ]\x1b[0m  \x1b[1;32mRendering sample at retro BBS speed...\x1b[1;37m       | \x1b[0m\n\x1b[1;44m\x1b[37m|                                                           | \x1b[0m\n\x1b[1;44m\x1b[37m \___________________________________________________________/  \x1b[0m\n";
+  print(welcome);
+  var name = await input("\nName: ");
+  var pass = await input({ prompt: "Password: ", mask: true });
+  // if name does not exist, off to crate it by confirming password
+  print("\nLogin message goes here.\n");
+  print("\nList of Forums:\n\n");
+  print("1. DevTeam\n");
+  print("2. Queville\n");
+  print("3. Bugs\n");
+  var forum = await input("\nSelect Forum: ");
+  exit();
+}
