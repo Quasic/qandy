@@ -1268,6 +1268,85 @@ window.pokeScroll = function(n) {
   
 };
 
+// pokeCursorSet(nameOrValue, value) — safely set cursor-related globals and redraw
+window.pokeCursorSet = function(nameOrValue, value) {
+  // known variables we handle explicitly
+  var known = ['CURSOR','CURX','CURY','CURFG','CURBG','CURATTR','CURBAUD','LINEX','LINEY','CURON','CURANSI'];
+
+  // helper to write a global
+  function setGlobal(n, v) {
+    try { window[n] = v; return true; } catch (e) { return false; }
+  }
+
+  // resolve name: accept string, or try to infer from numeric first-arg (not recommended)
+  var name = null;
+  if (typeof nameOrValue === 'string') {
+    name = String(nameOrValue).toUpperCase();
+  } else if (typeof nameOrValue === 'number') {
+    // attempt inference only if there's exactly one known global that matches this value
+    var matches = known.filter(function(k){ return (typeof window[k] !== 'undefined' && window[k] === nameOrValue); });
+    if (matches.length === 1) {
+      name = matches[0];
+      console.warn('pokeCursorSet: inferred "', name, '" from numeric first argument — pass the variable name string instead.');
+    } else {
+      console.error('pokeCursorSet: ambiguous numeric first argument. Use pokeCursorSet("CURSOR", 2) etc.');
+      return false;
+    }
+  } else {
+    console.error('pokeCursorSet: first argument must be variable name string (recommended).');
+    return false;
+  }
+
+  // ensure valid name
+  if (!name || (known.indexOf(name) === -1 && typeof window[name] === 'undefined')) {
+    console.error('pokeCursorSet: unknown variable "' + name + '"');
+    return false;
+  }
+
+  // common guards
+  var nval = value;
+  if (name === 'CURX' || name === 'LINEX' || name === 'CURY' || name === 'LINEY') {
+    nval = Number(value)|0;
+    if (name === 'CURX' || name === 'LINEX') nval = Math.max(0, Math.min(W - 1, nval));
+    else nval = Math.max(0, Math.min(H - 1, nval));
+  } else if (name === 'CURSOR' || name === 'CURBAUD' || name === 'CURFG' || name === 'CURBG' || name === 'CURATTR') {
+    nval = Number(value) || 0;
+  }
+
+  // apply with side-effects
+  try {
+    switch (name) {
+      case 'CURSOR':
+        if (typeof pokeCursorOff === 'function') try { pokeCursorOff(); } catch(e){}
+        setGlobal('CURSOR', nval);
+        if (typeof pokeCursorOn === 'function') try { pokeCursorOn(); } catch(e){}
+        return true;
+
+
+      case 'CURFG':
+      case 'CURBG':
+        setGlobal(name, nval);
+        if (typeof pokeRefresh === 'function') try { pokeRefresh(); } catch(e){}
+        return true;
+
+      case 'CURATTR':
+        setGlobal('CURATTR', nval);
+        if (typeof pokeRefresh === 'function') try { pokeRefresh(); } catch(e){}
+        return true;
+
+      case 'CURBAUD':
+        setGlobal('CURBAUD', nval);
+        return true;
+
+      default:
+        return false;
+    }
+  } catch (err) {
+    console.error('pokeCursorSet: error setting', name, err);
+    return false;
+  }
+};
+
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {
   window.qandySignalReady('Video');
