@@ -9,12 +9,12 @@ window.pokeCursor = function(t) {
   // Cancel any existing paced output and start fresh
   if (window._pokeCursor_state && window._pokeCursor_state.timer) {
     clearTimeout(window._pokeCursor_state.timer);
-  }
+  } 
   window._pokeCursor_state = null;
 
   var str = String(t);
 
-  pokeCell(CURX, CURY, CURFG, CURBG, CURATTR);
+  // pokeCell(CURX, CURY, CURFG, CURBG, CURATTR);
 
   // parse numeric params into array of numbers (empty => [])
   function parseParams(paramStr) {
@@ -130,7 +130,7 @@ window.pokeCursor = function(t) {
       var ch = str.charAt(j);
 
       if (CURANSI && ch === '\x1b') {
-        var rest = str.slice(j);
+        var st = str.slice(j);
         var m = /^\x1b\[([0-9;]*)?([@A-Za-z])/.exec(rest);
         if (m) {
           handleCSI(m[1] || '', m[2]);
@@ -262,16 +262,7 @@ window.pokeCursor = function(t) {
 };
 
 window._pokeCursor_state = window._pokeCursor_state || null;
-window.pokeCursorStop = function() {
-  if (window._pokeCursor_state) {
-    if (window._pokeCursor_state.timer) {
-      clearTimeout(window._pokeCursor_state.timer);
-      window._pokeCursor_state.timer = null;
-    }
-    window._pokeCursor_state = null;
-  }
-  return true;
-};
+
 var FALLBACK_FG = {
   black:30, red:31, green:32, yellow:33, blue:34, magenta:35, cyan:36, white:37,
   bright_black:90, bright_red:91, bright_green:92, bright_yellow:93, bright_blue:94, bright_magenta:95, bright_cyan:96, bright_white:97
@@ -1187,20 +1178,13 @@ window.pokeCursorOn = function() {
   var sx = Math.max(0, Math.min(W-1, CURX|0));
   var sy = Math.max(0, Math.min(H-1, CURY|0));
   var prevAttr = (typeof peekATTR === 'function') ? peekATTR(sx, sy) : (ATTR && ATTR[sy] ? ATTR[sy][sx] : 0);  
-  try {
-    // line cursor: underline
-    if (CURSOR === 1 || CURSOR === 3) {
-      if (typeof window.ATTR_UNDERLINE !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_UNDERLINE, true);
-      if (CURSOR === 3 && typeof window.ATTR_BLINK !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_BLINK, true);
-    }
-
-    // block cursor: inverse
-    if (CURSOR === 4 || CURSOR === 5) {
-      if (typeof window.ATTR_INVERSE !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_INVERSE, true);
-      if (CURSOR === 5 && typeof window.ATTR_BLINK !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_BLINK, true);
-    }
-  } catch (e) {
-    console.warn("activateStartupCursor failed:", e);
+  if (CURSOR === 1 || CURSOR === 3) { // line cursor: underline
+    if (typeof window.ATTR_UNDERLINE !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_UNDERLINE, true);
+    if (CURSOR === 3 && typeof window.ATTR_BLINK !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_BLINK, true);
+  }
+  if (CURSOR === 4 || CURSOR === 5) { // block cursor: inverse
+    if (typeof window.ATTR_INVERSE !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_INVERSE, true);
+    if (CURSOR === 5 && typeof window.ATTR_BLINK !== 'undefined') pokeAttrBit(sx, sy, window.ATTR_BLINK, true);
   }
 }
 
@@ -1208,7 +1192,6 @@ window.pokeCursorOff = function() {
   if (typeof prevAttr === 'undefined' || prevAttr === null) return false;
   ATTR[CURY][CURX] = prevAttr;
   pokeRefresh(CURX,CURY);
-  cursor_saved = null;
   return true;
 }
 

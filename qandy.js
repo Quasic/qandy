@@ -794,9 +794,14 @@ CURSOR=4; pokeCursorOn();
 text="\n[blue]Qandy Pocket\nComputer v1.j\n\n[yellow]Prototype Release\n[white]\n";
 print(text);
 
-function print(text) {
-  t=ansiize(text);
-  pokeCursor(t);
+function print(t) {
+  // 
+  // matches [color] tags
+  // word wrap
+  //
+
+  text = text.replace(/\[blue\]/g, "\x1b[34m");
+  pokeCursor(text);
 }
 
 // system ready
