@@ -1,0 +1,6 @@
+run="new.js"; allowScriptESC=true;
+
+function keydown(k) {
+ // called when user presses k
+
+}

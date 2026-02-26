@@ -412,6 +412,7 @@ function button(b, event) {
   } else {
     if (RUN) { keydown(k || l); }
   }
+  if (SOUND) { beep(900, 25, .01); }
   pokeCursorOn();
 }
 
@@ -796,20 +797,17 @@ text="\n[cyan]Qandy Pocket\nComputer v1.j\n\n[yellow]Prototype Release\n[white]\
 print(text);
 
 function print(t) {
-  // 
-  // matches [color] tags
-  // word wrap
-  //
-  text = text.replace(/\[blue\]/g, ANSIblue);
-  text = text.replace(/\[black]/g, ANSIblack); 
-  text = text.replace(/\[red]/g, ANSIred);
-  text = text.replace(/\[green]/g, ANSIgreen);
-  text = text.replace(/\[yellow]/g, ANSIyellow);
-  text = text.replace(/\[blue]/g, ANSIblue);
-  text = text.replace(/\[magenta]/g, ANSImagenta);
-  text = text.replace(/\[cyan]/g, ANSIcyan);
-  text = text.replace(/\[white]/g, ANSIwhite);
-  pokeCursor(text);
+  // matches [color] tags, word wrap
+  t=t.replace(/\[blue\]/g, ANSIblue);
+  t=t.replace(/\[black]/g, ANSIblack); 
+  t=t.replace(/\[red]/g, ANSIred);
+  t=t.replace(/\[green]/g, ANSIgreen);
+  t=t.replace(/\[yellow]/g, ANSIyellow);
+  t=t.replace(/\[blue]/g, ANSIblue);
+  t=t.replace(/\[magenta]/g, ANSImagenta);
+  t=t.replace(/\[cyan]/g, ANSIcyan);
+  t=t.replace(/\[white]/g, ANSIwhite);
+  pokeCursor(t);
 }
 
 // system ready
