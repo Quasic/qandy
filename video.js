@@ -1,4 +1,5 @@
 //
+//
 // Qandy Video Graphics Adaptor
 // 
 
@@ -93,15 +94,12 @@ window.pokeCursor = function(t) {
           // clear entire screen
           try {
             if (typeof cls === 'function') cls();
-            else if (typeof initScreen === 'function') initScreen();
             else {
               for (var ry = 0; ry < H; ry++) {
-                ensureVideoRow(ry);
-                ensureColorRow(ry);
-                ensureAttrRow(ry);
                 for (var rx = 0; rx < W; rx++) {
                   VIDEO[ry][rx] = ' ';
-                  COLOR[ry][rx] = COLOR[ry][rx] || { color: (window.defaultColor || 37), bgcolor: (window.defaultBg || 40) };
+                  FCOLOR[ry][rx]= CURFG;
+                  BCOLOR[ry][rx]= CURBG;
                   ATTR[ry][rx] = 0;
                 }
               }
@@ -124,42 +122,7 @@ window.pokeCursor = function(t) {
 
   // If delay is 0, run synchronously (old behavior)
   if (!delayMs) {
-    for (var j = 0; j < str.length; j++) {
-      var ch = str.charAt(j);
-
-      if (CURANSI && ch === '\x1b') {
-        var st = str.slice(j);
-        var m = /^\x1b\[([0-9;]*)?([@A-Za-z])/.exec(st);
-        if (m) {
-          handleCSI(m[1] || '', m[2]);
-          j += m[0].length - 1;
-          continue;
-        } else {
-          continue;
-        }
-      }
-
-      pokeCursorOff();
-      if (ch === '\n') {
-        CURX = 0; CURY = CURY + 1;
-        if (CURY >= H) { pokeScroll(4); CURY = H - 1; CURX = Math.min(CURX, W - 1); }
-        continue;
-      }
-      if (CURX >= W) {
-        CURX = 0; CURY = CURY + 1;
-        if (CURY >= H) { pokeScroll(4); CURY = H - 1; CURX = Math.min(CURX, W - 1); pokeCursorOn(); return false; }
-      }
-      
-      pokeCell(CURX, CURY, ch, CURFG, CURBG, CURATTR); 
-
-      CURX = CURX + 1;
-      if (CURX >= W) {
-        CURX = 0; CURY = CURY + 1;
-        if (CURY >= H) { pokeScroll(4); CURY = H - 1; CURX = Math.min(CURX, W - 1); pokeCursorOn(); return false; }
-      }
-      LINEX = CURX; LINEY = CURY; pokeCursorOn();
-    }
-    return true;
+    
   }
 
   // paced/asynchronous processing
@@ -328,12 +291,11 @@ window.pokeText = function(x, y, t, n) {
   return true;
 };
 
-window.pokeCell = function(x, y, ch, fg, bg, attr) {
-  if (typeof ch === 'undefined') { ch=" "; } 
+window.pokeCell = function(x,y,a,f,b,h) {
+  if (typeof a === 'undefined') { a=" "; } 
   if (!validateCoords(x, y)) return false;
-  var charToWrite = (ch === null) ? ' ' : (typeof ch === 'string' ? (ch.length ? ch.charAt(0) : ' ') : String(ch).charAt(0));
-  VIDEO[y][x] = charToWrite;
-  function _normalizeColorArg(val, which) {
+  VIDEO[y][x] = (a === null) ? ' ' : (typeof a === 'string' ? (a.length ? a.charAt(0) : ' ') : String(a).charAt(0));
+  function getColor(val, which) {
     if (typeof val === 'number' && !isNaN(val)) return val;
     if (typeof val === 'string') {
       var key = val.toLowerCase();
@@ -345,15 +307,15 @@ window.pokeCell = function(x, y, ch, fg, bg, attr) {
     }
     return undefined;
   }
-  var fgCode = _normalizeColorArg(fg, 'fg');
-  var bgCode = _normalizeColorArg(bg, 'bg');
+  var f = getColor(f, 'f');
+  var b = getColor(b, 'b');
 
-  if (typeof fgCode !== 'undefined') COLOR[y][x].color = fgCode;
-  if (typeof bgCode !== 'undefined') COLOR[y][x].bgcolor = bgCode;
+  if (typeof f !== 'undefined') { FCOLOR[y][x]=CURFG; }
+  if (typeof b !== 'undefined') { BCOLOR[y][x]=CURBG; }
 
   // ATTR handling: if provided overwrite; if omitted leave unchanged
-  if (typeof attr !== 'undefined' && attr !== null) {
-    try { ATTR[y][x] = (attr | 0); } catch (e) { ATTR[y][x] = attr; }
+  if (typeof h !== 'undefined' && h !== null) {
+    try { ATTR[y][x] = (h | 0); } catch (e) { ATTR[y][x] = h; }
   }
 
   if (SYNC) { pokeRefresh(x, y); }
@@ -361,36 +323,24 @@ window.pokeCell = function(x, y, ch, fg, bg, attr) {
   return true;
 };
 
-window.pokeColor = function(x, y, fgColor, bgColor, count) {
-  // Getter mode: return {fg, bg}
-  if (typeof fgColor === 'undefined') {
-    if (!validateCoords(x, y)) return undefined;
-    var style = COLOR[y][x];
-    return { fg: style.color, bg: style.bgcolor };
-  }
-  
-  // Validate starting position
-  if (!validateCoords(x, y)) return false;
-  
-  // Span mode
-  if (typeof count === 'number' && count > 1) {
-    var endX = Math.min(x + count, W);
+window.pokeColor = function(x, y, f, b, n) {
+  if (!validateCoords(x, y)) return false;  
+  if (typeof f === 'undefined') { f=CURFG; }
+  if (typeof b === 'undefined') { b=CURBG; }
+  n = (typeof n === 'number' && n > 0) ? Math.floor(n) : 1;
+  if (typeof n === 'number' && n > 0) {
+    var endX = Math.min(x + n, W);
     for (var i = x; i < endX; i++) {
-      if (typeof fgColor !== 'undefined') COLOR[y][i].color = fgColor;
-      if (typeof bgColor !== 'undefined') COLOR[y][i].bgcolor = bgColor;
-      pokeRefresh(i, y);
+      FCOLOR[y][i]=CURFG;
+      BCOLOR[y][i]=CURBG;
+      if (SYNC) { pokeRefresh(i, y); }
     }
     return endX - x;
   }
-  
-  // Single cell
-  if (typeof fgColor !== 'undefined') COLOR[y][x].color = fgColor;
-  if (typeof bgColor !== 'undefined') COLOR[y][x].bgcolor = bgColor;
-  pokeRefresh(x, y);
-  return true;
+  return false;
 };
 
-
+// there should be a poke function that already does this??
 window.eraseInput = function(text) {
   if (typeof text === 'undefined') { text=""; }
   var str = String(text); var curx = LINEX; var cury = LINEY;
@@ -472,65 +422,8 @@ window.pokeChar = function(x, y, a, n) {
   return (n === 1) ? true : written;
 };
 
-window.peekInverse = function(x, y) { 
-  if (typeof x !== 'number' || typeof y !== 'number') return undefined;
-  // Prefer existing validator if available
-  if (typeof validateCoords === 'function') {
-    if (!validateCoords(x, y)) return undefined;
-  } else {
-    // Minimal fallback checks
-    var sw = (typeof W === 'number') ? W : (typeof W === 'number' ? W : null);
-    var sh = (typeof H === 'number') ? H : (typeof H === 'number' ? H : null);
-    if (sw === null || sh === null) return undefined;
-    if (x < 0 || y < 0 || x >= sw || y >= sh) return undefined;
-  }
-  if (!window.COLOR || !window.COLOR[y]) return undefined;
-  var style = window.COLOR[y][x];
-  return style ? !!style.inverse : undefined;
-};
-
 window.peekChar = function(x, y) { 
   return validateCoords(x, y) ? VIDEO[y][x] : undefined;
-};
-
-// PEEKSTYLE - Read style at position
-window.peekStyle = function(x, y) { 
-  return validateCoords(x, y) ? COLOR[y][x] : undefined;
-};
-
-window.pokeBold = function(x, y, state, count) {
-  // Getter mode
-  if (typeof state === 'undefined') {
-    return validateCoords(x, y) ? COLOR[y][x].bold : undefined;
-  }
-  
-  // Validate starting position
-  if (!validateCoords(x, y)) return false;
-  
-  var boldState = !!state;
-  
-  // Span mode
-  if (typeof count === 'number' && count > 1) {
-    var endX = Math.min(x + count, W);
-    for (var i = x; i < endX; i++) {
-      COLOR[y][i].bold = boldState;
-      if (SYNC) { pokeRefresh(i, y); }
-    }
-    return endX - x;
-  }
-  
-  // Single cell
-  COLOR[y][x].bold = boldState;
-  if (SYNC) { pokeRefresh(x, y); }
-  return true;
-};
-
-
-// PEEKCOLOR - Read color at position
-window.peekColor = function(x, y) {
-  if (!validateCoords(x, y)) return undefined;
-  var style = COLOR[y][x];
-  return { fg: style.color, bg: style.bgcolor };
 };
 
 
@@ -814,24 +707,37 @@ for (var y = 0; y <= H; y++) {
   var rowStyles = new Array(W);
   var rowRefs   = new Array(W);
   var rowDiv = document.createElement('div');
+  var frow = new Uint8Array(W); // foreground ANSI codes (30..97)
+  var brow = new Uint8Array(W); // background ANSI codes (40..107)
+  var rowDiv = document.createElement('div');
   rowDiv.className = 'qandy-row';
   for (var x = 0; x < window.W; x++) {
     rowChars[x] = ' ';
     rowStyles[x] = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
+
+    // populate numeric banks from the style object (initial sync)
+    frow[x] = rowStyles[x].color | 0;
+    brow[x] = rowStyles[x].bgcolor | 0;
+
     var cell = document.createElement('span');
     cell.id = 'c' + y + '_' + x;
     // set class names for default colors so CSS can style them immediately
-    cell.className = 'qandy-cell ansi-fg-' + defaultColor + ' ansi-bg-' + defaultBg;
+    cell.className = 'qandy-cell ansi-fg-' + rowStyles[x].color + ' ansi-bg-' + rowStyles[x].bgcolor;
     cell.textContent = '\u00A0';
     // small snapshot to avoid costly classList scans in hot path
-    cell._qandyStyle = { color: defaultColor, bgcolor: defaultBg, bold: false, inverse: false };
+    cell._qandyStyle = { color: rowStyles[x].color, bgcolor: rowStyles[x].bgcolor, bold: false, inverse: false };
     rowDiv.appendChild(cell);
     rowRefs[x] = cell;
   }
   frag.appendChild(rowDiv);
+  // i think these settings are a bug, the values might get
+  // rewritten if a screen clear is issued so it's not being
+  // detected. These should be set to numeric data, not css styles
   window.VIDEO[y] = rowChars;
-  window.COLOR[y]  = rowStyles;
-  window.DOM[y]  = rowRefs;
+  window.COLOR[y]  = rowStyles; // ## old color (compat)
+  window.FCOLOR[y] = frow;      // new numeric foreground bank (Uint8Array)
+  window.BCOLOR[y] = brow;      // new numeric background bank (Uint8Array)
+  window.DOM[y]    = rowRefs;  frag.appendChild(rowDiv);
 }
 txtEl.appendChild(frag);
 
@@ -844,18 +750,6 @@ function buildClass(s) {
 
 window.hasATTR = function(x, y, attrBit) { return !!(ATTR[y][x] & attrBit); };
 window.peekATTR = function(x, y) { return ATTR[y][x]; };
-
-window.peekInverse = function(x, y) {
-  if (typeof x !== 'number' || typeof y !== 'number') return undefined;
-  if (window.ATTR && ATTR[y]) {
-    return !!(ATTR[y][x] & ATTR_INVERSE);
-  }
-  // fallback for old code during migration
-  if (window.COLOR && COLOR[y] && COLOR[y][x]) {
-    return !!COLOR[y][x].inverse;
-  }
-  return undefined;
-};
 
 window.pokeAttr = function(x, y, spec) {
   if (typeof x !== 'number' || typeof y !== 'number') return false;
@@ -949,7 +843,7 @@ window.pokeRefresh = function(x, y, n) {
     if (typeof W === 'number') { if (x < 0 || x >= W) return false; }
   }
   n = (typeof n === 'number' && !isNaN(n) && n > 0) ? (n|0) : 1;
-  var cx = x|0; var cy = y|0;
+  var cx = x|0; var cy = y|0; // these values need validating
   var remaining = n; var refreshed = 0;
   while (remaining > 0 && (typeof H !== 'number' || cy < H)) {
     if (typeof W === 'number' && cx >= W) { cx = 0; cy++; if (typeof H === 'number' && cy >= H) break; }
@@ -961,9 +855,8 @@ window.pokeRefresh = function(x, y, n) {
       if (elCell.textContent !== newTextCell) elCell.textContent = newTextCell;
 
       // color values
-      var ccell = (COLOR[cy] && COLOR[cy][cx]) || {};
-      var fg = (typeof ccell.color !== 'undefined') ? ccell.color : ((window.currentStyle && currentStyle.color) ? currentStyle.color : 37);
-      var bg = (typeof ccell.bgcolor !== 'undefined') ? ccell.bgcolor : ((window.currentStyle && currentStyle.bgcolor) ? currentStyle.bgcolor : 40);
+      fg = FCOLOR[cy][cx] | 0;
+      bg = BCOLOR[cy][cx] | 0;
 
       // attributes come from ATTR (authoritative)
       var attrVal = (ATTR && ATTR[cy] && typeof ATTR[cy][cx] !== 'undefined') ? ATTR[cy][cx] : 0;
@@ -1015,9 +908,12 @@ window.pokeSelect = function(state) {
   
 window.peekAttr = function(x,y) { return (ATTR && ATTR[y]) ? ATTR[y][x] : undefined; };
 
-window.peekInverse = function(x,y) {
-  if (ATTR && ATTR[y]) return !!(ATTR[y][x] & (window.ATTR_INVERSE || 0x0001));
-  if (COLOR && COLOR[y] && COLOR[y][x]) return !!COLOR[y][x].inverse;
+window.peekInverse = function(x, y) {
+  if (typeof x !== 'number' || typeof y !== 'number') return undefined;
+  if (!validateCoords(x, y)) return undefined;
+  if (window.ATTR && ATTR[y] && typeof ATTR[y][x] !== 'undefined') {
+    return !!(ATTR[y][x] & (window.ATTR_INVERSE || 0x0001));
+  }
   return undefined;
 };
 
@@ -1053,61 +949,45 @@ function getCellStyle(x, y) {
   };
 }
 
-window.pokeRefresh = function(x, y) {
-  // Full-screen refresh
-  if (typeof x === 'undefined' && typeof y === 'undefined') {
-    for (var ry = 0; ry < H; ry++) {
-      var rowRefs = DOM[ry];
-      var rowChars = VIDEO[ry];
-      // rowStyles not needed directly any more (we derive from ATTR + COLOR)
-      for (var rx = 0; rx < W; rx++) {
-        var el = rowRefs[rx];
-        var ch = (rowChars && typeof rowChars[rx] !== 'undefined') ? rowChars[rx] : ' ';
-        var newText = (ch === ' ' || ch === '\u00A0') ? '\u00A0' : ch;
-
-        // set text only if changed
-        if (el.textContent !== newText) el.textContent = newText;
-
-        var s = getCellStyle(rx, ry);
-        // build base class string
-        var classStr = 'qandy-cell ansi-fg-' + s.color + ' ansi-bg-' + s.bgcolor;
-        if (s.bold) classStr += ' ansi-bold';
-        if (s.inverse) classStr += ' ansi-inverse';
-        if (s.italic) classStr += ' ansi-italic';
-        if (s.underline) classStr += ' ansi-underline';
-        if (s.dim) classStr += ' ansi-dim';
-        if (s.blink) classStr += ' ansi-blink';
-
-        // only write className if changed to reduce style recalcs
-        if (el._lastClass !== classStr) {
-          el.className = classStr;
-          el._lastClass = classStr;
-        }
+window.pokeRefresh = function(x, y, n) {
+  if (typeof x === 'undefined' && typeof y === 'undefined') { x=0; y=0; n=W*H; }
+  if (typeof validateCoords === 'function') {
+    if (!validateCoords(x, y)) return false;
+  } else {
+    if (typeof x !== 'number' || typeof y !== 'number') return false;
+    if (x < 0 || x >= W || y < 0 || y >= H) return false;
+  }
+  n = (typeof n === 'number' && n > 0) ? Math.floor(n) : 1;
+  n = (typeof n === 'number' && n > 0) ? Math.floor(n) : 1;
+  var m = Math.max(0, W * H - (y * W + x));
+  if (n > m) count = m;
+  if (n < 1) return false;  
+  var remaining = n; var cx = x | 0; var cy = y | 0;
+  while (remaining > 0 && cy < H) {
+    var avail = Math.min(remaining, W - cx);
+    // Per-cell refresh
+    for (var rx = cx; rx < cx + avail; rx++) {
+      var el = DOM[cy] && DOM[cy][rx];
+      if (!el) continue;
+      var ch = (VIDEO[cy] && typeof VIDEO[cy][rx] !== 'undefined') ? VIDEO[cy][rx] : ' ';
+      var newText = (ch === ' ' || ch === '\u00A0') ? '\u00A0' : ch;
+      if (el.textContent !== newText) el.textContent = newText;
+      var s2 = getCellStyle(rx, cy);
+      var classStr2 = 'qandy-cell ansi-fg-' + s2.color + ' ansi-bg-' + s2.bgcolor;
+      if (s2.bold) classStr2 += ' ansi-bold';
+      if (s2.inverse) classStr2 += ' ansi-inverse';
+      if (s2.italic) classStr2 += ' ansi-italic';
+      if (s2.underline) classStr2 += ' ansi-underline';
+      if (s2.dim) classStr2 += ' ansi-dim';
+      if (s2.blink) classStr2 += ' ansi-blink';
+      if (el._lastClass !== classStr2) {
+        el.className = classStr2;
+        el._lastClass = classStr2;
       }
     }
-    return true;
-  }
-
-  // Single-cell refresh
-  var elCell = DOM[y] && DOM[y][x];
-  if (!elCell) return false;
-
-  var cellChar = VIDEO[y] && VIDEO[y][x] ? VIDEO[y][x] : ' ';
-  var newTextCell = (cellChar === ' ' || cellChar === '\u00A0') ? '\u00A0' : cellChar;
-  if (elCell.textContent !== newTextCell) elCell.textContent = newTextCell;
-
-  var s = getCellStyle(x, y);
-  var classStr = 'qandy-cell ansi-fg-' + s.color + ' ansi-bg-' + s.bgcolor;
-  if (s.bold) classStr += ' ansi-bold';
-  if (s.inverse) classStr += ' ansi-inverse';
-  if (s.italic) classStr += ' ansi-italic';
-  if (s.underline) classStr += ' ansi-underline';
-  if (s.dim) classStr += ' ansi-dim';
-  if (s.blink) classStr += ' ansi-blink';
-
-  if (elCell._lastClass !== classStr) {
-    elCell.className = classStr;
-    elCell._lastClass = classStr;
+    remaining -= avail;
+    cx = 0; 
+    cy++;
   }
   return true;
 };
@@ -1145,6 +1025,7 @@ window.pokeCursorOff = function() {
   if (typeof prevAttr === 'undefined' || prevAttr === null) return false;
   ATTR[CURY][CURX] = prevAttr;
   pokeRefresh(CURX,CURY);
+  prevAttr="";
   return true;
 }
 
@@ -1267,6 +1148,15 @@ window.pokeScroll = function(n) {
   return true;
   
 };
+
+
+window.pokeScroll = function() {
+  pokeCursorOff();
+  pokeText(0,0," ",800);
+  CURX=0; CURY=0; LINEX=0; LINEY=0;
+  pokeCursorOn();  
+
+}
 
 // Signal that video.js is ready
 if (typeof window.qandySignalReady === 'function') {

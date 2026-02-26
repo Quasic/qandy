@@ -509,7 +509,7 @@ function button(b, event) {
       print(out + "\n");
     } catch (e) {
       // fallback to original console to ensure we don't swallow errors
-      //_origConsole.log('qandyPrintLine error: ' + safeFormat(e));
+      _origConsole.log('qandyPrintLine error: ' + safeFormat(e));
     } finally {
       inQandyPrint = false;
     }
