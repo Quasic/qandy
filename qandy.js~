@@ -120,6 +120,11 @@ function button(b, event) {
     } else {
       if (k === "back") {
         event.preventDefault();
+        if (window.QandyKeyboard && QandyKeyboard.handleBackspace()) {
+          // consumed (masked mode)
+          pokeCursorOn(CURSOR); // or pokeCursorOn() depending on signature
+          return;
+        }
         if (SSTART !== -1 && SEND !== -1) {
           if (SSTART>SEND) { [SSTART, SEND] = [SEND, SSTART];}
           deleteSelection();
@@ -280,7 +285,9 @@ function button(b, event) {
           }
         } else if (k === "enter") {
           event.preventDefault();
-          // Submit the current line
+          if (window.QandyKeyboard && QandyKeyboard.handleEnter()) {
+            return;
+          }
           if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
           if (LINE !== undefined) {
             // Save to history
@@ -401,17 +408,23 @@ function button(b, event) {
           if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
           // Insert character into line at CURP (cursor position)
           // insert mode, need overwrite mode
-          LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
-          CURP += finalChar.length;
-          CURX += finalChar.length;
-          while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
-          pokeInput();
-          if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
+
+          if (window.QandyKeyboard && QandyKeyboard.handleTypedChar(char)) {
+            // consumed (e.g., masked input) — do nothing else
+          } else {
+            LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
+            CURP += finalChar.length;
+            CURX += finalChar.length;
+            while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
+            pokeInput();
+            if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
+          }          
         }
     } // end else (not run+keydown)
   } else {
     if (RUN) { keydown(k || l); }
   }
+  if (SOUND) { beep(900, 25, .01); }
   pokeCursorOn();
 }
 
@@ -792,24 +805,25 @@ function cls() {
 
 CURBAUD=9600; CURSOR=4; pokeCursorOn();
 
-text="\n[blue]Qandy Pocket\nComputer v1.j\n\n[yellow]Prototype Release\n[white]\n";
+text="\n[cyan]Qandy Pocket\nComputer v1.j\n\n[yellow]Prototype Release\n[white]\n";
 print(text);
 
 function print(t) {
-  // 
-  // matches [color] tags
-  // word wrap
-  //
-  text = text.replace(/\[blue\]/g, ANSIblue);
-  text = text.replace(/\[black]/g, ANSIblack); 
-  text = text.replace(/\[red]/g, ANSIred);
-  text = text.replace(/\[green]/g, ANSIgreen);
-  text = text.replace(/\[yellow]/g, ANSIyellow);
-  text = text.replace(/\[blue]/g, ANSIblue);
-  text = text.replace(/\[magenta]/g, ANSImagenta);
-  text = text.replace(/\[cyan]/g, ANSIcyan);
-  text = text.replace(/\[white]/g, ANSIwhite);
-  pokeCursor(text);
+  // matches [color] tags, word wrap
+  t=t.replace(/\[blue\]/g, ANSIblue);
+  t=t.replace(/\[black]/g, ANSIblack); 
+  t=t.replace(/\[red]/g, ANSIred);
+  t=t.replace(/\[green]/g, ANSIgreen);
+  t=t.replace(/\[yellow]/g, ANSIyellow);
+  t=t.replace(/\[blue]/g, ANSIblue);
+  t=t.replace(/\[magenta]/g, ANSImagenta);
+  t=t.replace(/\[cyan]/g, ANSIcyan);
+  t=t.replace(/\[white]/g, ANSIwhite);
+  pokeCursor(t);
+}
+
+function exit() {
+  RUN=qandy.js
 }
 
 // system ready

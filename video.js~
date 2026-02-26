@@ -151,7 +151,6 @@ window.pokeCursor = function(t) {
       }
       
       pokeCell(CURX, CURY, ch, CURFG, CURBG, CURATTR); 
-      if (CURBAUD) { if (SOUND) { beep(900, 25, .01); }}
 
       CURX = CURX + 1;
       if (CURX >= W) {
@@ -239,6 +238,7 @@ window.pokeCursor = function(t) {
       CURX = 0; CURY = CURY + 1;
       if (CURY >= H) {
         CURY = H - 1; CURX = Math.min(CURX, W - 1);
+        LINEX = CURX; LINEY = CURY;
         pokeCursorOn();
         window._pokeCursor_state = null;
         return;

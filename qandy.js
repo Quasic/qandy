@@ -120,6 +120,11 @@ function button(b, event) {
     } else {
       if (k === "back") {
         event.preventDefault();
+        if (window.QandyKeyboard && QandyKeyboard.handleBackspace()) {
+          // consumed (masked mode)
+          pokeCursorOn(CURSOR); // or pokeCursorOn() depending on signature
+          return;
+        }
         if (SSTART !== -1 && SEND !== -1) {
           if (SSTART>SEND) { [SSTART, SEND] = [SEND, SSTART];}
           deleteSelection();
@@ -280,7 +285,9 @@ function button(b, event) {
           }
         } else if (k === "enter") {
           event.preventDefault();
-          // Submit the current line
+          if (window.QandyKeyboard && QandyKeyboard.handleEnter()) {
+            return;
+          }
           if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
           if (LINE !== undefined) {
             // Save to history
@@ -401,17 +408,23 @@ function button(b, event) {
           if (SSTART>-1) { pokeSelect(false); SSTART = -1; SEND = -1; }
           // Insert character into line at CURP (cursor position)
           // insert mode, need overwrite mode
-          LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
-          CURP += finalChar.length;
-          CURX += finalChar.length;
-          while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
-          pokeInput();
-          if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
+
+          if (window.QandyKeyboard && QandyKeyboard.handleTypedChar(char)) {
+            // consumed (e.g., masked input) — do nothing else
+          } else {
+            LINE = (LINE || "").substring(0, CURP) + finalChar + (LINE || "").substring(CURP);
+            CURP += finalChar.length;
+            CURX += finalChar.length;
+            while (CURX >= W) { CURX -= W; CURY++; if (CURY >= H) { CURY = H - 1; } }
+            pokeInput();
+            if (typeof historyIndex !== 'undefined' && historyIndex !== -1) { historyIndex = -1; tempCommand = ""; }
+          }          
         }
     } // end else (not run+keydown)
   } else {
     if (RUN) { keydown(k || l); }
   }
+  if (SOUND) { beep(900, 25, .01); }
   pokeCursorOn();
 }
 
@@ -790,27 +803,84 @@ function cls() {
   pokeCursorOn();  
 }
 
+
+function waitForCursorIdle(timeoutMs) {
+  timeoutMs = typeof timeoutMs === 'number' ? timeoutMs : 5000;
+  return new Promise(function(resolve) {
+    if (!window._pokeCursor_state) return resolve();
+    var start = Date.now();
+    var iv = setInterval(function() {
+      if (!window._pokeCursor_state) {
+        clearInterval(iv);
+        return resolve();
+      }
+      if (Date.now() - start > timeoutMs) {
+        clearInterval(iv);
+        return resolve();
+      }
+    }, 8);
+  });
+}
+
+window._qandy_print_queue = window._qandy_print_queue || { items: [], running: false };
+
+async function _processPrintQueue() {
+  var q = window._qandy_print_queue;
+  if (q.running) return;
+  q.running = true;
+  try {
+    while (q.items.length) {
+      var job = q.items.shift();
+      // wait for any current paced output to finish
+      await waitForCursorIdle();
+      // invoke pokeCursor to print this job.text
+      try {
+        pokeCursor(job.text);
+      } catch (e) {
+        // If pokeCursor thrown, still resolve so callers don't hang
+      }
+      // wait for this pokeCursor output to finish
+      await waitForCursorIdle();
+      // resolve the enqueue promise if present
+      try { job.resolve(); } catch (e) {}
+    }
+  } finally {
+    q.running = false;
+  }
+}
+
+function exit() {
+  // guest scripts use this to exit back to qandy.js
+  RUN="qandy.js"
+}
+
+// public print(...) replacement
+function print(t) {
+  // do your color tag replacements first
+  var text = String(t == null ? "" : t);
+  text = text.replace(/\[blue\]/g, ANSIblue);
+  text = text.replace(/\[black\]/g, ANSIblack);
+  text = text.replace(/\[red\]/g, ANSIred);
+  text = text.replace(/\[green\]/g, ANSIgreen);
+  text = text.replace(/\[yellow\]/g, ANSIyellow);
+  text = text.replace(/\[magenta\]/g, ANSImagenta);
+  text = text.replace(/\[cyan\]/g, ANSIcyan);
+  text = text.replace(/\[white\]/g, ANSIwhite);
+
+  // enqueue the print and start processor
+  var q = window._qandy_print_queue;
+  return new Promise(function(resolve) {
+    q.items.push({ text: text, resolve: resolve });
+    // kick the processor (it is safe if already running)
+    _processPrintQueue();
+  });
+}
+
+
 CURBAUD=9600; CURSOR=4; pokeCursorOn();
 
 text="\n[cyan]Qandy Pocket\nComputer v1.j\n\n[yellow]Prototype Release\n[white]\n";
 print(text);
-
-function print(t) {
-  // 
-  // matches [color] tags
-  // word wrap
-  //
-  text = text.replace(/\[blue\]/g, ANSIblue);
-  text = text.replace(/\[black]/g, ANSIblack); 
-  text = text.replace(/\[red]/g, ANSIred);
-  text = text.replace(/\[green]/g, ANSIgreen);
-  text = text.replace(/\[yellow]/g, ANSIyellow);
-  text = text.replace(/\[blue]/g, ANSIblue);
-  text = text.replace(/\[magenta]/g, ANSImagenta);
-  text = text.replace(/\[cyan]/g, ANSIcyan);
-  text = text.replace(/\[white]/g, ANSIwhite);
-  pokeCursor(text);
-}
 
 // system ready
 
