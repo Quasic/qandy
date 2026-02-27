@@ -227,7 +227,7 @@ var FALLBACK_FG = {
   black:30, red:31, green:32, yellow:33, blue:34, magenta:35, cyan:36, white:37,
   bright_black:90, bright_red:91, bright_green:92, bright_yellow:93, bright_blue:94, bright_magenta:95, bright_cyan:96, bright_white:97
 };
-var FALLBACK_BG = {
+	var FALLBACK_BG = {
   black:40, red:41, green:42, yellow:43, blue:44, magenta:45, cyan:46, white:47,
   bright_black:100, bright_red:101, bright_green:102, bright_yellow:103, bright_blue:104, bright_magenta:105, bright_cyan:106, bright_white:107
 };
@@ -295,15 +295,41 @@ window.pokeCell = function(x,y,a,f,b,h) {
   if (typeof a === 'undefined') { a=" "; } 
   if (!validateCoords(x, y)) return false;
   VIDEO[y][x] = (a === null) ? ' ' : (typeof a === 'string' ? (a.length ? a.charAt(0) : ' ') : String(a).charAt(0));
-  var f = window.ANSI_NAME_TO_FG[f.toLowerCase()]; 
-  var b = window.ANSI_NAME_TO_BG[b.toLowerCase()];
+
+  var fgCode;
+  if (typeof f === 'number') {
+    fgCode = f | 0;
+  } else if (typeof f === 'string' && f.length) {
+    var name = f.toLowerCase();
+    fgCode = (window.ANSI_NAME_TO_FG && typeof window.ANSI_NAME_TO_FG[name] !== 'undefined')
+      ? (window.ANSI_NAME_TO_FG[name] | 0)
+      : CURFG;
+  } else {
+    // fallback: try existing FCOLOR bank for this cell, otherwise default
+    fgCode = CURFG;
+  }
+
+  var bgCode;
+  if (typeof b === 'number') {
+    bgCode = b | 0;
+  } else if (typeof b === 'string' && b.length) {
+    var name = b.toLowerCase();
+    bgCode = (window.ANSI_NAME_TO_BG && typeof window.ANSI_NAME_TO_BG[name] !== 'undefined')
+      ? (window.ANSI_NAME_TO_BG[name] | 0)
+      : CURBG;
+  } else {
+    // fallback: try existing FCOLOR bank for this cell, otherwise default
+    bgCode = CURBG;
+  }
+  
+  FCOLOR[y][x]=fgCode;
+  BCOLOR[y][x]=bgCode; 
 
   if (typeof h !== 'undefined' && h !== null) {
     try { ATTR[y][x] = (h | 0); } catch (e) { ATTR[y][x] = h; }
   }
 
   if (SYNC) { pokeRefresh(x, y); }
-
   return true;
 };
 
@@ -712,61 +738,49 @@ window.pokeInverse = function(x, y, state, n) {
 };
 
 window.pokeRefresh = function(x, y, n) {
-  var full = (typeof x === 'undefined' && typeof y === 'undefined');
-  if (full) { x = 0; y = 0; n = (typeof W === 'number' && typeof H === 'number') ? (W * H) : 0; }
-  if (!full) {
+  if (typeof x === 'undefined' && typeof y === 'undefined') { x=0; y=0; n=W*H; }
+  if (typeof validateCoords === 'function') {
+    if (!validateCoords(x, y)) return false;
+  } else {
     if (typeof x !== 'number' || typeof y !== 'number') return false;
-    if (typeof H === 'number') { if (y < 0 || y >= H) return false; }
-    if (typeof W === 'number') { if (x < 0 || x >= W) return false; }
+    if (x < 0 || x >= W || y < 0 || y >= H) return false;
   }
-  n = (typeof n === 'number' && !isNaN(n) && n > 0) ? (n|0) : 1;
-  var cx = x|0; var cy = y|0; // these values need validating
-  var remaining = n; var refreshed = 0;
-  while (remaining > 0 && (typeof H !== 'number' || cy < H)) {
-    if (typeof W === 'number' && cx >= W) { cx = 0; cy++; if (typeof H === 'number' && cy >= H) break; }
-    var elCell = (DOM[cy] && DOM[cy][cx]);
-    if (elCell) {
-      // text
-      var chCell = (VIDEO[cy] && typeof VIDEO[cy][cx] !== 'undefined') ? VIDEO[cy][cx] : ' ';
-      var newTextCell = (chCell === ' ' || chCell === '\u00A0') ? '\u00A0' : chCell;
-      if (elCell.textContent !== newTextCell) elCell.textContent = newTextCell;
+  n = (typeof n === 'number' && n > 0) ? Math.floor(n) : 1;
+  var m = Math.max(0, W * H - (y * W + x));
+  if (n > m) n = m;
+  if (n < 1) return false;  
+  var remaining = n; var cx = x | 0; var cy = y | 0;
+  while (remaining > 0 && cy < H) {
+    var avail = Math.min(remaining, W - cx);
+    // Per-cell refresh
+    for (var rx = cx; rx < cx + avail; rx++) {
+      var el = DOM[cy] && DOM[cy][rx];
+      if (!el) continue;
+      var ch = (VIDEO[cy] && typeof VIDEO[cy][rx] !== 'undefined') ? VIDEO[cy][rx] : ' ';
+      var newText = (ch === ' ' || ch === '\u00A0') ? '\u00A0' : ch;
+      if (el.textContent !== newText) el.textContent = newText;
 
-      // color values
-      fg = FCOLOR[cy][cx] | 0;
-      bg = BCOLOR[cy][cx] | 0;
+      fg = FCOLOR[cy][rx] | 0; 
+      bg = BCOLOR[cy][rx] | 0;
 
-      // attributes come from ATTR (authoritative)
-      var attrVal = (ATTR && ATTR[cy] && typeof ATTR[cy][cx] !== 'undefined') ? ATTR[cy][cx] : 0;
-      var inv   = !!(attrVal & (window.ATTR_INVERSE || 0x0001));
-      var bold  = !!(attrVal & (window.ATTR_BOLD    || 0x0002));
-      var dim   = !!(attrVal & (window.ATTR_DIM     || 0x0004));
-      var italic= !!(attrVal & (window.ATTR_ITALIC  || 0x0008));
-      var under = !!(attrVal & (window.ATTR_UNDERLINE || 0x0010));
-      var blink = !!(attrVal & (window.ATTR_BLINK   || 0x0020));
-
-      // build class string
-      var classStr = 'qandy-cell ansi-fg-' + fg + ' ansi-bg-' + bg;
-      if (bold) classStr += ' ansi-bold';
-      if (inv)  classStr += ' ansi-inverse';
-      if (italic) classStr += ' ansi-italic';
-      if (under) classStr += ' ansi-underline';
-      if (dim) classStr += ' ansi-dim';
-      if (blink) classStr += ' ansi-blink';
-
-      if (elCell._lastClass !== classStr) {
-        elCell.className = classStr;
-        elCell._lastClass = classStr;
+      var s2 = getCellStyle(rx, cy);
+      var classStr2 = 'qandy-cell ansi-fg-' + s2.color + ' ansi-bg-' + s2.bgcolor;
+      if (s2.bold) classStr2 += ' ansi-bold';
+      if (s2.inverse) classStr2 += ' ansi-inverse';
+      if (s2.italic) classStr2 += ' ansi-italic';
+      if (s2.underline) classStr2 += ' ansi-underline';
+      if (s2.dim) classStr2 += ' ansi-dim';
+      if (s2.blink) classStr2 += ' ansi-blink';
+      if (el._lastClass !== classStr2) {
+        el.className = classStr2;
+        el._lastClass = classStr2;
       }
-      refreshed++;
     }
-    // advance to next cell, wrapping rows as needed
-    cx++;
-    if (typeof W === 'number' && cx >= W) { cx = 0; cy++; }
-    remaining--;
+    remaining -= avail;
+    cx = 0; 
+    cy++;
   }
-  if (full) return true;
-  if (n === 1) return true;
-  return refreshed;
+  return true;
 };
 
 window.pokeSelect = function(state) {
@@ -825,49 +839,6 @@ function getCellStyle(x, y) {
     blink: blink
   };
 }
-
-window.pokeRefresh = function(x, y, n) {
-  if (typeof x === 'undefined' && typeof y === 'undefined') { x=0; y=0; n=W*H; }
-  if (typeof validateCoords === 'function') {
-    if (!validateCoords(x, y)) return false;
-  } else {
-    if (typeof x !== 'number' || typeof y !== 'number') return false;
-    if (x < 0 || x >= W || y < 0 || y >= H) return false;
-  }
-  n = (typeof n === 'number' && n > 0) ? Math.floor(n) : 1;
-  n = (typeof n === 'number' && n > 0) ? Math.floor(n) : 1;
-  var m = Math.max(0, W * H - (y * W + x));
-  if (n > m) count = m;
-  if (n < 1) return false;  
-  var remaining = n; var cx = x | 0; var cy = y | 0;
-  while (remaining > 0 && cy < H) {
-    var avail = Math.min(remaining, W - cx);
-    // Per-cell refresh
-    for (var rx = cx; rx < cx + avail; rx++) {
-      var el = DOM[cy] && DOM[cy][rx];
-      if (!el) continue;
-      var ch = (VIDEO[cy] && typeof VIDEO[cy][rx] !== 'undefined') ? VIDEO[cy][rx] : ' ';
-      var newText = (ch === ' ' || ch === '\u00A0') ? '\u00A0' : ch;
-      if (el.textContent !== newText) el.textContent = newText;
-      var s2 = getCellStyle(rx, cy);
-      var classStr2 = 'qandy-cell ansi-fg-' + s2.color + ' ansi-bg-' + s2.bgcolor;
-      if (s2.bold) classStr2 += ' ansi-bold';
-      if (s2.inverse) classStr2 += ' ansi-inverse';
-      if (s2.italic) classStr2 += ' ansi-italic';
-      if (s2.underline) classStr2 += ' ansi-underline';
-      if (s2.dim) classStr2 += ' ansi-dim';
-      if (s2.blink) classStr2 += ' ansi-blink';
-      if (el._lastClass !== classStr2) {
-        el.className = classStr2;
-        el._lastClass = classStr2;
-      }
-    }
-    remaining -= avail;
-    cx = 0; 
-    cy++;
-  }
-  return true;
-};
 
 function validateCoords(x, y) { return (typeof x === 'number' && typeof y === 'number' && x >= 0 && y >= 0 && x < W && y < H); }
 function safeGet(arr, y, x) { return (arr && arr[y]) ? arr[y][x] : undefined; }
