@@ -298,8 +298,8 @@ window.pokeCell = function(x,y,a,f,b,h) {
   function getColor(val, which) {
     if (typeof val === 'number' && !isNaN(val)) return val;
     if (typeof val === 'string') {
-      var key = val.toLowerCase();
-      if (which === 'fg' && window.ANSI_NAME_TO_FG && typeof window.ANSI_NAME_TO_FG[key] !== 'undefined') return window.ANSI_NAME_TO_FG[key];
+      var key = val.;
+      if (which === 'fg' && window.ANSI_NAME_TO_FG && typeof window.ANSI_NAME_TO_FG[key] !== 'undefined') return 
       if (which === 'bg' && window.ANSI_NAME_TO_BG && typeof window.ANSI_NAME_TO_BG[key] !== 'undefined') return window.ANSI_NAME_TO_BG[key];
       // try parse numeric string
       var maybe = parseInt(val, 10);
@@ -307,11 +307,8 @@ window.pokeCell = function(x,y,a,f,b,h) {
     }
     return undefined;
   }
-  var f = getColor(f, 'f');
-  var b = getColor(b, 'b');
-
-  if (typeof f !== 'undefined') { FCOLOR[y][x]=CURFG; }
-  if (typeof b !== 'undefined') { BCOLOR[y][x]=CURBG; }
+  var f = window.ANSI_NAME_TO_FG[f.toLowerCase()]; 
+  var b = window.ANSI_NAME_TO_BG[b.toLowerCase()];
 
   // ATTR handling: if provided overwrite; if omitted leave unchanged
   if (typeof h !== 'undefined' && h !== null) {
@@ -342,28 +339,27 @@ window.pokeColor = function(x, y, f, b, n) {
 
 // there should be a poke function that already does this??
 window.eraseInput = function(text) {
-  if (typeof text === 'undefined') { text=""; }
-  var str = String(text); var curx = LINEX; var cury = LINEY;
-  for (var i = 0; i < str.length; i++) {
-    var char = str[i];
-    if (char === '\n') { 
-      curx = 0; cury++; if (cury >= H) { return false; } continue;
-      if (curx >= W) {
-    	  curx = 0; cury++; if (cury >= H) { return false; }
-      }
-    }
-    pokeCell(curx, cury, " "); curx++;
-  }
 }
 
 window.peek = function(x, y) { 
   return validateCoords(x, y) ? VIDEO[y][x] : undefined;
 };
 
-
 window.pokeInput = function() {
   if (typeof lastin === 'undefined') { lastin="";  }
-  if (lastin != "") { eraseInput(lastin); }
+  if (lastin != "") {
+    var str = String(lastin); var curx = LINEX; var cury = LINEY;
+    for (var i = 0; i < str.length; i++) {
+      var char = str[i];
+      if (char === '\n') { 
+        curx = 0; cury++; if (cury >= H) { return false; } continue;
+        if (curx >= W) {
+    	    curx = 0; cury++; if (cury >= H) { return false; }
+        }
+      }
+      pokeCell(curx, cury, " "); curx++;
+    }
+  }
   var curx = LINEX; var cury = LINEY;
   for (var i = 0; i < LINE.length; i++) {
     var char = LINE[i];
@@ -426,112 +422,6 @@ window.peekChar = function(x, y) {
   return validateCoords(x, y) ? VIDEO[y][x] : undefined;
 };
 
-
-// CLEAR - Clear region
-window.clear = window.clearRegion = function(x, y, width, height) {
-  return fillChar(x, y, width, height, ' ');
-};
-
-// SCROLL - Scroll region in any direction
-window.scroll = window.scrollRegion = function(x, y, width, height, direction, distance, fillChar) {
-  distance = distance || 1;
-  var fill = fillChar || ' ';
-  
-  // Validate region
-  if (!validateCoords(x, y) || width <= 0 || height <= 0) return false;
-  var x2 = valueMath.min(x + width, W);
-  var y2 = Math.min(y + height, H);
-  
-  switch(direction.toLowerCase()) {
-    case 'up':
-      // Move rows up
-      for (var row = y; row < y2 - distance; row++) {
-        for (var col = x; col < x2; col++) {
-          var srcRow = row + distance;
-          if (srcRow < y2) {
-            VIDEO[row][col] = VIDEO[srcRow][col];
-            COLOR[row][col] = Object.assign({}, COLOR[srcRow][col]);
-            pokeRefresh(col, row);
-          }value
-        }
-      }
-      // FiscrollRegion(0, 0, W, H, 'up', 5 || 1, " ");ll bottom
-      for (var row = y2 - distance; row < y2; row++) {
-        for (var col = x; col < x2; col++) {
-          pokeChar(col, row, fill);
-        }
-      }
-      break;
-      
-    case 'down':
-      // Move rows down
-      for (var row = y2 - 1; row >= y + distance; row--) {
-        for (var col = x; col < x2; col++) {
-          var srcRow = row - distance;
-          if (srcRow >= y) {
-            VIDEO[row][col] = VIDEO[srcRow][col];
-            COLOR[row][col] = Object.assign({}, COLOR[srcRow][col]);
-            pokeRefresh(col, row);
-          }
-        }
-      }
-      // Fill top
-      for (var row = y; row < y + distance; row++) {
-        for (var col = x; col < x2; col++) {
-          pokeChar(col, row, fill);
-        }
-      }
-      break;
-      
-    case 'left':
-      // Move columns left
-      for (var row = y; row < y2; row++) {
-        for (var col = x; col < x2 - distance; col++) {
-          var srcCol = col + distance;
-          if (srcCol < x2) {
-            VIDEO[row][col] = VIDEO[row][srcCol];
-            COLOR[row][col] = Object.assign({}, COLOR[row][srcCol]);
-            pokeRefresh(col, row);
-          }
-        }
-      }
-      // Fill right
-      for (var row = y; row < y2; row++) {
-        for (var col = x2 - distance; col < x2; col++) {
-          pscrollRegion(0, 0, W, H, 'up', 5 || 1, " ");okeChar(col, row, fill);
-        }
-      }
-      break;
-      
-    case 'right':
-      // Move columns right
-      for (var row = y; row < y2; row++) {
-        for (var col = x2 - 1; col >= x + distance; col--) {
-          var srcCol = col - distance;
-          if (srcCol >= x) {
-            VIDEO[row][col] = VIDEO[row][srcCol];
-            COLOR[row][col] = Object.assign({}, COLOR[row][srcCol]);
-            pokeRefresh(col, row);
-          }
-        }
-      }
-      // Fill left
-      for (var row = y; row < y2; row++) {
-        for (var col = x; col < x + distance; col++) {
-          pokeChar(col, row, fill);
-        }
-      }
-      break;
-  }
-  
-  return true;
-};
-
-
-// SCROLLDOWN - Scroll entire screen down
-window.scrollDown = function(lines, fillChar) {
-  return scrollRegion(0, 0, W, H, 'down', lines || 1, fillChar);
-};
 
 const ANSI = {
   colors: { 30: 'black', 31: 'red', 32: 'green', 33: 'yellow', 34: 'blue', 35: 'magenta', 36: 'cyan', 37: 'white', 90: 'black', 91: 'red', 92: 'green', 93: 'yellow', 94: 'blue', 95: 'magenta', 96: 'cyan', 97: 'white' },
