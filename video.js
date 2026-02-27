@@ -654,6 +654,130 @@ function buildClass(s) {
 window.hasATTR = function(x, y, attrBit) { return !!(ATTR[y][x] & attrBit); };
 window.peekATTR = function(x, y) { return ATTR[y][x]; };
 
+// set/get foreground for a cell or horizontal span
+window.pokeFG = function(x, y, fg, count) {
+  // Getter: if fg is undefined, return current fg value or undefined if out-of-bounds
+  if (typeof fg === 'undefined') {
+    if (typeof validateCoords === 'function') {
+      if (!validateCoords(x, y)) return undefined;
+    } else {
+      if (typeof x !== 'number' || typeof y !== 'number' || x < 0 || y < 0 || y >= H || x >= W) return undefined;
+    }
+    if (window.FCOLOR && FCOLOR[y] && typeof FCOLOR[y][x] !== 'undefined') return FCOLOR[y][x] | 0;
+    if (window.COLOR && COLOR[y] && COLOR[y][x] && typeof COLOR[y][x].color !== 'undefined') return COLOR[y][x].color | 0;
+    return (typeof window.defaultColor !== 'undefined') ? window.defaultColor : 37;
+  }
+
+  // Validate coords
+  if (typeof validateCoords === 'function') {
+    if (!validateCoords(x, y)) return false;
+  } else {
+    if (typeof x !== 'number' || typeof y !== 'number') return false;
+    if (x < 0 || y < 0 || y >= H || x >= W) return false;
+  }
+
+  // normalize count default=1 and clamp to remaining cells on screen
+  count = (typeof count === 'number' && count > 0) ? Math.floor(count) : 1;
+  var maxRemaining = Math.max(0, W * H - (y * W + x));
+  if (count > maxRemaining) count = maxRemaining;
+  if (count <= 0) return false;
+
+  // ensure banks exist
+  if (!window.FCOLOR) FCOLOR = [];
+  if (!FCOLOR[y]) FCOLOR[y] = new Uint8Array(W);
+
+  // resolve numeric code from name or number
+  var fgCode;
+  if (typeof fg === 'number') {
+    fgCode = fg | 0;
+  } else if (typeof fg === 'string' && fg.length) {
+    var name = fg.toLowerCase();
+    fgCode = (window.ANSI_NAME_TO_FG && typeof window.ANSI_NAME_TO_FG[name] !== 'undefined')
+      ? (window.ANSI_NAME_TO_FG[name] | 0)
+      : ((typeof window.defaultColor !== 'undefined') ? window.defaultColor : 37);
+  } else {
+    fgCode = (typeof window.defaultColor !== 'undefined') ? window.defaultColor : 37;
+  }
+
+  // write span
+  for (var i = 0; i < count; i++) {
+    var cx = x + i;
+    FCOLOR[y][cx] = fgCode;
+    if (window.COLOR && COLOR[y] && COLOR[y][cx]) COLOR[y][cx].color = fgCode;
+  }
+
+  // refresh
+  if (typeof pokeRefreshRow === 'function') {
+    try { pokeRefreshRow(x, y, count); } catch (e) { for (var r = 0; r < count; r++) try { pokeRefresh(x + r, y); } catch(e){} }
+  } else {
+    for (var j = 0; j < count; j++) try { pokeRefresh(x + j, y); } catch(e){}
+  }
+
+  return count;
+};
+
+// set/get background for a cell or horizontal span
+window.pokeBG = function(x, y, bg, count) {
+  // Getter: if bg is undefined, return current bg value or undefined if out-of-bounds
+  if (typeof bg === 'undefined') {
+    if (typeof validateCoords === 'function') {
+      if (!validateCoords(x, y)) return undefined;
+    } else {
+      if (typeof x !== 'number' || typeof y !== 'number' || x < 0 || y < 0 || y >= H || x >= W) return undefined;
+    }
+    if (window.BCOLOR && BCOLOR[y] && typeof BCOLOR[y][x] !== 'undefined') return BCOLOR[y][x] | 0;
+    if (window.COLOR && COLOR[y] && COLOR[y][x] && typeof COLOR[y][x].bgcolor !== 'undefined') return COLOR[y][x].bgcolor | 0;
+    return (typeof window.defaultBg !== 'undefined') ? window.defaultBg : 40;
+  }
+
+  // Validate coords
+  if (typeof validateCoords === 'function') {
+    if (!validateCoords(x, y)) return false;
+  } else {
+    if (typeof x !== 'number' || typeof y !== 'number') return false;
+    if (x < 0 || y < 0 || y >= H || x >= W) return false;
+  }
+
+  // normalize count default=1 and clamp to remaining cells on screen
+  count = (typeof count === 'number' && count > 0) ? Math.floor(count) : 1;
+  var maxRemaining = Math.max(0, W * H - (y * W + x));
+  if (count > maxRemaining) count = maxRemaining;
+  if (count <= 0) return false;
+
+  // ensure banks exist
+  if (!window.BCOLOR) BCOLOR = [];
+  if (!BCOLOR[y]) BCOLOR[y] = new Uint8Array(W);
+
+  // resolve numeric code from name or number
+  var bgCode;
+  if (typeof bg === 'number') {
+    bgCode = bg | 0;
+  } else if (typeof bg === 'string' && bg.length) {
+    var name = bg.toLowerCase();
+    bgCode = (window.ANSI_NAME_TO_BG && typeof window.ANSI_NAME_TO_BG[name] !== 'undefined')
+      ? (window.ANSI_NAME_TO_BG[name] | 0)
+      : ((typeof window.defaultBg !== 'undefined') ? window.defaultBg : 40);
+  } else {
+    bgCode = (typeof window.defaultBg !== 'undefined') ? window.defaultBg : 40;
+  }
+
+  // write span
+  for (var i = 0; i < count; i++) {
+    var cx = x + i;
+    BCOLOR[y][cx] = bgCode;
+    if (window.COLOR && COLOR[y] && COLOR[y][cx]) COLOR[y][cx].bgcolor = bgCode;
+  }
+
+  // refresh
+  if (typeof pokeRefreshRow === 'function') {
+    try { pokeRefreshRow(x, y, count); } catch (e) { for (var r = 0; r < count; r++) try { pokeRefresh(x + r, y); } catch(e){} }
+  } else {
+    for (var j = 0; j < count; j++) try { pokeRefresh(x + j, y); } catch(e){}
+  }
+
+  return count;
+};
+
 window.pokeAttr = function(x, y, spec) {
   if (typeof x !== 'number' || typeof y !== 'number') return false;
   // optional validator function if present in repo
@@ -808,37 +932,57 @@ window.peekInverse = function(x, y) {
   return undefined;
 };
 
-function getCellStyle(x, y) {
-  // color/bgcolor come from COLOR buffer (fallbacks provided)
-  var colRow = (window.COLOR && COLOR[y]) ? COLOR[y] : undefined;
-  var colCell = (colRow && typeof colRow[x] !== 'undefined') ? colRow[x] : undefined;
+// getCellStyle(x,y) - prefer numeric banks (FCOLOR/BCOLOR), fallback to COLOR objects and ATTR bits
+window.getCellStyle = function(x, y) {
+  var defaultFG = (typeof window.defaultColor !== 'undefined') ? window.defaultColor : 37;
+  var defaultBG = (typeof window.defaultBg !== 'undefined') ? window.defaultBg : 40;
 
-  var fg = (colCell && typeof colCell.color !== 'undefined') ? colCell.color : ((window.currentStyle && currentStyle.color) ? currentStyle.color : 37);
-  var bg = (colCell && typeof colCell.bgcolor !== 'undefined') ? colCell.bgcolor : ((window.currentStyle && currentStyle.bgcolor) ? currentStyle.bgcolor : 40);
+  // validate coords: return safe defaults if out-of-range
+  if (typeof x !== 'number' || typeof y !== 'number' || x < 0 || y < 0 || y >= H || x >= W) {
+    return { color: defaultFG, bgcolor: defaultBG, bold:false, inverse:false, italic:false, underline:false, dim:false, blink:false };
+  }
 
-  // ATTR is compact bitfield storage; read booleans from the bitmask
-  var attrRow = (window.ATTR && ATTR[y]) ? ATTR[y] : undefined;
-  var attrVal = (attrRow && typeof attrRow[x] !== 'undefined') ? attrRow[x] : 0;
+  // read numeric banks first (preferred)
+  var fg = defaultFG;
+  var bg = defaultBG;
 
-  var inv = !!(attrVal & (window.ATTR_INVERSE || 0x0001));
-  var bold = !!(attrVal & (window.ATTR_BOLD || 0x0002));
-  var dim = !!(attrVal & (window.ATTR_DIM || 0x0004));
-  var italic = !!(attrVal & (window.ATTR_ITALIC || 0x0008));
-  var underline = !!(attrVal & (window.ATTR_UNDERLINE || 0x0010));
-  var blink = !!(attrVal & (window.ATTR_BLINK || 0x0020));
-  // extend as needed for other bits...
+  if (window.FCOLOR && FCOLOR[y] && typeof FCOLOR[y][x] !== 'undefined') {
+    fg = FCOLOR[y][x] | 0;
+  } else if (window.COLOR && COLOR[y] && COLOR[y][x] && typeof COLOR[y][x].color !== 'undefined') {
+    fg = COLOR[y][x].color | 0;
+  }
 
-  return {
+  if (window.BCOLOR && BCOLOR[y] && typeof BCOLOR[y][x] !== 'undefined') {
+    bg = BCOLOR[y][x] | 0;
+  } else if (window.COLOR && COLOR[y] && COLOR[y][x] && typeof COLOR[y][x].bgcolor !== 'undefined') {
+    bg = COLOR[y][x].bgcolor | 0;
+  }
+
+  // read ATTR bitmask (if present)
+  var attr = 0;
+  if (window.ATTR && ATTR[y] && typeof ATTR[y][x] !== 'undefined') {
+    attr = ATTR[y][x] | 0;
+  }
+
+  var s = {
     color: fg,
     bgcolor: bg,
-    bold: bold,
-    inverse: inv,
-    dim: dim,
-    italic: italic,
-    underline: underline,
-    blink: blink
+    bold:     !!(attr & (window.ATTR_BOLD      || 0x0002)),
+    dim:      !!(attr & (window.ATTR_DIM       || 0x0004)),
+    italic:   !!(attr & (window.ATTR_ITALIC    || 0x0008)),
+    underline:!!(attr & (window.ATTR_UNDERLINE || 0x0010)),
+    blink:    !!(attr & (window.ATTR_BLINK     || 0x0020)),
+    inverse:  !!(attr & (window.ATTR_INVERSE   || 0x0001)),
+    hidden:   !!(attr & (window.ATTR_HIDDEN    || 0x0080))
   };
-}
+
+  // Visual inverse: swap fg/bg for rendering only (do not modify banks)
+  if (s.inverse) {
+    var t = s.color; s.color = s.bgcolor; s.bgcolor = t;
+  }
+
+  return s;
+};
 
 function validateCoords(x, y) { return (typeof x === 'number' && typeof y === 'number' && x >= 0 && y >= 0 && x < W && y < H); }
 function safeGet(arr, y, x) { return (arr && arr[y]) ? arr[y][x] : undefined; }
