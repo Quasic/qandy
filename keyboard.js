@@ -47,7 +47,7 @@ keyboardData.forEach(function(key) {
   }
   btn.style.left = key.x + 'px';
   btn.style.top = key.y + 'px';
-  btn.onclick = function() { button(key.keyCode,key); };
+  btn.onclick = function(event) { button(key.keyCode,event); };
   document.getElementById('keyboard-container').appendChild(btn);
  });
  updateKeyLabels();
