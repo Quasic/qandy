@@ -227,7 +227,7 @@ var FALLBACK_FG = {
   black:30, red:31, green:32, yellow:33, blue:34, magenta:35, cyan:36, white:37,
   bright_black:90, bright_red:91, bright_green:92, bright_yellow:93, bright_blue:94, bright_magenta:95, bright_cyan:96, bright_white:97
 };
-var FALLBACK_BG = {
+	var FALLBACK_BG = {
   black:40, red:41, green:42, yellow:43, blue:44, magenta:45, cyan:46, white:47,
   bright_black:100, bright_red:101, bright_green:102, bright_yellow:103, bright_blue:104, bright_magenta:105, bright_cyan:106, bright_white:107
 };
@@ -295,31 +295,41 @@ window.pokeCell = function(x,y,a,f,b,h) {
   if (typeof a === 'undefined') { a=" "; } 
   if (!validateCoords(x, y)) return false;
   VIDEO[y][x] = (a === null) ? ' ' : (typeof a === 'string' ? (a.length ? a.charAt(0) : ' ') : String(a).charAt(0));
-  function getColor(val, which) {
-    if (typeof val === 'number' && !isNaN(val)) return val;
-    if (typeof val === 'string') {
-      var key = val.toLowerCase();
-      if (which === 'fg' && window.ANSI_NAME_TO_FG && typeof window.ANSI_NAME_TO_FG[key] !== 'undefined') return window.ANSI_NAME_TO_FG[key];
-      if (which === 'bg' && window.ANSI_NAME_TO_BG && typeof window.ANSI_NAME_TO_BG[key] !== 'undefined') return window.ANSI_NAME_TO_BG[key];
-      // try parse numeric string
-      var maybe = parseInt(val, 10);
-      if (!isNaN(maybe)) return maybe;
-    }
-    return undefined;
+
+  var fgCode;
+  if (typeof f === 'number') {
+    fgCode = f | 0;
+  } else if (typeof f === 'string' && f.length) {
+    var name = f.toLowerCase();
+    fgCode = (window.ANSI_NAME_TO_FG && typeof window.ANSI_NAME_TO_FG[name] !== 'undefined')
+      ? (window.ANSI_NAME_TO_FG[name] | 0)
+      : CURFG;
+  } else {
+    // fallback: try existing FCOLOR bank for this cell, otherwise default
+    fgCode = CURFG;
   }
-  var f = getColor(f, 'f');
-  var b = getColor(b, 'b');
 
-  if (typeof f !== 'undefined') { FCOLOR[y][x]=CURFG; }
-  if (typeof b !== 'undefined') { BCOLOR[y][x]=CURBG; }
+  var bgCode;
+  if (typeof b === 'number') {
+    bgCode = b | 0;
+  } else if (typeof b === 'string' && b.length) {
+    var name = b.toLowerCase();
+    bgCode = (window.ANSI_NAME_TO_BG && typeof window.ANSI_NAME_TO_BG[name] !== 'undefined')
+      ? (window.ANSI_NAME_TO_BG[name] | 0)
+      : CURBG;
+  } else {
+    // fallback: try existing FCOLOR bank for this cell, otherwise default
+    bgCode = CURBG;
+  }
+  
+  FCOLOR[y][x]=fgCode;
+  BCOLOR[y][x]=bgCode; 
 
-  // ATTR handling: if provided overwrite; if omitted leave unchanged
   if (typeof h !== 'undefined' && h !== null) {
     try { ATTR[y][x] = (h | 0); } catch (e) { ATTR[y][x] = h; }
   }
 
   if (SYNC) { pokeRefresh(x, y); }
-
   return true;
 };
 
@@ -342,28 +352,27 @@ window.pokeColor = function(x, y, f, b, n) {
 
 // there should be a poke function that already does this??
 window.eraseInput = function(text) {
-  if (typeof text === 'undefined') { text=""; }
-  var str = String(text); var curx = LINEX; var cury = LINEY;
-  for (var i = 0; i < str.length; i++) {
-    var char = str[i];
-    if (char === '\n') { 
-      curx = 0; cury++; if (cury >= H) { return false; } continue;
-      if (curx >= W) {
-    	  curx = 0; cury++; if (cury >= H) { return false; }
-      }
-    }
-    pokeCell(curx, cury, " "); curx++;
-  }
 }
 
 window.peek = function(x, y) { 
   return validateCoords(x, y) ? VIDEO[y][x] : undefined;
 };
 
-
 window.pokeInput = function() {
   if (typeof lastin === 'undefined') { lastin="";  }
-  if (lastin != "") { eraseInput(lastin); }
+  if (lastin != "") {
+    var str = String(lastin); var curx = LINEX; var cury = LINEY;
+    for (var i = 0; i < str.length; i++) {
+      var char = str[i];
+      if (char === '\n') { 
+        curx = 0; cury++; if (cury >= H) { return false; } continue;
+        if (curx >= W) {
+    	    curx = 0; cury++; if (cury >= H) { return false; }
+        }
+      }
+      pokeCell(curx, cury, " "); curx++;
+    }
+  }
   var curx = LINEX; var cury = LINEY;
   for (var i = 0; i < LINE.length; i++) {
     var char = LINE[i];
@@ -426,112 +435,6 @@ window.peekChar = function(x, y) {
   return validateCoords(x, y) ? VIDEO[y][x] : undefined;
 };
 
-
-// CLEAR - Clear region
-window.clear = window.clearRegion = function(x, y, width, height) {
-  return fillChar(x, y, width, height, ' ');
-};
-
-// SCROLL - Scroll region in any direction
-window.scroll = window.scrollRegion = function(x, y, width, height, direction, distance, fillChar) {
-  distance = distance || 1;
-  var fill = fillChar || ' ';
-  
-  // Validate region
-  if (!validateCoords(x, y) || width <= 0 || height <= 0) return false;
-  var x2 = valueMath.min(x + width, W);
-  var y2 = Math.min(y + height, H);
-  
-  switch(direction.toLowerCase()) {
-    case 'up':
-      // Move rows up
-      for (var row = y; row < y2 - distance; row++) {
-        for (var col = x; col < x2; col++) {
-          var srcRow = row + distance;
-          if (srcRow < y2) {
-            VIDEO[row][col] = VIDEO[srcRow][col];
-            COLOR[row][col] = Object.assign({}, COLOR[srcRow][col]);
-            pokeRefresh(col, row);
-          }value
-        }
-      }
-      // FiscrollRegion(0, 0, W, H, 'up', 5 || 1, " ");ll bottom
-      for (var row = y2 - distance; row < y2; row++) {
-        for (var col = x; col < x2; col++) {
-          pokeChar(col, row, fill);
-        }
-      }
-      break;
-      
-    case 'down':
-      // Move rows down
-      for (var row = y2 - 1; row >= y + distance; row--) {
-        for (var col = x; col < x2; col++) {
-          var srcRow = row - distance;
-          if (srcRow >= y) {
-            VIDEO[row][col] = VIDEO[srcRow][col];
-            COLOR[row][col] = Object.assign({}, COLOR[srcRow][col]);
-            pokeRefresh(col, row);
-          }
-        }
-      }
-      // Fill top
-      for (var row = y; row < y + distance; row++) {
-        for (var col = x; col < x2; col++) {
-          pokeChar(col, row, fill);
-        }
-      }
-      break;
-      
-    case 'left':
-      // Move columns left
-      for (var row = y; row < y2; row++) {
-        for (var col = x; col < x2 - distance; col++) {
-          var srcCol = col + distance;
-          if (srcCol < x2) {
-            VIDEO[row][col] = VIDEO[row][srcCol];
-            COLOR[row][col] = Object.assign({}, COLOR[row][srcCol]);
-            pokeRefresh(col, row);
-          }
-        }
-      }
-      // Fill right
-      for (var row = y; row < y2; row++) {
-        for (var col = x2 - distance; col < x2; col++) {
-          pscrollRegion(0, 0, W, H, 'up', 5 || 1, " ");okeChar(col, row, fill);
-        }
-      }
-      break;
-      
-    case 'right':
-      // Move columns right
-      for (var row = y; row < y2; row++) {
-        for (var col = x2 - 1; col >= x + distance; col--) {
-          var srcCol = col - distance;
-          if (srcCol >= x) {
-            VIDEO[row][col] = VIDEO[row][srcCol];
-            COLOR[row][col] = Object.assign({}, COLOR[row][srcCol]);
-            pokeRefresh(col, row);
-          }
-        }
-      }
-      // Fill left
-      for (var row = y; row < y2; row++) {
-        for (var col = x; col < x + distance; col++) {
-          pokeChar(col, row, fill);
-        }
-      }
-      break;
-  }
-  
-  return true;
-};
-
-
-// SCROLLDOWN - Scroll entire screen down
-window.scrollDown = function(lines, fillChar) {
-  return scrollRegion(0, 0, W, H, 'down', lines || 1, fillChar);
-};
 
 const ANSI = {
   colors: { 30: 'black', 31: 'red', 32: 'green', 33: 'yellow', 34: 'blue', 35: 'magenta', 36: 'cyan', 37: 'white', 90: 'black', 91: 'red', 92: 'green', 93: 'yellow', 94: 'blue', 95: 'magenta', 96: 'cyan', 97: 'white' },
@@ -751,6 +654,130 @@ function buildClass(s) {
 window.hasATTR = function(x, y, attrBit) { return !!(ATTR[y][x] & attrBit); };
 window.peekATTR = function(x, y) { return ATTR[y][x]; };
 
+// set/get foreground for a cell or horizontal span
+window.pokeFG = function(x, y, fg, count) {
+  // Getter: if fg is undefined, return current fg value or undefined if out-of-bounds
+  if (typeof fg === 'undefined') {
+    if (typeof validateCoords === 'function') {
+      if (!validateCoords(x, y)) return undefined;
+    } else {
+      if (typeof x !== 'number' || typeof y !== 'number' || x < 0 || y < 0 || y >= H || x >= W) return undefined;
+    }
+    if (window.FCOLOR && FCOLOR[y] && typeof FCOLOR[y][x] !== 'undefined') return FCOLOR[y][x] | 0;
+    if (window.COLOR && COLOR[y] && COLOR[y][x] && typeof COLOR[y][x].color !== 'undefined') return COLOR[y][x].color | 0;
+    return (typeof window.defaultColor !== 'undefined') ? window.defaultColor : 37;
+  }
+
+  // Validate coords
+  if (typeof validateCoords === 'function') {
+    if (!validateCoords(x, y)) return false;
+  } else {
+    if (typeof x !== 'number' || typeof y !== 'number') return false;
+    if (x < 0 || y < 0 || y >= H || x >= W) return false;
+  }
+
+  // normalize count default=1 and clamp to remaining cells on screen
+  count = (typeof count === 'number' && count > 0) ? Math.floor(count) : 1;
+  var maxRemaining = Math.max(0, W * H - (y * W + x));
+  if (count > maxRemaining) count = maxRemaining;
+  if (count <= 0) return false;
+
+  // ensure banks exist
+  if (!window.FCOLOR) FCOLOR = [];
+  if (!FCOLOR[y]) FCOLOR[y] = new Uint8Array(W);
+
+  // resolve numeric code from name or number
+  var fgCode;
+  if (typeof fg === 'number') {
+    fgCode = fg | 0;
+  } else if (typeof fg === 'string' && fg.length) {
+    var name = fg.toLowerCase();
+    fgCode = (window.ANSI_NAME_TO_FG && typeof window.ANSI_NAME_TO_FG[name] !== 'undefined')
+      ? (window.ANSI_NAME_TO_FG[name] | 0)
+      : ((typeof window.defaultColor !== 'undefined') ? window.defaultColor : 37);
+  } else {
+    fgCode = (typeof window.defaultColor !== 'undefined') ? window.defaultColor : 37;
+  }
+
+  // write span
+  for (var i = 0; i < count; i++) {
+    var cx = x + i;
+    FCOLOR[y][cx] = fgCode;
+    if (window.COLOR && COLOR[y] && COLOR[y][cx]) COLOR[y][cx].color = fgCode;
+  }
+
+  // refresh
+  if (typeof pokeRefreshRow === 'function') {
+    try { pokeRefreshRow(x, y, count); } catch (e) { for (var r = 0; r < count; r++) try { pokeRefresh(x + r, y); } catch(e){} }
+  } else {
+    for (var j = 0; j < count; j++) try { pokeRefresh(x + j, y); } catch(e){}
+  }
+
+  return count;
+};
+
+// set/get background for a cell or horizontal span
+window.pokeBG = function(x, y, bg, count) {
+  // Getter: if bg is undefined, return current bg value or undefined if out-of-bounds
+  if (typeof bg === 'undefined') {
+    if (typeof validateCoords === 'function') {
+      if (!validateCoords(x, y)) return undefined;
+    } else {
+      if (typeof x !== 'number' || typeof y !== 'number' || x < 0 || y < 0 || y >= H || x >= W) return undefined;
+    }
+    if (window.BCOLOR && BCOLOR[y] && typeof BCOLOR[y][x] !== 'undefined') return BCOLOR[y][x] | 0;
+    if (window.COLOR && COLOR[y] && COLOR[y][x] && typeof COLOR[y][x].bgcolor !== 'undefined') return COLOR[y][x].bgcolor | 0;
+    return (typeof window.defaultBg !== 'undefined') ? window.defaultBg : 40;
+  }
+
+  // Validate coords
+  if (typeof validateCoords === 'function') {
+    if (!validateCoords(x, y)) return false;
+  } else {
+    if (typeof x !== 'number' || typeof y !== 'number') return false;
+    if (x < 0 || y < 0 || y >= H || x >= W) return false;
+  }
+
+  // normalize count default=1 and clamp to remaining cells on screen
+  count = (typeof count === 'number' && count > 0) ? Math.floor(count) : 1;
+  var maxRemaining = Math.max(0, W * H - (y * W + x));
+  if (count > maxRemaining) count = maxRemaining;
+  if (count <= 0) return false;
+
+  // ensure banks exist
+  if (!window.BCOLOR) BCOLOR = [];
+  if (!BCOLOR[y]) BCOLOR[y] = new Uint8Array(W);
+
+  // resolve numeric code from name or number
+  var bgCode;
+  if (typeof bg === 'number') {
+    bgCode = bg | 0;
+  } else if (typeof bg === 'string' && bg.length) {
+    var name = bg.toLowerCase();
+    bgCode = (window.ANSI_NAME_TO_BG && typeof window.ANSI_NAME_TO_BG[name] !== 'undefined')
+      ? (window.ANSI_NAME_TO_BG[name] | 0)
+      : ((typeof window.defaultBg !== 'undefined') ? window.defaultBg : 40);
+  } else {
+    bgCode = (typeof window.defaultBg !== 'undefined') ? window.defaultBg : 40;
+  }
+
+  // write span
+  for (var i = 0; i < count; i++) {
+    var cx = x + i;
+    BCOLOR[y][cx] = bgCode;
+    if (window.COLOR && COLOR[y] && COLOR[y][cx]) COLOR[y][cx].bgcolor = bgCode;
+  }
+
+  // refresh
+  if (typeof pokeRefreshRow === 'function') {
+    try { pokeRefreshRow(x, y, count); } catch (e) { for (var r = 0; r < count; r++) try { pokeRefresh(x + r, y); } catch(e){} }
+  } else {
+    for (var j = 0; j < count; j++) try { pokeRefresh(x + j, y); } catch(e){}
+  }
+
+  return count;
+};
+
 window.pokeAttr = function(x, y, spec) {
   if (typeof x !== 'number' || typeof y !== 'number') return false;
   // optional validator function if present in repo
@@ -835,61 +862,49 @@ window.pokeInverse = function(x, y, state, n) {
 };
 
 window.pokeRefresh = function(x, y, n) {
-  var full = (typeof x === 'undefined' && typeof y === 'undefined');
-  if (full) { x = 0; y = 0; n = (typeof W === 'number' && typeof H === 'number') ? (W * H) : 0; }
-  if (!full) {
+  if (typeof x === 'undefined' && typeof y === 'undefined') { x=0; y=0; n=W*H; }
+  if (typeof validateCoords === 'function') {
+    if (!validateCoords(x, y)) return false;
+  } else {
     if (typeof x !== 'number' || typeof y !== 'number') return false;
-    if (typeof H === 'number') { if (y < 0 || y >= H) return false; }
-    if (typeof W === 'number') { if (x < 0 || x >= W) return false; }
+    if (x < 0 || x >= W || y < 0 || y >= H) return false;
   }
-  n = (typeof n === 'number' && !isNaN(n) && n > 0) ? (n|0) : 1;
-  var cx = x|0; var cy = y|0; // these values need validating
-  var remaining = n; var refreshed = 0;
-  while (remaining > 0 && (typeof H !== 'number' || cy < H)) {
-    if (typeof W === 'number' && cx >= W) { cx = 0; cy++; if (typeof H === 'number' && cy >= H) break; }
-    var elCell = (DOM[cy] && DOM[cy][cx]);
-    if (elCell) {
-      // text
-      var chCell = (VIDEO[cy] && typeof VIDEO[cy][cx] !== 'undefined') ? VIDEO[cy][cx] : ' ';
-      var newTextCell = (chCell === ' ' || chCell === '\u00A0') ? '\u00A0' : chCell;
-      if (elCell.textContent !== newTextCell) elCell.textContent = newTextCell;
+  n = (typeof n === 'number' && n > 0) ? Math.floor(n) : 1;
+  var m = Math.max(0, W * H - (y * W + x));
+  if (n > m) n = m;
+  if (n < 1) return false;  
+  var remaining = n; var cx = x | 0; var cy = y | 0;
+  while (remaining > 0 && cy < H) {
+    var avail = Math.min(remaining, W - cx);
+    // Per-cell refresh
+    for (var rx = cx; rx < cx + avail; rx++) {
+      var el = DOM[cy] && DOM[cy][rx];
+      if (!el) continue;
+      var ch = (VIDEO[cy] && typeof VIDEO[cy][rx] !== 'undefined') ? VIDEO[cy][rx] : ' ';
+      var newText = (ch === ' ' || ch === '\u00A0') ? '\u00A0' : ch;
+      if (el.textContent !== newText) el.textContent = newText;
 
-      // color values
-      fg = FCOLOR[cy][cx] | 0;
-      bg = BCOLOR[cy][cx] | 0;
+      fg = FCOLOR[cy][rx] | 0; 
+      bg = BCOLOR[cy][rx] | 0;
 
-      // attributes come from ATTR (authoritative)
-      var attrVal = (ATTR && ATTR[cy] && typeof ATTR[cy][cx] !== 'undefined') ? ATTR[cy][cx] : 0;
-      var inv   = !!(attrVal & (window.ATTR_INVERSE || 0x0001));
-      var bold  = !!(attrVal & (window.ATTR_BOLD    || 0x0002));
-      var dim   = !!(attrVal & (window.ATTR_DIM     || 0x0004));
-      var italic= !!(attrVal & (window.ATTR_ITALIC  || 0x0008));
-      var under = !!(attrVal & (window.ATTR_UNDERLINE || 0x0010));
-      var blink = !!(attrVal & (window.ATTR_BLINK   || 0x0020));
-
-      // build class string
-      var classStr = 'qandy-cell ansi-fg-' + fg + ' ansi-bg-' + bg;
-      if (bold) classStr += ' ansi-bold';
-      if (inv)  classStr += ' ansi-inverse';
-      if (italic) classStr += ' ansi-italic';
-      if (under) classStr += ' ansi-underline';
-      if (dim) classStr += ' ansi-dim';
-      if (blink) classStr += ' ansi-blink';
-
-      if (elCell._lastClass !== classStr) {
-        elCell.className = classStr;
-        elCell._lastClass = classStr;
+      var s2 = getCellStyle(rx, cy);
+      var classStr2 = 'qandy-cell ansi-fg-' + s2.color + ' ansi-bg-' + s2.bgcolor;
+      if (s2.bold) classStr2 += ' ansi-bold';
+      if (s2.inverse) classStr2 += ' ansi-inverse';
+      if (s2.italic) classStr2 += ' ansi-italic';
+      if (s2.underline) classStr2 += ' ansi-underline';
+      if (s2.dim) classStr2 += ' ansi-dim';
+      if (s2.blink) classStr2 += ' ansi-blink';
+      if (el._lastClass !== classStr2) {
+        el.className = classStr2;
+        el._lastClass = classStr2;
       }
-      refreshed++;
     }
-    // advance to next cell, wrapping rows as needed
-    cx++;
-    if (typeof W === 'number' && cx >= W) { cx = 0; cy++; }
-    remaining--;
+    remaining -= avail;
+    cx = 0; 
+    cy++;
   }
-  if (full) return true;
-  if (n === 1) return true;
-  return refreshed;
+  return true;
 };
 
 window.pokeSelect = function(state) {
@@ -917,79 +932,56 @@ window.peekInverse = function(x, y) {
   return undefined;
 };
 
-function getCellStyle(x, y) {
-  // color/bgcolor come from COLOR buffer (fallbacks provided)
-  var colRow = (window.COLOR && COLOR[y]) ? COLOR[y] : undefined;
-  var colCell = (colRow && typeof colRow[x] !== 'undefined') ? colRow[x] : undefined;
+// getCellStyle(x,y) - prefer numeric banks (FCOLOR/BCOLOR), fallback to COLOR objects and ATTR bits
+window.getCellStyle = function(x, y) {
+  var defaultFG = (typeof window.defaultColor !== 'undefined') ? window.defaultColor : 37;
+  var defaultBG = (typeof window.defaultBg !== 'undefined') ? window.defaultBg : 40;
 
-  var fg = (colCell && typeof colCell.color !== 'undefined') ? colCell.color : ((window.currentStyle && currentStyle.color) ? currentStyle.color : 37);
-  var bg = (colCell && typeof colCell.bgcolor !== 'undefined') ? colCell.bgcolor : ((window.currentStyle && currentStyle.bgcolor) ? currentStyle.bgcolor : 40);
+  // validate coords: return safe defaults if out-of-range
+  if (typeof x !== 'number' || typeof y !== 'number' || x < 0 || y < 0 || y >= H || x >= W) {
+    return { color: defaultFG, bgcolor: defaultBG, bold:false, inverse:false, italic:false, underline:false, dim:false, blink:false };
+  }
 
-  // ATTR is compact bitfield storage; read booleans from the bitmask
-  var attrRow = (window.ATTR && ATTR[y]) ? ATTR[y] : undefined;
-  var attrVal = (attrRow && typeof attrRow[x] !== 'undefined') ? attrRow[x] : 0;
+  // read numeric banks first (preferred)
+  var fg = defaultFG;
+  var bg = defaultBG;
 
-  var inv = !!(attrVal & (window.ATTR_INVERSE || 0x0001));
-  var bold = !!(attrVal & (window.ATTR_BOLD || 0x0002));
-  var dim = !!(attrVal & (window.ATTR_DIM || 0x0004));
-  var italic = !!(attrVal & (window.ATTR_ITALIC || 0x0008));
-  var underline = !!(attrVal & (window.ATTR_UNDERLINE || 0x0010));
-  var blink = !!(attrVal & (window.ATTR_BLINK || 0x0020));
-  // extend as needed for other bits...
+  if (window.FCOLOR && FCOLOR[y] && typeof FCOLOR[y][x] !== 'undefined') {
+    fg = FCOLOR[y][x] | 0;
+  } else if (window.COLOR && COLOR[y] && COLOR[y][x] && typeof COLOR[y][x].color !== 'undefined') {
+    fg = COLOR[y][x].color | 0;
+  }
 
-  return {
+  if (window.BCOLOR && BCOLOR[y] && typeof BCOLOR[y][x] !== 'undefined') {
+    bg = BCOLOR[y][x] | 0;
+  } else if (window.COLOR && COLOR[y] && COLOR[y][x] && typeof COLOR[y][x].bgcolor !== 'undefined') {
+    bg = COLOR[y][x].bgcolor | 0;
+  }
+
+  // read ATTR bitmask (if present)
+  var attr = 0;
+  if (window.ATTR && ATTR[y] && typeof ATTR[y][x] !== 'undefined') {
+    attr = ATTR[y][x] | 0;
+  }
+
+  var s = {
     color: fg,
     bgcolor: bg,
-    bold: bold,
-    inverse: inv,
-    dim: dim,
-    italic: italic,
-    underline: underline,
-    blink: blink
+    bold:     !!(attr & (window.ATTR_BOLD      || 0x0002)),
+    dim:      !!(attr & (window.ATTR_DIM       || 0x0004)),
+    italic:   !!(attr & (window.ATTR_ITALIC    || 0x0008)),
+    underline:!!(attr & (window.ATTR_UNDERLINE || 0x0010)),
+    blink:    !!(attr & (window.ATTR_BLINK     || 0x0020)),
+    inverse:  !!(attr & (window.ATTR_INVERSE   || 0x0001)),
+    hidden:   !!(attr & (window.ATTR_HIDDEN    || 0x0080))
   };
-}
 
-window.pokeRefresh = function(x, y, n) {
-  if (typeof x === 'undefined' && typeof y === 'undefined') { x=0; y=0; n=W*H; }
-  if (typeof validateCoords === 'function') {
-    if (!validateCoords(x, y)) return false;
-  } else {
-    if (typeof x !== 'number' || typeof y !== 'number') return false;
-    if (x < 0 || x >= W || y < 0 || y >= H) return false;
+  // Visual inverse: swap fg/bg for rendering only (do not modify banks)
+  if (s.inverse) {
+    var t = s.color; s.color = s.bgcolor; s.bgcolor = t;
   }
-  n = (typeof n === 'number' && n > 0) ? Math.floor(n) : 1;
-  n = (typeof n === 'number' && n > 0) ? Math.floor(n) : 1;
-  var m = Math.max(0, W * H - (y * W + x));
-  if (n > m) count = m;
-  if (n < 1) return false;  
-  var remaining = n; var cx = x | 0; var cy = y | 0;
-  while (remaining > 0 && cy < H) {
-    var avail = Math.min(remaining, W - cx);
-    // Per-cell refresh
-    for (var rx = cx; rx < cx + avail; rx++) {
-      var el = DOM[cy] && DOM[cy][rx];
-      if (!el) continue;
-      var ch = (VIDEO[cy] && typeof VIDEO[cy][rx] !== 'undefined') ? VIDEO[cy][rx] : ' ';
-      var newText = (ch === ' ' || ch === '\u00A0') ? '\u00A0' : ch;
-      if (el.textContent !== newText) el.textContent = newText;
-      var s2 = getCellStyle(rx, cy);
-      var classStr2 = 'qandy-cell ansi-fg-' + s2.color + ' ansi-bg-' + s2.bgcolor;
-      if (s2.bold) classStr2 += ' ansi-bold';
-      if (s2.inverse) classStr2 += ' ansi-inverse';
-      if (s2.italic) classStr2 += ' ansi-italic';
-      if (s2.underline) classStr2 += ' ansi-underline';
-      if (s2.dim) classStr2 += ' ansi-dim';
-      if (s2.blink) classStr2 += ' ansi-blink';
-      if (el._lastClass !== classStr2) {
-        el.className = classStr2;
-        el._lastClass = classStr2;
-      }
-    }
-    remaining -= avail;
-    cx = 0; 
-    cy++;
-  }
-  return true;
+
+  return s;
 };
 
 function validateCoords(x, y) { return (typeof x === 'number' && typeof y === 'number' && x >= 0 && y >= 0 && x < W && y < H); }
