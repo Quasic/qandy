@@ -207,21 +207,29 @@ window.gfxZClick = function(z, clickedElement) {
 
 window.gfxServers = async function() {
   var url = _registryUrl;
-  if (!url) return { error: 'Error: no registry URL configured' };
-  try {
+  // Build server options with defaults in case central server unreachable
+  var servers = [];
+  var options = [
+    location.protocol==='file:'?
+      { name: 'localhost', host: 'localhost', port: 8080, drives: [] }:
+    { name: 'origin', host: location.hostname, port: location.port, drives: [] }
+    
+  ];
+
+  if (url) try {
     var response = await fetch(url, { method: 'GET' });
     if (!response.ok) return { error: 'Error: registry responded with ' + response.status };
     var data = await response.json();
-    
-    // Build server options
-    var servers = data.servers || [];
-    var options = [{ name: 'localhost', host: 'localhost', port: 8080, drives: [] }];
+    servers = data.servers || [];
     
     for (var i = 0; i < servers.length; i++) {
       var s = servers[i];
       if (s.drives && s.drives.includes(_gfxDrive)) {
         options.push(s);
       }
+    }
+  } catch (e) {
+    await print("Error fetching servers: " + e.message + "\n");
     }
     
     // Store for gfxConnect to use
@@ -237,17 +245,12 @@ window.gfxServers = async function() {
     await print("Server [0]: ");
     
     return options;
-    
-  } catch (e) {
-    await print("Error fetching servers: " + e.message + "\n");
-    return null;
-  }
 }
 
 window.gfxConnect = async function(serverIndex) {
   // Get server from the list stored by gfxServers()
   var server = window._serverOptions[serverIndex || 0];
-  if (!server) { server = { host: 'localhost', port: 8080 }; }
+  if (!server) { server = location.protocol === 'file:' ? { host: 'localhost', port: 8080 } : { host: location.hostname, port: location.port }; }
   _serverUrl = "http://" + server.host + ":" + server.port + "/qandyland3.js";
   try {
   	
